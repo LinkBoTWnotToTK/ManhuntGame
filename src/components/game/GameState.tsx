@@ -8,9 +8,11 @@ interface GameState {
   elapsedTime: number;
   gameWon: boolean;
   isPlaying: boolean;
+  nearestDistance: number | null;
   collect: (id: string) => void;
   startGame: () => void;
   resetGame: () => void;
+  setNearestDistance: (d: number | null) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -30,6 +32,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [gameWon, setGameWon] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [nearestDistance, setNearestDistance] = useState<number | null>(null);
   const timerRef = useRef<number | null>(null);
 
   const startGame = useCallback(() => {
@@ -69,11 +72,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setIsPlaying(false);
     setStartTime(null);
     setElapsedTime(0);
+    setNearestDistance(null);
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
   return (
-    <GameContext.Provider value={{ score, totalItems: TOTAL_ITEMS, collected, startTime, elapsedTime, gameWon, isPlaying, collect, startGame, resetGame }}>
+    <GameContext.Provider value={{ score, totalItems: TOTAL_ITEMS, collected, startTime, elapsedTime, gameWon, isPlaying, nearestDistance, collect, startGame, resetGame, setNearestDistance }}>
       {children}
     </GameContext.Provider>
   );

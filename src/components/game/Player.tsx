@@ -3,6 +3,8 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { PointerLockControls } from "@react-three/drei";
 import * as THREE from "three";
 import { wallColliders } from "./House";
+import { useGame } from "./GameState";
+import { COLLECTIBLE_DATA } from "./Collectible";
 
 const SPEED = 3.5;
 const PLAYER_RADIUS = 0.3;
@@ -13,6 +15,8 @@ export default function Player() {
   const { camera } = useThree();
   const keys = useRef<Record<string, boolean>>({});
   const velocity = useRef(new THREE.Vector3());
+  const { collected, isPlaying, setNearestDistance } = useGame();
+  const frameCount = useRef(0);
 
   useEffect(() => {
     camera.position.set(0, PLAYER_HEIGHT, 4);
@@ -60,17 +64,8 @@ export default function Player() {
     const newPos = camera.position.clone().add(velocity.current);
     newPos.y = PLAYER_HEIGHT;
 
-    // Simple AABB collision
-    const playerMin = new THREE.Vector3(
-      newPos.x - PLAYER_RADIUS,
-      0,
-      newPos.z - PLAYER_RADIUS
-    );
-    const playerMax = new THREE.Vector3(
-      newPos.x + PLAYER_RADIUS,
-      PLAYER_HEIGHT + 0.2,
-      newPos.z + PLAYER_RADIUS
-    );
+    const playerMin = new THREE.Vector3(newPos.x - PLAYER_RADIUS, 0, newPos.z - PLAYER_RADIUS);
+    const playerMax = new THREE.Vector3(newPos.x + PLAYER_RADIUS, PLAYER_HEIGHT + 0.2, newPos.z + PLAYER_RADIUS);
 
     let blocked = false;
     for (const collider of wallColliders) {
@@ -90,7 +85,6 @@ export default function Player() {
     if (!blocked) {
       camera.position.copy(newPos);
     } else {
-      // Try sliding along X
       const slideX = camera.position.clone();
       slideX.x += velocity.current.x;
       slideX.y = PLAYER_HEIGHT;
@@ -105,7 +99,6 @@ export default function Player() {
       }
       if (!blockedX) camera.position.x = slideX.x;
 
-      // Try sliding along Z
       const slideZ = camera.position.clone();
       slideZ.z += velocity.current.z;
       slideZ.y = PLAYER_HEIGHT;
@@ -119,6 +112,18 @@ export default function Player() {
         }
       }
       if (!blockedZ) camera.position.z = slideZ.z;
+    }
+
+    // Update nearest hider distance every 5 frames
+    frameCount.current++;
+    if (isPlaying && frameCount.current % 5 === 0) {
+      let nearest = Infinity;
+      for (const item of COLLECTIBLE_DATA) {
+        if (collected.has(item.id)) continue;
+        const dist = camera.position.distanceTo(new THREE.Vector3(item.position[0], camera.position.y, item.position[2]));
+        if (dist < nearest) nearest = dist;
+      }
+      setNearestDistance(nearest === Infinity ? null : nearest);
     }
   });
 
