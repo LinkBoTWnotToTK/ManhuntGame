@@ -2,8 +2,28 @@ import { Canvas } from "@react-three/fiber";
 import House from "@/components/game/House";
 import Player from "@/components/game/Player";
 import GameUI from "@/components/game/GameUI";
-import Collectible, { COLLECTIBLE_DATA } from "@/components/game/Collectible";
-import { GameProvider } from "@/components/game/GameState";
+import NPC, { RUNNER_NPCS, HUNTER_NPCS } from "@/components/game/NPC";
+import { GameProvider, useGame } from "@/components/game/GameState";
+
+function GameScene() {
+  const { role } = useGame();
+
+  return (
+    <>
+      <House />
+      {/* If player is hunter, spawn runner NPCs. If player is runner, spawn hunter NPCs */}
+      {role === "hunter" &&
+        RUNNER_NPCS.map((npc) => (
+          <NPC key={npc.id} {...npc} npcRole="runner" />
+        ))}
+      {role === "runner" &&
+        HUNTER_NPCS.map((npc) => (
+          <NPC key={npc.id} {...npc} npcRole="hunter" />
+        ))}
+      <Player />
+    </>
+  );
+}
 
 const Index = () => {
   return (
@@ -15,12 +35,7 @@ const Index = () => {
           camera={{ fov: 75, near: 0.1, far: 100 }}
           gl={{ antialias: true }}
         >
-          <fog attach="fog" args={["#1a1a2e", 0, 20]} />
-          <House />
-          {COLLECTIBLE_DATA.map((item) => (
-            <Collectible key={item.id} {...item} />
-          ))}
-          <Player />
+          <GameScene />
         </Canvas>
       </div>
     </GameProvider>

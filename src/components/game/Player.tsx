@@ -2,11 +2,12 @@ import { useRef, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { PointerLockControls } from "@react-three/drei";
 import * as THREE from "three";
-import { wallColliders } from "./House";
+import { wallColliders, ESCAPE_ZONE_POS, ESCAPE_ZONE_RADIUS } from "./House";
 import { useGame } from "./GameState";
-import { COLLECTIBLE_DATA } from "./Collectible";
+import { HUNTER_NPCS } from "./NPC";
 
-const SPEED = 3.5;
+const SPEED = 4;
+const SPRINT_SPEED = 6;
 const PLAYER_RADIUS = 0.3;
 const PLAYER_HEIGHT = 1.6;
 
@@ -15,8 +16,8 @@ export default function Player() {
   const { camera } = useThree();
   const keys = useRef<Record<string, boolean>>({});
   const velocity = useRef(new THREE.Vector3());
-  const { collected, isPlaying, setNearestDistance } = useGame();
-  const frameCount = useRef(0);
+  const { role, isPlaying, escapeOpen, setEscaped, gameOver } = useGame();
+  const caughtRef = useRef(false);
 
   useEffect(() => {
     camera.position.set(0, PLAYER_HEIGHT, 4);
@@ -36,8 +37,11 @@ export default function Player() {
     };
   }, [camera]);
 
-  useFrame((_, delta) => {
-    if (!controlsRef.current?.isLocked) return;
+  useFrame(() => {
+    if (!controlsRef.current?.isLocked || !isPlaying || gameOver) return;
+
+    const isSprinting = keys.current["ShiftLeft"] || keys.current["ShiftRight"];
+    const speed = isSprinting ? SPRINT_SPEED : SPEED;
 
     const direction = new THREE.Vector3();
     const forward = new THREE.Vector3();
@@ -55,14 +59,18 @@ export default function Player() {
 
     if (direction.length() > 0) {
       direction.normalize();
-      velocity.current.copy(direction).multiplyScalar(SPEED * delta);
+      const delta = 1 / 60;
+      velocity.current.copy(direction).multiplyScalar(speed * delta);
     } else {
       velocity.current.set(0, 0, 0);
     }
 
-    // Try to move and check collisions
     const newPos = camera.position.clone().add(velocity.current);
     newPos.y = PLAYER_HEIGHT;
+
+    // Bounds
+    newPos.x = THREE.MathUtils.clamp(newPos.x, -13.5, 13.5);
+    newPos.z = THREE.MathUtils.clamp(newPos.z, -23.5, 14.5);
 
     const playerMin = new THREE.Vector3(newPos.x - PLAYER_RADIUS, 0, newPos.z - PLAYER_RADIUS);
     const playerMax = new THREE.Vector3(newPos.x + PLAYER_RADIUS, PLAYER_HEIGHT + 0.2, newPos.z + PLAYER_RADIUS);
@@ -70,12 +78,9 @@ export default function Player() {
     let blocked = false;
     for (const collider of wallColliders) {
       if (
-        playerMin.x < collider.max.x &&
-        playerMax.x > collider.min.x &&
-        playerMin.y < collider.max.y &&
-        playerMax.y > collider.min.y &&
-        playerMin.z < collider.max.z &&
-        playerMax.z > collider.min.z
+        playerMin.x < collider.max.x && playerMax.x > collider.min.x &&
+        playerMin.y < collider.max.y && playerMax.y > collider.min.y &&
+        playerMin.z < collider.max.z && playerMax.z > collider.min.z
       ) {
         blocked = true;
         break;
@@ -85,6 +90,7 @@ export default function Player() {
     if (!blocked) {
       camera.position.copy(newPos);
     } else {
+      // Slide X
       const slideX = camera.position.clone();
       slideX.x += velocity.current.x;
       slideX.y = PLAYER_HEIGHT;
@@ -93,12 +99,12 @@ export default function Player() {
       let blockedX = false;
       for (const c of wallColliders) {
         if (sxMin.x < c.max.x && sxMax.x > c.min.x && sxMin.y < c.max.y && sxMax.y > c.min.y && sxMin.z < c.max.z && sxMax.z > c.min.z) {
-          blockedX = true;
-          break;
+          blockedX = true; break;
         }
       }
       if (!blockedX) camera.position.x = slideX.x;
 
+      // Slide Z
       const slideZ = camera.position.clone();
       slideZ.z += velocity.current.z;
       slideZ.y = PLAYER_HEIGHT;
@@ -107,23 +113,19 @@ export default function Player() {
       let blockedZ = false;
       for (const c of wallColliders) {
         if (szMin.x < c.max.x && szMax.x > c.min.x && szMin.y < c.max.y && szMax.y > c.min.y && szMin.z < c.max.z && szMax.z > c.min.z) {
-          blockedZ = true;
-          break;
+          blockedZ = true; break;
         }
       }
       if (!blockedZ) camera.position.z = slideZ.z;
     }
 
-    // Update nearest hider distance every 5 frames
-    frameCount.current++;
-    if (isPlaying && frameCount.current % 5 === 0) {
-      let nearest = Infinity;
-      for (const item of COLLECTIBLE_DATA) {
-        if (collected.has(item.id)) continue;
-        const dist = camera.position.distanceTo(new THREE.Vector3(item.position[0], camera.position.y, item.position[2]));
-        if (dist < nearest) nearest = dist;
+    // Check escape zone (runner only)
+    if (role === "runner" && escapeOpen) {
+      const flatPos = new THREE.Vector3(camera.position.x, 0, camera.position.z);
+      const flatEscape = new THREE.Vector3(ESCAPE_ZONE_POS.x, 0, ESCAPE_ZONE_POS.z);
+      if (flatPos.distanceTo(flatEscape) < ESCAPE_ZONE_RADIUS) {
+        setEscaped();
       }
-      setNearestDistance(nearest === Infinity ? null : nearest);
     }
   });
 

@@ -1,18 +1,25 @@
 import { createContext, useContext, useState, useCallback, useRef } from "react";
 
+export type Role = "runner" | "hunter";
+
 interface GameState {
+  role: Role | null;
   score: number;
-  totalItems: number;
-  collected: Set<string>;
-  startTime: number | null;
+  totalNPCs: number;
+  tagged: Set<string>;
   elapsedTime: number;
-  gameWon: boolean;
+  timeLeft: number;
+  gameOver: boolean;
+  gameResult: "win" | "lose" | null;
   isPlaying: boolean;
-  nearestDistance: number | null;
-  collect: (id: string) => void;
+  escapeOpen: boolean;
+  escaped: boolean;
+  selectRole: (role: Role) => void;
+  tagNPC: (id: string) => void;
   startGame: () => void;
   resetGame: () => void;
-  setNearestDistance: (d: number | null) => void;
+  setEscaped: () => void;
+  setCaught: () => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -23,41 +30,65 @@ export function useGame() {
   return ctx;
 }
 
-const TOTAL_ITEMS = 8;
+const TOTAL_NPCS = 5;
+const GAME_DURATION = 120; // 2 minutes in seconds
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
+  const [role, setRole] = useState<Role | null>(null);
   const [score, setScore] = useState(0);
-  const [collected, setCollected] = useState<Set<string>>(new Set());
-  const [startTime, setStartTime] = useState<number | null>(null);
+  const [tagged, setTagged] = useState<Set<string>>(new Set());
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [gameWon, setGameWon] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [gameResult, setGameResult] = useState<"win" | "lose" | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [nearestDistance, setNearestDistance] = useState<number | null>(null);
+  const [escapeOpen, setEscapeOpen] = useState(false);
+  const [escaped, setEscapedState] = useState(false);
   const timerRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number>(0);
+
+  const selectRole = useCallback((r: Role) => {
+    setRole(r);
+  }, []);
 
   const startGame = useCallback(() => {
     setScore(0);
-    setCollected(new Set());
-    setGameWon(false);
+    setTagged(new Set());
+    setGameOver(false);
+    setGameResult(null);
     setIsPlaying(true);
-    const now = Date.now();
-    setStartTime(now);
+    setEscapeOpen(false);
+    setEscapedState(false);
+    startTimeRef.current = Date.now();
     setElapsedTime(0);
+
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = window.setInterval(() => {
-      setElapsedTime(Date.now() - now);
+      const elapsed = (Date.now() - startTimeRef.current) / 1000;
+      setElapsedTime(elapsed);
+
+      if (elapsed >= GAME_DURATION) {
+        setEscapeOpen(true);
+      }
+
+      // Hunter loses if time runs out + 30s grace after escape opens
+      if (elapsed >= GAME_DURATION + 30) {
+        // Game ends
+      }
     }, 100);
   }, []);
 
-  const collect = useCallback((id: string) => {
-    setCollected(prev => {
+  const tagNPC = useCallback((id: string) => {
+    setTagged(prev => {
       if (prev.has(id)) return prev;
       const next = new Set(prev);
       next.add(id);
       const newScore = next.size;
       setScore(newScore);
-      if (newScore >= TOTAL_ITEMS) {
-        setGameWon(true);
+
+      // Hunter wins by tagging all
+      if (newScore >= TOTAL_NPCS) {
+        setGameOver(true);
+        setGameResult("win");
         setIsPlaying(false);
         if (timerRef.current) clearInterval(timerRef.current);
       }
@@ -65,19 +96,42 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const resetGame = useCallback(() => {
-    setScore(0);
-    setCollected(new Set());
-    setGameWon(false);
+  const setEscaped = useCallback(() => {
+    setEscapedState(true);
+    setGameOver(true);
+    setGameResult("win");
     setIsPlaying(false);
-    setStartTime(null);
-    setElapsedTime(0);
-    setNearestDistance(null);
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
+  const setCaught = useCallback(() => {
+    setGameOver(true);
+    setGameResult("lose");
+    setIsPlaying(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+  }, []);
+
+  const resetGame = useCallback(() => {
+    setRole(null);
+    setScore(0);
+    setTagged(new Set());
+    setGameOver(false);
+    setGameResult(null);
+    setIsPlaying(false);
+    setEscapeOpen(false);
+    setEscapedState(false);
+    setElapsedTime(0);
+    if (timerRef.current) clearInterval(timerRef.current);
+  }, []);
+
+  const timeLeft = Math.max(0, GAME_DURATION - elapsedTime);
+
   return (
-    <GameContext.Provider value={{ score, totalItems: TOTAL_ITEMS, collected, startTime, elapsedTime, gameWon, isPlaying, nearestDistance, collect, startGame, resetGame, setNearestDistance }}>
+    <GameContext.Provider value={{
+      role, score, totalNPCs: TOTAL_NPCS, tagged, elapsedTime, timeLeft,
+      gameOver, gameResult, isPlaying, escapeOpen, escaped,
+      selectRole, tagNPC, startGame, resetGame, setEscaped, setCaught
+    }}>
       {children}
     </GameContext.Provider>
   );
