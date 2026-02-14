@@ -11,35 +11,24 @@ function GameScene() {
   return (
     <>
       <House />
-      {/* If player is hunter, spawn runner NPCs. If player is runner, spawn hunter NPCs */}
       {role === "hunter" &&
-        RUNNER_NPCS.map((npc) => (
-          <NPC key={npc.id} {...npc} npcRole="runner" />
-        ))}
+        RUNNER_NPCS.map((npc) => <NPC key={npc.id} {...npc} npcRole="runner" />)}
       {role === "runner" &&
-        HUNTER_NPCS.map((npc) => (
-          <NPC key={npc.id} {...npc} npcRole="hunter" />
-        ))}
+        HUNTER_NPCS.map((npc) => <NPC key={npc.id} {...npc} npcRole="hunter" />)}
       <Player />
     </>
   );
 }
 
-const Index = () => {
-  return (
-    <GameProvider>
-      <div className="w-screen h-screen bg-black overflow-hidden">
-        <GameUI />
-        <Canvas
-          shadows
-          camera={{ fov: 75, near: 0.1, far: 100 }}
-          gl={{ antialias: true }}
-        >
-          <GameScene />
-        </Canvas>
-      </div>
-    </GameProvider>
-  );
-};
+const Index = () => (
+  <GameProvider>
+    <div className="w-screen h-screen bg-black overflow-hidden">
+      <GameUI />
+      <Canvas shadows camera={{ fov: 80, near: 0.1, far: 100 }} gl={{ antialias: true }}>
+        <GameScene />
+      </Canvas>
+    </div>
+  </GameProvider>
+);
 
 export default Index;

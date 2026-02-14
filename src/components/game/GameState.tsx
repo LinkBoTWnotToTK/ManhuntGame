@@ -14,12 +14,16 @@ interface GameState {
   isPlaying: boolean;
   escapeOpen: boolean;
   escaped: boolean;
+  stamina: number;
+  maxStamina: number;
   selectRole: (role: Role) => void;
   tagNPC: (id: string) => void;
   startGame: () => void;
   resetGame: () => void;
   setEscaped: () => void;
   setCaught: () => void;
+  useStamina: (amount: number) => boolean;
+  regenStamina: (amount: number) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -30,8 +34,10 @@ export function useGame() {
   return ctx;
 }
 
-const TOTAL_NPCS = 5;
-const GAME_DURATION = 120; // 2 minutes in seconds
+const HUNTER_NPC_COUNT = 7;
+const RUNNER_NPC_COUNT = 3;
+const GAME_DURATION = 60; // 1 minute
+const MAX_STAMINA = 100;
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role | null>(null);
@@ -43,8 +49,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [escapeOpen, setEscapeOpen] = useState(false);
   const [escaped, setEscapedState] = useState(false);
+  const [stamina, setStamina] = useState(MAX_STAMINA);
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
+  const gameOverRef = useRef(false);
 
   const selectRole = useCallback((r: Role) => {
     setRole(r);
@@ -58,11 +66,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setIsPlaying(true);
     setEscapeOpen(false);
     setEscapedState(false);
+    setStamina(MAX_STAMINA);
+    gameOverRef.current = false;
     startTimeRef.current = Date.now();
     setElapsedTime(0);
 
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = window.setInterval(() => {
+      if (gameOverRef.current) return;
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       setElapsedTime(elapsed);
 
@@ -70,12 +81,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         setEscapeOpen(true);
       }
 
-      // Hunter loses if time runs out + 30s grace after escape opens
-      if (elapsed >= GAME_DURATION + 30) {
-        // Game ends
+      // Hunter loses when escape opens (runners got away)
+      if (elapsed >= GAME_DURATION + 15) {
+        gameOverRef.current = true;
+        setGameOver(true);
+        setGameResult("lose");
+        setIsPlaying(false);
+        if (timerRef.current) clearInterval(timerRef.current);
       }
     }, 100);
   }, []);
+
+  const totalNPCs = role === "hunter" ? HUNTER_NPC_COUNT : RUNNER_NPC_COUNT;
 
   const tagNPC = useCallback((id: string) => {
     setTagged(prev => {
@@ -85,8 +102,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const newScore = next.size;
       setScore(newScore);
 
-      // Hunter wins by tagging all
-      if (newScore >= TOTAL_NPCS) {
+      if (newScore >= HUNTER_NPC_COUNT) {
+        gameOverRef.current = true;
         setGameOver(true);
         setGameResult("win");
         setIsPlaying(false);
@@ -98,6 +115,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const setEscaped = useCallback(() => {
     setEscapedState(true);
+    gameOverRef.current = true;
     setGameOver(true);
     setGameResult("win");
     setIsPlaying(false);
@@ -105,10 +123,28 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setCaught = useCallback(() => {
+    if (gameOverRef.current) return;
+    gameOverRef.current = true;
     setGameOver(true);
     setGameResult("lose");
     setIsPlaying(false);
     if (timerRef.current) clearInterval(timerRef.current);
+  }, []);
+
+  const useStaminaFn = useCallback((amount: number) => {
+    let canUse = false;
+    setStamina(prev => {
+      if (prev >= amount) {
+        canUse = true;
+        return prev - amount;
+      }
+      return prev;
+    });
+    return canUse;
+  }, []);
+
+  const regenStamina = useCallback((amount: number) => {
+    setStamina(prev => Math.min(MAX_STAMINA, prev + amount));
   }, []);
 
   const resetGame = useCallback(() => {
@@ -121,6 +157,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setEscapeOpen(false);
     setEscapedState(false);
     setElapsedTime(0);
+    setStamina(MAX_STAMINA);
+    gameOverRef.current = false;
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
@@ -128,9 +166,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <GameContext.Provider value={{
-      role, score, totalNPCs: TOTAL_NPCS, tagged, elapsedTime, timeLeft,
+      role, score, totalNPCs, tagged, elapsedTime, timeLeft,
       gameOver, gameResult, isPlaying, escapeOpen, escaped,
-      selectRole, tagNPC, startGame, resetGame, setEscaped, setCaught
+      stamina, maxStamina: MAX_STAMINA,
+      selectRole, tagNPC, startGame, resetGame, setEscaped, setCaught,
+      useStamina: useStaminaFn, regenStamina
     }}>
       {children}
     </GameContext.Provider>
