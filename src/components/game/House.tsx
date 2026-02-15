@@ -1,28 +1,22 @@
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import * as THREE from "three";
 import { useGame } from "./GameState";
 import { useFrame } from "@react-three/fiber";
+import { createTexturedMaterials } from "./Textures";
 
-const wallMaterial = new THREE.MeshStandardMaterial({ color: "#c8bfb0", roughness: 0.85, metalness: 0.02 });
-const floorMaterial = new THREE.MeshStandardMaterial({ color: "#6d5a42", roughness: 0.75, metalness: 0.05 });
-const ceilingMaterial = new THREE.MeshStandardMaterial({ color: "#e8e0d5", roughness: 0.95 });
-const darkWoodMaterial = new THREE.MeshStandardMaterial({ color: "#4a2e15", roughness: 0.65, metalness: 0.05 });
-const fabricMaterial = new THREE.MeshStandardMaterial({ color: "#5a3c2e", roughness: 0.92 });
-const cushionMaterial = new THREE.MeshStandardMaterial({ color: "#b83e28", roughness: 0.85 });
-const metalMaterial = new THREE.MeshStandardMaterial({ color: "#999", metalness: 0.9, roughness: 0.2 });
-const counterMaterial = new THREE.MeshStandardMaterial({ color: "#ccc8be", roughness: 0.35, metalness: 0.15 });
-const concreteMaterial = new THREE.MeshStandardMaterial({ color: "#7a7a7a", roughness: 0.8, metalness: 0.05 });
-const grassMaterial = new THREE.MeshStandardMaterial({ color: "#2a5420", roughness: 0.95 });
-const fenceMaterial = new THREE.MeshStandardMaterial({ color: "#5a4810", roughness: 0.75, metalness: 0.1 });
-const crateMaterial = new THREE.MeshStandardMaterial({ color: "#8a6a45", roughness: 0.7, metalness: 0.05 });
-const brickMaterial = new THREE.MeshStandardMaterial({ color: "#7a3a10", roughness: 0.9 });
-const escapeClosedMaterial = new THREE.MeshStandardMaterial({ color: "#660000", roughness: 0.5, emissive: "#330000", emissiveIntensity: 0.5 });
-const escapeOpenMaterial = new THREE.MeshStandardMaterial({ color: "#00ff44", roughness: 0.05, emissive: "#00ff44", emissiveIntensity: 3, transparent: true, opacity: 0.85 });
+// Singleton materials with textures
+let _mats: ReturnType<typeof createTexturedMaterials> | null = null;
+function getMats() {
+  if (!_mats) _mats = createTexturedMaterials();
+  return _mats;
+}
 
 export const wallColliders: { min: THREE.Vector3; max: THREE.Vector3 }[] = [];
 wallColliders.length = 0;
 
-function Wall({ position, size, material: mat = wallMaterial }: { position: [number, number, number]; size: [number, number, number]; material?: THREE.MeshStandardMaterial }) {
+function Wall({ position, size, material: mat }: { position: [number, number, number]; size: [number, number, number]; material?: THREE.MeshStandardMaterial }) {
+  const mats = getMats();
+  const usedMat = mat || mats.wall;
   const halfSize = size.map(s => s / 2);
   const min = new THREE.Vector3(position[0] - halfSize[0], position[1] - halfSize[1], position[2] - halfSize[2]);
   const max = new THREE.Vector3(position[0] + halfSize[0], position[1] + halfSize[1], position[2] + halfSize[2]);
@@ -30,14 +24,15 @@ function Wall({ position, size, material: mat = wallMaterial }: { position: [num
   if (!exists) wallColliders.push({ min, max });
 
   return (
-    <mesh position={position} material={mat} castShadow receiveShadow>
+    <mesh position={position} material={usedMat} castShadow receiveShadow>
       <boxGeometry args={size} />
     </mesh>
   );
 }
 
 function Crate({ position }: { position: [number, number, number] }) {
-  return <Wall position={[position[0], position[1] + 0.4, position[2]]} size={[0.8, 0.8, 0.8]} material={crateMaterial} />;
+  const mats = getMats();
+  return <Wall position={[position[0], position[1] + 0.4, position[2]]} size={[0.8, 0.8, 0.8]} material={mats.crate} />;
 }
 
 function CrateStack({ position }: { position: [number, number, number] }) {
@@ -51,28 +46,31 @@ function CrateStack({ position }: { position: [number, number, number] }) {
 }
 
 function Sofa({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
+  const mats = getMats();
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <mesh position={[0, 0.25, 0]} material={fabricMaterial} castShadow><boxGeometry args={[2, 0.5, 0.9]} /></mesh>
-      <mesh position={[0, 0.6, -0.35]} material={fabricMaterial} castShadow><boxGeometry args={[2, 0.5, 0.2]} /></mesh>
-      <mesh position={[-0.4, 0.55, 0.05]} material={cushionMaterial} castShadow><boxGeometry args={[0.6, 0.12, 0.7]} /></mesh>
-      <mesh position={[0.4, 0.55, 0.05]} material={cushionMaterial} castShadow><boxGeometry args={[0.6, 0.12, 0.7]} /></mesh>
+      <mesh position={[0, 0.25, 0]} material={mats.fabric} castShadow receiveShadow><boxGeometry args={[2, 0.5, 0.9]} /></mesh>
+      <mesh position={[0, 0.6, -0.35]} material={mats.fabric} castShadow receiveShadow><boxGeometry args={[2, 0.5, 0.2]} /></mesh>
+      <mesh position={[-0.4, 0.55, 0.05]} material={mats.cushion} castShadow><boxGeometry args={[0.6, 0.12, 0.7]} /></mesh>
+      <mesh position={[0.4, 0.55, 0.05]} material={mats.cushion} castShadow><boxGeometry args={[0.6, 0.12, 0.7]} /></mesh>
     </group>
   );
 }
 
 function KitchenCounter({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
+  const mats = getMats();
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <mesh position={[0, 0.45, 0]} material={darkWoodMaterial} castShadow><boxGeometry args={[3, 0.9, 0.6]} /></mesh>
-      <mesh position={[0, 0.92, 0]} material={counterMaterial} castShadow><boxGeometry args={[3.05, 0.05, 0.65]} /></mesh>
-      <mesh position={[0.5, 0.93, 0]} material={metalMaterial} castShadow><boxGeometry args={[0.5, 0.08, 0.4]} /></mesh>
+      <mesh position={[0, 0.45, 0]} material={mats.darkWood} castShadow receiveShadow><boxGeometry args={[3, 0.9, 0.6]} /></mesh>
+      <mesh position={[0, 0.92, 0]} material={mats.counter} castShadow receiveShadow><boxGeometry args={[3.05, 0.05, 0.65]} /></mesh>
+      <mesh position={[0.5, 0.93, 0]} material={mats.metal} castShadow><boxGeometry args={[0.5, 0.08, 0.4]} /></mesh>
     </group>
   );
 }
 
 function EscapeZone() {
   const { escapeOpen } = useGame();
+  const mats = getMats();
   const ref = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
 
@@ -89,17 +87,14 @@ function EscapeZone() {
   });
 
   return (
-    <group position={[0, 0, -18]}>
-      {/* Portal frame */}
-      <mesh position={[0, 1.5, 0]} castShadow>
+    <group position={[0, 0, -32]}>
+      <mesh position={[0, 1.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[3.5, 3.5, 0.3]} />
         <meshStandardMaterial color={escapeOpen ? "#003300" : "#330000"} roughness={0.5} />
       </mesh>
-      {/* Portal surface */}
-      <mesh ref={ref} position={[0, 1.5, 0]} material={escapeOpen ? escapeOpenMaterial : escapeClosedMaterial}>
+      <mesh ref={ref} position={[0, 1.5, 0]} material={escapeOpen ? mats.escapeOpen : mats.escapeClosed}>
         <boxGeometry args={[2.8, 2.8, 0.15]} />
       </mesh>
-      {/* Spinning ring when open */}
       {escapeOpen && (
         <mesh ref={ringRef} position={[0, 1.5, 0.2]}>
           <torusGeometry args={[1.6, 0.06, 8, 32]} />
@@ -112,29 +107,30 @@ function EscapeZone() {
   );
 }
 
-export const ESCAPE_ZONE_POS = new THREE.Vector3(0, 0, -18);
+export const ESCAPE_ZONE_POS = new THREE.Vector3(0, 0, -32);
 export const ESCAPE_ZONE_RADIUS = 2.5;
 
 export default function House() {
   const WH = 2.8;
   const WT = 0.15;
+  const mats = getMats();
 
   return (
     <group>
       {/* ===== INDOOR FLOOR + CEILING ===== */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} material={floorMaterial} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} material={mats.floor} receiveShadow>
         <planeGeometry args={[12, 10]} />
       </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, WH, 0]} material={ceilingMaterial} receiveShadow>
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, WH, 0]} material={mats.ceiling} receiveShadow>
         <planeGeometry args={[12, 10]} />
       </mesh>
 
-      {/* ===== OUTDOOR GROUND ===== */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, -14]} material={grassMaterial} receiveShadow>
-        <planeGeometry args={[30, 20]} />
+      {/* ===== OUTDOOR GROUND (expanded) ===== */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, -18]} material={mats.grass} receiveShadow>
+        <planeGeometry args={[50, 40]} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 10]} material={grassMaterial} receiveShadow>
-        <planeGeometry args={[30, 10]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 15]} material={mats.grass} receiveShadow>
+        <planeGeometry args={[50, 20]} />
       </mesh>
 
       {/* ===== HOUSE OUTER WALLS ===== */}
@@ -156,64 +152,105 @@ export default function House() {
       <Wall position={[-3, WH / 2, -2]} size={[6, WH, WT]} />
       <Wall position={[-3, WH / 2, -2]} size={[WT, WH, 6]} />
 
-      {/* ===== PERIMETER FENCE ===== */}
-      <Wall position={[0, 0.6, -24]} size={[30, 1.2, WT]} material={fenceMaterial} />
-      <Wall position={[-14, 0.6, -4]} size={[WT, 1.2, 40]} material={fenceMaterial} />
-      <Wall position={[14, 0.6, -4]} size={[WT, 1.2, 40]} material={fenceMaterial} />
-      <Wall position={[0, 0.6, 15]} size={[28, 1.2, WT]} material={fenceMaterial} />
+      {/* ===== PERIMETER FENCE (expanded) ===== */}
+      <Wall position={[0, 0.6, -38]} size={[50, 1.2, WT]} material={mats.fence} />
+      <Wall position={[-24, 0.6, -10]} size={[WT, 1.2, 56]} material={mats.fence} />
+      <Wall position={[24, 0.6, -10]} size={[WT, 1.2, 56]} material={mats.fence} />
+      <Wall position={[0, 0.6, 20]} size={[48, 1.2, WT]} material={mats.fence} />
 
-      {/* ===== OUTDOOR COVER — lots of it ===== */}
-      {/* Concrete walls for cover */}
-      <Wall position={[-8, 1, -10]} size={[4, 2, WT]} material={concreteMaterial} />
-      <Wall position={[-8, 1, -10]} size={[WT, 2, 3]} material={concreteMaterial} />
-      <Wall position={[8, 1, -12]} size={[WT, 2, 5]} material={concreteMaterial} />
-      <Wall position={[8, 1, -14.5]} size={[3, 2, WT]} material={concreteMaterial} />
-      <Wall position={[-5, 1, -16]} size={[WT, 2, 4]} material={concreteMaterial} />
-      <Wall position={[-5, 1, -18]} size={[3, 2, WT]} material={concreteMaterial} />
-      <Wall position={[5, 1, -8]} size={[3, 2, WT]} material={concreteMaterial} />
-      <Wall position={[5, 1, -8]} size={[WT, 2, 3]} material={concreteMaterial} />
-      <Wall position={[-10, 1, -7]} size={[3, 2, WT]} material={concreteMaterial} />
-      <Wall position={[-10, 1, -7]} size={[WT, 2, 2]} material={concreteMaterial} />
-      <Wall position={[10, 1, -18]} size={[WT, 2, 4]} material={concreteMaterial} />
-      <Wall position={[10, 1, -20]} size={[3, 2, WT]} material={concreteMaterial} />
-      <Wall position={[-8, 1, -20]} size={[5, 2, WT]} material={concreteMaterial} />
-      <Wall position={[3, 1, -15]} size={[WT, 2, 5]} material={concreteMaterial} />
-      <Wall position={[3, 1, -17.5]} size={[3, 2, WT]} material={concreteMaterial} />
-      
+      {/* ===== OUTDOOR COVER — ZONE A: near house ===== */}
+      <Wall position={[-8, 1, -10]} size={[4, 2, WT]} material={mats.concrete} />
+      <Wall position={[-8, 1, -10]} size={[WT, 2, 3]} material={mats.concrete} />
+      <Wall position={[8, 1, -12]} size={[WT, 2, 5]} material={mats.concrete} />
+      <Wall position={[8, 1, -14.5]} size={[3, 2, WT]} material={mats.concrete} />
+      <Wall position={[-5, 1, -16]} size={[WT, 2, 4]} material={mats.concrete} />
+      <Wall position={[-5, 1, -18]} size={[3, 2, WT]} material={mats.concrete} />
+      <Wall position={[5, 1, -8]} size={[3, 2, WT]} material={mats.concrete} />
+      <Wall position={[5, 1, -8]} size={[WT, 2, 3]} material={mats.concrete} />
+      <Wall position={[-10, 1, -7]} size={[3, 2, WT]} material={mats.concrete} />
+      <Wall position={[-10, 1, -7]} size={[WT, 2, 2]} material={mats.concrete} />
+
       {/* L-shaped covers */}
-      <Wall position={[-2, 1, -12]} size={[3, 2, WT]} material={brickMaterial} />
-      <Wall position={[-3.5, 1, -13]} size={[WT, 2, 2]} material={brickMaterial} />
-      <Wall position={[11, 1, -7]} size={[2, 2, WT]} material={brickMaterial} />
-      <Wall position={[12, 1, -8]} size={[WT, 2, 2]} material={brickMaterial} />
-      <Wall position={[-12, 1, -15]} size={[2, 2, WT]} material={brickMaterial} />
-      <Wall position={[-12, 1, -16]} size={[WT, 2, 2]} material={brickMaterial} />
+      <Wall position={[-2, 1, -12]} size={[3, 2, WT]} material={mats.brick} />
+      <Wall position={[-3.5, 1, -13]} size={[WT, 2, 2]} material={mats.brick} />
+      <Wall position={[11, 1, -7]} size={[2, 2, WT]} material={mats.brick} />
+      <Wall position={[12, 1, -8]} size={[WT, 2, 2]} material={mats.brick} />
+      <Wall position={[-12, 1, -15]} size={[2, 2, WT]} material={mats.brick} />
+      <Wall position={[-12, 1, -16]} size={[WT, 2, 2]} material={mats.brick} />
 
-      {/* More scattered cover near escape zone */}
-      <Wall position={[-4, 1, -21]} size={[2, 2, WT]} material={concreteMaterial} />
-      <Wall position={[4, 1, -21]} size={[2, 2, WT]} material={concreteMaterial} />
-      <Wall position={[-2, 1, -19]} size={[WT, 2, 2]} material={concreteMaterial} />
-      <Wall position={[2, 1, -19]} size={[WT, 2, 2]} material={concreteMaterial} />
+      {/* ===== ZONE B: mid-field expanded area ===== */}
+      <Wall position={[15, 1, -15]} size={[4, 2, WT]} material={mats.concrete} />
+      <Wall position={[15, 1, -15]} size={[WT, 2, 3]} material={mats.concrete} />
+      <Wall position={[-15, 1, -12]} size={[WT, 2, 5]} material={mats.concrete} />
+      <Wall position={[-15, 1, -14.5]} size={[3, 2, WT]} material={mats.concrete} />
+      <Wall position={[18, 1, -22]} size={[3, 2, WT]} material={mats.brick} />
+      <Wall position={[19.5, 1, -23]} size={[WT, 2, 2]} material={mats.brick} />
+      <Wall position={[-18, 1, -20]} size={[4, 2, WT]} material={mats.brick} />
+      <Wall position={[-20, 1, -21]} size={[WT, 2, 2]} material={mats.brick} />
+      <Wall position={[10, 1, -18]} size={[WT, 2, 4]} material={mats.concrete} />
+      <Wall position={[10, 1, -20]} size={[3, 2, WT]} material={mats.concrete} />
+      <Wall position={[-8, 1, -20]} size={[5, 2, WT]} material={mats.concrete} />
+      <Wall position={[3, 1, -15]} size={[WT, 2, 5]} material={mats.concrete} />
+      <Wall position={[3, 1, -17.5]} size={[3, 2, WT]} material={mats.concrete} />
 
-      {/* ===== CRATE CLUSTERS ===== */}
+      {/* ===== ZONE C: far field near escape portal ===== */}
+      <Wall position={[-4, 1, -28]} size={[3, 2, WT]} material={mats.concrete} />
+      <Wall position={[-5.5, 1, -29]} size={[WT, 2, 2]} material={mats.concrete} />
+      <Wall position={[4, 1, -28]} size={[3, 2, WT]} material={mats.concrete} />
+      <Wall position={[5.5, 1, -29]} size={[WT, 2, 2]} material={mats.concrete} />
+      <Wall position={[-8, 1, -33]} size={[4, 2, WT]} material={mats.brick} />
+      <Wall position={[8, 1, -33]} size={[4, 2, WT]} material={mats.brick} />
+      <Wall position={[-2, 1, -30]} size={[WT, 2, 3]} material={mats.concrete} />
+      <Wall position={[2, 1, -30]} size={[WT, 2, 3]} material={mats.concrete} />
+      <Wall position={[12, 1, -28]} size={[WT, 2, 4]} material={mats.concrete} />
+      <Wall position={[-12, 1, -28]} size={[WT, 2, 4]} material={mats.concrete} />
+      <Wall position={[15, 1, -30]} size={[3, 2, WT]} material={mats.brick} />
+      <Wall position={[-15, 1, -30]} size={[3, 2, WT]} material={mats.brick} />
+      <Wall position={[-20, 1, -32]} size={[WT, 2, 4]} material={mats.concrete} />
+      <Wall position={[20, 1, -32]} size={[WT, 2, 4]} material={mats.concrete} />
+      <Wall position={[-20, 1, -34]} size={[3, 2, WT]} material={mats.concrete} />
+      <Wall position={[20, 1, -34]} size={[3, 2, WT]} material={mats.concrete} />
+
+      {/* ===== FRONT YARD expanded ===== */}
+      <Wall position={[-6, 1, 8]} size={[3, 2, WT]} material={mats.concrete} />
+      <Wall position={[-6, 1, 8]} size={[WT, 2, 2]} material={mats.concrete} />
+      <Wall position={[7, 1, 10]} size={[WT, 2, 4]} material={mats.concrete} />
+      <Wall position={[7, 1, 12]} size={[2, 2, WT]} material={mats.concrete} />
+      <Wall position={[-10, 1, 11]} size={[2, 2, WT]} material={mats.brick} />
+      <Wall position={[3, 1, 9]} size={[2, 2, WT]} material={mats.brick} />
+      <Wall position={[-15, 1, 12]} size={[3, 2, WT]} material={mats.concrete} />
+      <Wall position={[-15, 1, 12]} size={[WT, 2, 3]} material={mats.concrete} />
+      <Wall position={[15, 1, 14]} size={[WT, 2, 4]} material={mats.concrete} />
+      <Wall position={[15, 1, 16]} size={[3, 2, WT]} material={mats.brick} />
+      <Wall position={[-20, 1, 8]} size={[3, 2, WT]} material={mats.brick} />
+      <Wall position={[20, 1, 10]} size={[WT, 2, 3]} material={mats.brick} />
+
+      {/* ===== CRATE CLUSTERS (more, spread wider) ===== */}
       <CrateStack position={[-3, 0, -8]} />
       <CrateStack position={[7, 0, -15]} />
       <CrateStack position={[-11, 0, -14]} />
       <CrateStack position={[12, 0, -8]} />
       <CrateStack position={[-7, 0, 8]} />
       <CrateStack position={[9, 0, 12]} />
+      <CrateStack position={[-18, 0, -18]} />
+      <CrateStack position={[16, 0, -25]} />
+      <CrateStack position={[-14, 0, -30]} />
+      <CrateStack position={[14, 0, -32]} />
+      <CrateStack position={[20, 0, -10]} />
+      <CrateStack position={[-20, 0, -8]} />
+      <CrateStack position={[0, 0, -25]} />
+      <CrateStack position={[-22, 0, 5]} />
+      <CrateStack position={[18, 0, 8]} />
       <Crate position={[0, 0, -9]} />
       <Crate position={[-6, 0, -13]} />
       <Crate position={[6, 0, -19]} />
       <Crate position={[-9, 0, -5]} />
       <Crate position={[11, 0, -15]} />
-
-      {/* Front yard cover */}
-      <Wall position={[-6, 1, 8]} size={[3, 2, WT]} material={concreteMaterial} />
-      <Wall position={[-6, 1, 8]} size={[WT, 2, 2]} material={concreteMaterial} />
-      <Wall position={[7, 1, 10]} size={[WT, 2, 4]} material={concreteMaterial} />
-      <Wall position={[7, 1, 12]} size={[2, 2, WT]} material={concreteMaterial} />
-      <Wall position={[-10, 1, 11]} size={[2, 2, WT]} material={brickMaterial} />
-      <Wall position={[3, 1, 9]} size={[2, 2, WT]} material={brickMaterial} />
+      <Crate position={[-16, 0, -25]} />
+      <Crate position={[18, 0, -18]} />
+      <Crate position={[0, 0, -35]} />
+      <Crate position={[-10, 0, -35]} />
+      <Crate position={[10, 0, -35]} />
 
       {/* ===== FURNITURE ===== */}
       <Sofa position={[-3, 0, 3.5]} rotation={Math.PI} />
@@ -225,41 +262,41 @@ export default function House() {
       {/* ===== LIGHTING — cinematic moonlit scene ===== */}
       <ambientLight intensity={0.08} color="#1a1a3a" />
       
-      {/* Moon-like directional light */}
       <directionalLight 
-        position={[15, 20, -10]} 
-        intensity={0.6} 
+        position={[20, 25, -15]} 
+        intensity={0.7} 
         color="#8899bb" 
         castShadow 
-        shadow-mapSize-width={2048} 
-        shadow-mapSize-height={2048}
-        shadow-camera-left={-20}
-        shadow-camera-right={20}
-        shadow-camera-top={20}
-        shadow-camera-bottom={-20}
-        shadow-bias={-0.0005}
+        shadow-mapSize-width={4096} 
+        shadow-mapSize-height={4096}
+        shadow-camera-left={-35}
+        shadow-camera-right={35}
+        shadow-camera-top={35}
+        shadow-camera-bottom={-35}
+        shadow-bias={-0.0003}
       />
       
-      {/* Warm fill from opposite side */}
       <directionalLight position={[-10, 8, 5]} intensity={0.15} color="#ffd4a0" />
 
       {/* Indoor warm lighting */}
-      <pointLight position={[-3, 2.5, 3]} intensity={1.0} color="#ffe0a0" distance={8} decay={2} />
+      <pointLight position={[-3, 2.5, 3]} intensity={1.0} color="#ffe0a0" distance={8} decay={2} castShadow />
       <pointLight position={[3, 2.5, 3]} intensity={0.7} color="#fff0d0" distance={8} decay={2} />
       <pointLight position={[4, 2.5, -3.5]} intensity={0.5} color="#ffd080" distance={6} decay={2} />
 
-      {/* Outdoor — deep blue moonlit atmosphere */}
-      <pointLight position={[0, 8, -10]} intensity={0.8} color="#4466aa" distance={30} decay={2} />
-      <pointLight position={[-10, 6, -15]} intensity={0.4} color="#4466aa" distance={25} decay={2} />
-      <pointLight position={[10, 6, -15]} intensity={0.4} color="#4466aa" distance={25} decay={2} />
-      <pointLight position={[0, 6, 10]} intensity={0.5} color="#4466aa" distance={25} decay={2} />
-      <pointLight position={[-12, 4, 0]} intensity={0.2} color="#334488" distance={18} decay={2} />
-      <pointLight position={[12, 4, 0]} intensity={0.2} color="#334488" distance={18} decay={2} />
+      {/* Outdoor — deep blue moonlit atmosphere (wider coverage) */}
+      <pointLight position={[0, 8, -10]} intensity={0.8} color="#4466aa" distance={35} decay={2} />
+      <pointLight position={[-15, 6, -20]} intensity={0.5} color="#4466aa" distance={30} decay={2} />
+      <pointLight position={[15, 6, -20]} intensity={0.5} color="#4466aa" distance={30} decay={2} />
+      <pointLight position={[0, 6, 10]} intensity={0.5} color="#4466aa" distance={30} decay={2} />
+      <pointLight position={[-20, 4, -5]} intensity={0.3} color="#334488" distance={25} decay={2} />
+      <pointLight position={[20, 4, -5]} intensity={0.3} color="#334488" distance={25} decay={2} />
+      <pointLight position={[0, 6, -30]} intensity={0.6} color="#4466aa" distance={30} decay={2} />
+      <pointLight position={[-15, 5, -32]} intensity={0.3} color="#334488" distance={20} decay={2} />
+      <pointLight position={[15, 5, -32]} intensity={0.3} color="#334488" distance={20} decay={2} />
       
-      {/* Rim/accent lights for depth */}
-      <spotLight position={[0, 10, -18]} angle={0.4} penumbra={0.8} intensity={0.5} color="#223366" distance={20} />
+      <spotLight position={[0, 12, -32]} angle={0.4} penumbra={0.8} intensity={0.5} color="#223366" distance={25} />
 
-      <fog attach="fog" args={["#060812", 5, 40]} />
+      <fog attach="fog" args={["#060812", 5, 50]} />
     </group>
   );
 }
