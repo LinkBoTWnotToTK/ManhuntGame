@@ -3,21 +3,21 @@ import * as THREE from "three";
 import { useGame } from "./GameState";
 import { useFrame } from "@react-three/fiber";
 
-const wallMaterial = new THREE.MeshStandardMaterial({ color: "#d8d0c4", roughness: 0.9 });
-const floorMaterial = new THREE.MeshStandardMaterial({ color: "#8B7355", roughness: 0.8 });
-const ceilingMaterial = new THREE.MeshStandardMaterial({ color: "#f5f0e8", roughness: 1 });
-const darkWoodMaterial = new THREE.MeshStandardMaterial({ color: "#5c3a1e", roughness: 0.7 });
-const fabricMaterial = new THREE.MeshStandardMaterial({ color: "#6b4c3b", roughness: 0.95 });
-const cushionMaterial = new THREE.MeshStandardMaterial({ color: "#c4573a", roughness: 0.9 });
-const metalMaterial = new THREE.MeshStandardMaterial({ color: "#888", metalness: 0.8, roughness: 0.3 });
-const counterMaterial = new THREE.MeshStandardMaterial({ color: "#d4cfc7", roughness: 0.4, metalness: 0.1 });
-const concreteMaterial = new THREE.MeshStandardMaterial({ color: "#888", roughness: 0.7 });
-const grassMaterial = new THREE.MeshStandardMaterial({ color: "#3a6a2a", roughness: 1 });
-const fenceMaterial = new THREE.MeshStandardMaterial({ color: "#6B5914", roughness: 0.8 });
-const crateMaterial = new THREE.MeshStandardMaterial({ color: "#a0825a", roughness: 0.7 });
-const brickMaterial = new THREE.MeshStandardMaterial({ color: "#8b4513", roughness: 0.85 });
-const escapeClosedMaterial = new THREE.MeshStandardMaterial({ color: "#660000", roughness: 0.5, emissive: "#220000", emissiveIntensity: 0.3 });
-const escapeOpenMaterial = new THREE.MeshStandardMaterial({ color: "#00ff44", roughness: 0.1, emissive: "#00ff44", emissiveIntensity: 2, transparent: true, opacity: 0.8 });
+const wallMaterial = new THREE.MeshStandardMaterial({ color: "#c8bfb0", roughness: 0.85, metalness: 0.02 });
+const floorMaterial = new THREE.MeshStandardMaterial({ color: "#6d5a42", roughness: 0.75, metalness: 0.05 });
+const ceilingMaterial = new THREE.MeshStandardMaterial({ color: "#e8e0d5", roughness: 0.95 });
+const darkWoodMaterial = new THREE.MeshStandardMaterial({ color: "#4a2e15", roughness: 0.65, metalness: 0.05 });
+const fabricMaterial = new THREE.MeshStandardMaterial({ color: "#5a3c2e", roughness: 0.92 });
+const cushionMaterial = new THREE.MeshStandardMaterial({ color: "#b83e28", roughness: 0.85 });
+const metalMaterial = new THREE.MeshStandardMaterial({ color: "#999", metalness: 0.9, roughness: 0.2 });
+const counterMaterial = new THREE.MeshStandardMaterial({ color: "#ccc8be", roughness: 0.35, metalness: 0.15 });
+const concreteMaterial = new THREE.MeshStandardMaterial({ color: "#7a7a7a", roughness: 0.8, metalness: 0.05 });
+const grassMaterial = new THREE.MeshStandardMaterial({ color: "#2a5420", roughness: 0.95 });
+const fenceMaterial = new THREE.MeshStandardMaterial({ color: "#5a4810", roughness: 0.75, metalness: 0.1 });
+const crateMaterial = new THREE.MeshStandardMaterial({ color: "#8a6a45", roughness: 0.7, metalness: 0.05 });
+const brickMaterial = new THREE.MeshStandardMaterial({ color: "#7a3a10", roughness: 0.9 });
+const escapeClosedMaterial = new THREE.MeshStandardMaterial({ color: "#660000", roughness: 0.5, emissive: "#330000", emissiveIntensity: 0.5 });
+const escapeOpenMaterial = new THREE.MeshStandardMaterial({ color: "#00ff44", roughness: 0.05, emissive: "#00ff44", emissiveIntensity: 3, transparent: true, opacity: 0.85 });
 
 export const wallColliders: { min: THREE.Vector3; max: THREE.Vector3 }[] = [];
 wallColliders.length = 0;
@@ -222,24 +222,44 @@ export default function House() {
       {/* ===== ESCAPE ZONE ===== */}
       <EscapeZone />
 
-      {/* ===== LIGHTING ===== */}
-      <ambientLight intensity={0.2} />
-      <directionalLight position={[10, 15, 5]} intensity={0.5} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+      {/* ===== LIGHTING — cinematic moonlit scene ===== */}
+      <ambientLight intensity={0.08} color="#1a1a3a" />
+      
+      {/* Moon-like directional light */}
+      <directionalLight 
+        position={[15, 20, -10]} 
+        intensity={0.6} 
+        color="#8899bb" 
+        castShadow 
+        shadow-mapSize-width={2048} 
+        shadow-mapSize-height={2048}
+        shadow-camera-left={-20}
+        shadow-camera-right={20}
+        shadow-camera-top={20}
+        shadow-camera-bottom={-20}
+        shadow-bias={-0.0005}
+      />
+      
+      {/* Warm fill from opposite side */}
+      <directionalLight position={[-10, 8, 5]} intensity={0.15} color="#ffd4a0" />
 
-      {/* Indoor */}
-      <pointLight position={[-3, 2.5, 3]} intensity={0.7} color="#fff5e0" distance={8} />
-      <pointLight position={[3, 2.5, 3]} intensity={0.5} color="#fff8f0" distance={8} />
-      <pointLight position={[4, 2.5, -3.5]} intensity={0.4} color="#ffe8c0" distance={6} />
+      {/* Indoor warm lighting */}
+      <pointLight position={[-3, 2.5, 3]} intensity={1.0} color="#ffe0a0" distance={8} decay={2} />
+      <pointLight position={[3, 2.5, 3]} intensity={0.7} color="#fff0d0" distance={8} decay={2} />
+      <pointLight position={[4, 2.5, -3.5]} intensity={0.5} color="#ffd080" distance={6} decay={2} />
 
-      {/* Outdoor — moonlit feel */}
-      <pointLight position={[0, 6, -10]} intensity={0.6} color="#6688aa" distance={25} />
-      <pointLight position={[-10, 5, -15]} intensity={0.3} color="#6688aa" distance={20} />
-      <pointLight position={[10, 5, -15]} intensity={0.3} color="#6688aa" distance={20} />
-      <pointLight position={[0, 5, 10]} intensity={0.4} color="#6688aa" distance={20} />
-      <pointLight position={[-10, 5, 5]} intensity={0.2} color="#6688aa" distance={15} />
-      <pointLight position={[10, 5, 5]} intensity={0.2} color="#6688aa" distance={15} />
+      {/* Outdoor — deep blue moonlit atmosphere */}
+      <pointLight position={[0, 8, -10]} intensity={0.8} color="#4466aa" distance={30} decay={2} />
+      <pointLight position={[-10, 6, -15]} intensity={0.4} color="#4466aa" distance={25} decay={2} />
+      <pointLight position={[10, 6, -15]} intensity={0.4} color="#4466aa" distance={25} decay={2} />
+      <pointLight position={[0, 6, 10]} intensity={0.5} color="#4466aa" distance={25} decay={2} />
+      <pointLight position={[-12, 4, 0]} intensity={0.2} color="#334488" distance={18} decay={2} />
+      <pointLight position={[12, 4, 0]} intensity={0.2} color="#334488" distance={18} decay={2} />
+      
+      {/* Rim/accent lights for depth */}
+      <spotLight position={[0, 10, -18]} angle={0.4} penumbra={0.8} intensity={0.5} color="#223366" distance={20} />
 
-      <fog attach="fog" args={["#0a0a1e", 3, 35]} />
+      <fog attach="fog" args={["#060812", 5, 40]} />
     </group>
   );
 }
