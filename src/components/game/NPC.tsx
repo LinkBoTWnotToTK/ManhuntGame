@@ -22,44 +22,51 @@ const TAG_DISTANCE = 1.2;
 
 function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
   const isHunter = npcRole === "hunter";
+  const bodyColor = isHunter ? "#2a0a0a" : color;
+  const accentColor = isHunter ? "#ff2200" : "#ffffff";
   return (
     <group>
       {/* Head */}
-      <mesh position={[0, 1.5, 0]}>
-        <sphereGeometry args={[isHunter ? 0.17 : 0.14, 12, 12]} />
-        <meshStandardMaterial color={color} />
+      <mesh position={[0, 1.5, 0]} castShadow>
+        <sphereGeometry args={[isHunter ? 0.18 : 0.14, 16, 16]} />
+        <meshStandardMaterial color={bodyColor} roughness={0.6} metalness={0.1} />
       </mesh>
       {/* Body */}
-      <mesh position={[0, 1.1, 0]}>
-        <capsuleGeometry args={[isHunter ? 0.14 : 0.11, isHunter ? 0.45 : 0.35, 6, 12]} />
-        <meshStandardMaterial color={color} />
+      <mesh position={[0, 1.1, 0]} castShadow>
+        <capsuleGeometry args={[isHunter ? 0.15 : 0.12, isHunter ? 0.45 : 0.35, 8, 16]} />
+        <meshStandardMaterial color={bodyColor} roughness={0.7} metalness={0.05} />
+      </mesh>
+      {/* Shoulders/accent */}
+      <mesh position={[0, 1.35, 0]} castShadow>
+        <boxGeometry args={[isHunter ? 0.4 : 0.3, 0.06, 0.2]} />
+        <meshStandardMaterial color={color} roughness={0.5} emissive={color} emissiveIntensity={0.2} />
       </mesh>
       {/* Arms */}
-      <mesh position={[-0.2, 1.1, 0]} rotation={[0, 0, 0.3]}>
-        <capsuleGeometry args={[0.04, 0.3, 4, 8]} />
-        <meshStandardMaterial color={color} />
+      <mesh position={[-0.22, 1.05, 0]} rotation={[0, 0, 0.3]} castShadow>
+        <capsuleGeometry args={[0.045, 0.32, 6, 10]} />
+        <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0.2, 1.1, 0]} rotation={[0, 0, -0.3]}>
-        <capsuleGeometry args={[0.04, 0.3, 4, 8]} />
-        <meshStandardMaterial color={color} />
+      <mesh position={[0.22, 1.05, 0]} rotation={[0, 0, -0.3]} castShadow>
+        <capsuleGeometry args={[0.045, 0.32, 6, 10]} />
+        <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
       {/* Legs */}
-      <mesh position={[-0.07, 0.5, 0]}>
-        <capsuleGeometry args={[0.05, 0.4, 4, 8]} />
-        <meshStandardMaterial color={color} />
+      <mesh position={[-0.08, 0.5, 0]} castShadow>
+        <capsuleGeometry args={[0.055, 0.42, 6, 10]} />
+        <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0.07, 0.5, 0]}>
-        <capsuleGeometry args={[0.05, 0.4, 4, 8]} />
-        <meshStandardMaterial color={color} />
+      <mesh position={[0.08, 0.5, 0]} castShadow>
+        <capsuleGeometry args={[0.055, 0.42, 6, 10]} />
+        <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      {/* Eyes */}
-      <mesh position={[0.05, 1.53, 0.11]}>
-        <sphereGeometry args={[0.025, 8, 8]} />
-        <meshStandardMaterial color={isHunter ? "#ff0000" : "#ffffff"} emissive={isHunter ? "#ff0000" : "#ffffff"} emissiveIntensity={isHunter ? 1.5 : 0.5} />
+      {/* Eyes — glowing */}
+      <mesh position={[0.05, 1.53, 0.12]}>
+        <sphereGeometry args={[0.028, 8, 8]} />
+        <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={isHunter ? 3 : 1} />
       </mesh>
-      <mesh position={[-0.05, 1.53, 0.11]}>
-        <sphereGeometry args={[0.025, 8, 8]} />
-        <meshStandardMaterial color={isHunter ? "#ff0000" : "#ffffff"} emissive={isHunter ? "#ff0000" : "#ffffff"} emissiveIntensity={isHunter ? 1.5 : 0.5} />
+      <mesh position={[-0.05, 1.53, 0.12]}>
+        <sphereGeometry args={[0.028, 8, 8]} />
+        <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={isHunter ? 3 : 1} />
       </mesh>
     </group>
   );
