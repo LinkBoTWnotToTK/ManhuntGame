@@ -85,8 +85,8 @@ function checkCollision(pos: THREE.Vector3): boolean {
 
 function tryMove(myPos: THREE.Vector3, moveDir: THREE.Vector3, speed: number, delta: number): boolean {
   const newPos = myPos.clone().add(moveDir.clone().normalize().multiplyScalar(speed * delta));
-  newPos.x = THREE.MathUtils.clamp(newPos.x, -13.5, 13.5);
-  newPos.z = THREE.MathUtils.clamp(newPos.z, -23.5, 14.5);
+  newPos.x = THREE.MathUtils.clamp(newPos.x, -23.5, 23.5);
+  newPos.z = THREE.MathUtils.clamp(newPos.z, -37.5, 19.5);
   if (!checkCollision(newPos)) {
     myPos.copy(newPos);
     return true;
@@ -153,16 +153,16 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
         moveDir.add(perp).normalize();
 
         // Avoid corners by trending toward center when near bounds
-        if (Math.abs(myPos.x) > 11) moveDir.x -= Math.sign(myPos.x) * 0.5;
-        if (myPos.z > 12 || myPos.z < -21) moveDir.z -= Math.sign(myPos.z) * 0.5;
+        if (Math.abs(myPos.x) > 20) moveDir.x -= Math.sign(myPos.x) * 0.5;
+        if (myPos.z > 17 || myPos.z < -35) moveDir.z -= Math.sign(myPos.z) * 0.5;
         moveDir.normalize();
       } else {
         // Wander intelligently — move around, explore
         wanderTimer.current -= delta;
         if (wanderTimer.current <= 0) {
           // Pick a random point and head toward it
-          const targetX = (Math.random() - 0.5) * 24;
-          const targetZ = -5 + (Math.random() - 0.5) * 30;
+          const targetX = (Math.random() - 0.5) * 44;
+          const targetZ = -10 + (Math.random() - 0.5) * 50;
           wanderDir.current.set(targetX - myPos.x, 0, targetZ - myPos.z).normalize();
           wanderTimer.current = 3 + Math.random() * 4;
         }
@@ -246,18 +246,18 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
 
 // 7 runner NPCs for hunter mode (harder to catch)
 export const RUNNER_NPCS: Omit<NPCProps, "npcRole">[] = [
-  { id: "r1", startPosition: [-10, 0, -10], color: "#4ecdc4" },
-  { id: "r2", startPosition: [10, 0, -14], color: "#feca57" },
-  { id: "r3", startPosition: [-12, 0, -18], color: "#ff9ff3" },
-  { id: "r4", startPosition: [12, 0, -8], color: "#a8e6cf" },
-  { id: "r5", startPosition: [0, 0, 12], color: "#c792ea" },
-  { id: "r6", startPosition: [-8, 0, 8], color: "#48dbfb" },
-  { id: "r7", startPosition: [6, 0, -20], color: "#f8b500" },
+  { id: "r1", startPosition: [-18, 0, -15], color: "#4ecdc4" },
+  { id: "r2", startPosition: [18, 0, -20], color: "#feca57" },
+  { id: "r3", startPosition: [-20, 0, -30], color: "#ff9ff3" },
+  { id: "r4", startPosition: [20, 0, -10], color: "#a8e6cf" },
+  { id: "r5", startPosition: [0, 0, 16], color: "#c792ea" },
+  { id: "r6", startPosition: [-15, 0, 10], color: "#48dbfb" },
+  { id: "r7", startPosition: [12, 0, -30], color: "#f8b500" },
 ];
 
-// 3 hunter NPCs for runner mode (easier to evade)
+// 3 hunter NPCs for runner mode
 export const HUNTER_NPCS: Omit<NPCProps, "npcRole">[] = [
-  { id: "h1", startPosition: [-10, 0, -15], color: "#ff3333" },
-  { id: "h2", startPosition: [10, 0, -12], color: "#ff5533" },
-  { id: "h3", startPosition: [0, 0, -20], color: "#cc2222" },
+  { id: "h1", startPosition: [-18, 0, -20], color: "#ff3333" },
+  { id: "h2", startPosition: [18, 0, -18], color: "#ff5533" },
+  { id: "h3", startPosition: [0, 0, -30], color: "#cc2222" },
 ];

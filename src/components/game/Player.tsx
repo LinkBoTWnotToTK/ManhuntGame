@@ -69,8 +69,8 @@ export default function Player() {
 
     const newPos = camera.position.clone().add(velocity.current);
     newPos.y = PLAYER_HEIGHT;
-    newPos.x = THREE.MathUtils.clamp(newPos.x, -13.5, 13.5);
-    newPos.z = THREE.MathUtils.clamp(newPos.z, -23.5, 14.5);
+    newPos.x = THREE.MathUtils.clamp(newPos.x, -23.5, 23.5);
+    newPos.z = THREE.MathUtils.clamp(newPos.z, -37.5, 19.5);
 
     const playerMin = new THREE.Vector3(newPos.x - PLAYER_RADIUS, 0, newPos.z - PLAYER_RADIUS);
     const playerMax = new THREE.Vector3(newPos.x + PLAYER_RADIUS, PLAYER_HEIGHT + 0.2, newPos.z + PLAYER_RADIUS);

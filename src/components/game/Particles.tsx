@@ -10,9 +10,9 @@ export function DustParticles({ count = 200 }: { count?: number }) {
   const positions = useMemo(() => {
     const arr = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      arr[i * 3] = (Math.random() - 0.5) * 30;
-      arr[i * 3 + 1] = Math.random() * 4;
-      arr[i * 3 + 2] = (Math.random() - 0.5) * 40 - 4;
+      arr[i * 3] = (Math.random() - 0.5) * 50;
+      arr[i * 3 + 1] = Math.random() * 5;
+      arr[i * 3 + 2] = (Math.random() - 0.5) * 60 - 10;
     }
     return arr;
   }, [count]);
@@ -73,7 +73,7 @@ export function PortalParticles() {
       const radius = 1 + Math.random() * 3;
       arr[i * 3] = Math.cos(angle) * radius;
       arr[i * 3 + 1] = Math.random() * 4;
-      arr[i * 3 + 2] = -18 + Math.sin(angle) * radius;
+      arr[i * 3 + 2] = -32 + Math.sin(angle) * radius;
     }
     return arr;
   }, []);
@@ -87,7 +87,7 @@ export function PortalParticles() {
       const r = 1.5 + Math.sin(t * 0.3 + i) * 1;
       pos.array[i * 3] = Math.cos(angle) * r;
       pos.array[i * 3 + 1] = 1.5 + Math.sin(t * 2 + i * 0.5) * 1.5;
-      pos.array[i * 3 + 2] = -18 + Math.sin(angle) * r;
+      pos.array[i * 3 + 2] = -32 + Math.sin(angle) * r;
     }
     pos.needsUpdate = true;
     // Pulse size
