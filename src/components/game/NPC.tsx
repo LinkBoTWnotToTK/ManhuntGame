@@ -3,45 +3,41 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "./GameState";
 import { wallColliders } from "./House";
+import { playerPosition, npcPositions, projectiles, addProjectile } from "./SharedState";
 
 interface NPCProps {
   id: string;
   startPosition: [number, number, number];
   color: string;
-  npcRole: "runner" | "hunter";
+  npcRole: "runner" | "hunter" | "ally";
 }
 
-// Runner NPCs: smarter, faster, dodge and juke, hide behind cover
 const RUNNER_BASE_SPEED = 3.8;
 const RUNNER_SPRINT_SPEED = 5.0;
-// Hunter NPCs: slower, predictable, but persistent
 const HUNTER_BASE_SPEED = 2.4;
 const HUNTER_SPRINT_SPEED = 3.0;
 const NPC_RADIUS = 0.3;
 const TAG_DISTANCE = 1.2;
+const HIT_RADIUS = 0.8;
 
 function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
-  const isHunter = npcRole === "hunter";
+  const isHunter = npcRole === "hunter" || npcRole === "ally";
   const bodyColor = isHunter ? "#2a0a0a" : color;
-  const accentColor = isHunter ? "#ff2200" : "#ffffff";
+  const eyeColor = npcRole === "ally" ? "#00ff88" : isHunter ? "#ff2200" : "#ffffff";
   return (
     <group>
-      {/* Head */}
       <mesh position={[0, 1.5, 0]} castShadow>
         <sphereGeometry args={[isHunter ? 0.18 : 0.14, 16, 16]} />
         <meshStandardMaterial color={bodyColor} roughness={0.6} metalness={0.1} />
       </mesh>
-      {/* Body */}
       <mesh position={[0, 1.1, 0]} castShadow>
         <capsuleGeometry args={[isHunter ? 0.15 : 0.12, isHunter ? 0.45 : 0.35, 8, 16]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} metalness={0.05} />
       </mesh>
-      {/* Shoulders/accent */}
       <mesh position={[0, 1.35, 0]} castShadow>
         <boxGeometry args={[isHunter ? 0.4 : 0.3, 0.06, 0.2]} />
         <meshStandardMaterial color={color} roughness={0.5} emissive={color} emissiveIntensity={0.2} />
       </mesh>
-      {/* Arms */}
       <mesh position={[-0.22, 1.05, 0]} rotation={[0, 0, 0.3]} castShadow>
         <capsuleGeometry args={[0.045, 0.32, 6, 10]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
@@ -50,7 +46,6 @@ function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
         <capsuleGeometry args={[0.045, 0.32, 6, 10]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      {/* Legs */}
       <mesh position={[-0.08, 0.5, 0]} castShadow>
         <capsuleGeometry args={[0.055, 0.42, 6, 10]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
@@ -59,14 +54,30 @@ function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
         <capsuleGeometry args={[0.055, 0.42, 6, 10]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      {/* Eyes — glowing */}
       <mesh position={[0.05, 1.53, 0.12]}>
         <sphereGeometry args={[0.028, 8, 8]} />
-        <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={isHunter ? 3 : 1} />
+        <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={isHunter ? 3 : 1} />
       </mesh>
       <mesh position={[-0.05, 1.53, 0.12]}>
         <sphereGeometry args={[0.028, 8, 8]} />
-        <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={isHunter ? 3 : 1} />
+        <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={isHunter ? 3 : 1} />
+      </mesh>
+    </group>
+  );
+}
+
+function HealthBar({ health, maxHealth }: { health: number; maxHealth: number }) {
+  const pct = health / maxHealth;
+  const color = pct > 0.6 ? "#33ff33" : pct > 0.3 ? "#ffaa00" : "#ff3333";
+  return (
+    <group position={[0, 2.1, 0]}>
+      <mesh>
+        <planeGeometry args={[0.6, 0.08]} />
+        <meshBasicMaterial color="#222222" transparent opacity={0.7} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[-(1 - pct) * 0.3, 0, 0.001]}>
+        <planeGeometry args={[0.6 * pct, 0.08]} />
+        <meshBasicMaterial color={color} side={THREE.DoubleSide} />
       </mesh>
     </group>
   );
@@ -76,31 +87,22 @@ function checkCollision(pos: THREE.Vector3): boolean {
   const pMin = new THREE.Vector3(pos.x - NPC_RADIUS, 0, pos.z - NPC_RADIUS);
   const pMax = new THREE.Vector3(pos.x + NPC_RADIUS, 2, pos.z + NPC_RADIUS);
   for (const c of wallColliders) {
-    if (pMin.x < c.max.x && pMax.x > c.min.x && pMin.y < c.max.y && pMax.y > c.min.y && pMin.z < c.max.z && pMax.z > c.min.z) {
-      return true;
-    }
+    if (pMin.x < c.max.x && pMax.x > c.min.x && pMin.y < c.max.y && pMax.y > c.min.y && pMin.z < c.max.z && pMax.z > c.min.z) return true;
   }
   return false;
 }
 
 function tryMove(myPos: THREE.Vector3, moveDir: THREE.Vector3, speed: number, delta: number): boolean {
-  const newPos = myPos.clone().add(moveDir.clone().normalize().multiplyScalar(speed * delta));
+  const newPos = myPos.clone().addScaledVector(moveDir.clone().normalize(), speed * delta);
   newPos.x = THREE.MathUtils.clamp(newPos.x, -23.5, 23.5);
   newPos.z = THREE.MathUtils.clamp(newPos.z, -37.5, 19.5);
-  if (!checkCollision(newPos)) {
-    myPos.copy(newPos);
-    return true;
-  }
-  // Try sliding
-  const slideX = myPos.clone();
-  slideX.x += moveDir.x * speed * delta;
-  if (!checkCollision(slideX)) { myPos.x = slideX.x; return true; }
-  const slideZ = myPos.clone();
-  slideZ.z += moveDir.z * speed * delta;
-  if (!checkCollision(slideZ)) { myPos.z = slideZ.z; return true; }
-  // Try perpendicular
+  if (!checkCollision(newPos)) { myPos.copy(newPos); return true; }
+  const sx = myPos.clone(); sx.x += moveDir.x * speed * delta;
+  if (!checkCollision(sx)) { myPos.x = sx.x; return true; }
+  const sz = myPos.clone(); sz.z += moveDir.z * speed * delta;
+  if (!checkCollision(sz)) { myPos.z = sz.z; return true; }
   const perp = new THREE.Vector3(-moveDir.z, 0, moveDir.x).normalize();
-  const altPos = myPos.clone().add(perp.multiplyScalar(speed * delta));
+  const altPos = myPos.clone().addScaledVector(perp, speed * delta);
   if (!checkCollision(altPos)) { myPos.copy(altPos); return true; }
   return false;
 }
@@ -108,134 +110,198 @@ function tryMove(myPos: THREE.Vector3, moveDir: THREE.Vector3, speed: number, de
 export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   const ref = useRef<THREE.Group>(null);
   const posRef = useRef(new THREE.Vector3(...startPosition));
-  const { tagged, tagNPC, isPlaying, setCaught } = useGame();
+  const { tagged, tagNPC, isPlaying, damagePlayer, damageNPC, npcHealth } = useGame();
   const wanderDir = useRef(new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize());
   const wanderTimer = useRef(Math.random() * 2);
   const jukeTimer = useRef(0);
   const jukeDir = useRef(1);
-  const isTagged = tagged.has(id);
   const lastMoveDir = useRef(new THREE.Vector3());
+  const shootTimer = useRef(2 + Math.random() * 3);
+  const ammo = useRef(5);
+  const healthBarRef = useRef<THREE.Group>(null);
+
+  const isTagged = tagged.has(id);
+  const health = npcHealth[id] ?? 3;
 
   useFrame((state, delta) => {
     if (!ref.current || !isPlaying || isTagged) return;
 
-    const camPos = state.camera.position;
-    const myPos = posRef.current;
-    const toPlayer = new THREE.Vector3().subVectors(camPos, myPos);
-    toPlayer.y = 0;
-    const dist = toPlayer.length();
-    const t = state.clock.elapsedTime;
+    if (health <= 0) { tagNPC(id); return; }
 
+    npcPositions.set(id, posRef.current.clone());
+
+    const myPos = posRef.current;
+    const t = state.clock.elapsedTime;
     let moveDir = new THREE.Vector3();
     let speed: number;
 
-    if (npcRole === "runner") {
-      // SMART RUNNER AI
-      const fleeRange = 10;
-      const panicRange = 4;
-      const isSprinting = dist < panicRange;
-      speed = isSprinting ? RUNNER_SPRINT_SPEED : RUNNER_BASE_SPEED;
-
-      if (dist < fleeRange) {
-        // Flee away from player
-        moveDir.copy(toPlayer).normalize().multiplyScalar(-1);
-
-        // Juke/dodge: periodically shift direction perpendicular
-        jukeTimer.current -= delta;
-        if (jukeTimer.current <= 0) {
-          jukeDir.current = Math.random() > 0.5 ? 1 : -1;
-          jukeTimer.current = 0.5 + Math.random() * 1.0;
-        }
-
-        // More aggressive juking when very close
-        const jukeFactor = dist < panicRange ? 0.7 : 0.3;
-        const perp = new THREE.Vector3(-moveDir.z, 0, moveDir.x).multiplyScalar(jukeDir.current * jukeFactor);
-        moveDir.add(perp).normalize();
-
-        // Avoid corners by trending toward center when near bounds
-        if (Math.abs(myPos.x) > 20) moveDir.x -= Math.sign(myPos.x) * 0.5;
-        if (myPos.z > 17 || myPos.z < -35) moveDir.z -= Math.sign(myPos.z) * 0.5;
-        moveDir.normalize();
-      } else {
-        // Wander intelligently — move around, explore
-        wanderTimer.current -= delta;
-        if (wanderTimer.current <= 0) {
-          // Pick a random point and head toward it
-          const targetX = (Math.random() - 0.5) * 44;
-          const targetZ = -10 + (Math.random() - 0.5) * 50;
-          wanderDir.current.set(targetX - myPos.x, 0, targetZ - myPos.z).normalize();
-          wanderTimer.current = 3 + Math.random() * 4;
-        }
-        moveDir.copy(wanderDir.current);
-        speed = RUNNER_BASE_SPEED * 0.6;
+    if (npcRole === "ally") {
+      // Chase nearest alive runner NPC
+      let nearestDist = Infinity;
+      let nearestPos: THREE.Vector3 | null = null;
+      let nearestId: string | null = null;
+      for (const [nid, npos] of npcPositions) {
+        if (!nid.startsWith("r") || tagged.has(nid)) continue;
+        const d = myPos.distanceTo(npos);
+        if (d < nearestDist) { nearestDist = d; nearestPos = npos; nearestId = nid; }
       }
-    } else {
-      // HUNTER AI — slower but persistent, with slight prediction
-      const chaseRange = 15;
-      const isSprinting = dist < 6;
-      speed = isSprinting ? HUNTER_SPRINT_SPEED : HUNTER_BASE_SPEED;
-
-      if (dist < chaseRange) {
-        // Chase with slight prediction — aim ahead of player movement
-        moveDir.copy(toPlayer).normalize();
-
-        // Add some wobble to make hunters feel less robotic
-        const wobble = Math.sin(t * 3 + parseInt(id.replace(/\D/g, '')) * 2) * 0.15;
-        moveDir.x += wobble;
-        moveDir.normalize();
+      if (nearestPos) {
+        moveDir.subVectors(nearestPos, myPos); moveDir.y = 0; moveDir.normalize();
+        speed = nearestDist < 5 ? HUNTER_SPRINT_SPEED : HUNTER_BASE_SPEED;
+        if (nearestDist < TAG_DISTANCE && nearestId) tagNPC(nearestId);
       } else {
-        // Patrol — wander toward player's general area
         wanderTimer.current -= delta;
         if (wanderTimer.current <= 0) {
-          wanderDir.current.set(
-            camPos.x + (Math.random() - 0.5) * 10 - myPos.x,
-            0,
-            camPos.z + (Math.random() - 0.5) * 10 - myPos.z
-          ).normalize();
-          wanderTimer.current = 2 + Math.random() * 3;
+          wanderDir.current.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+          wanderTimer.current = 3 + Math.random() * 3;
         }
         moveDir.copy(wanderDir.current);
         speed = HUNTER_BASE_SPEED * 0.5;
       }
+    } else {
+      const toPlayer = new THREE.Vector3().subVectors(playerPosition, myPos);
+      toPlayer.y = 0;
+      const dist = toPlayer.length();
+
+      if (npcRole === "runner") {
+        const fleeRange = 10;
+        const panicRange = 4;
+        const isSprinting = dist < panicRange;
+        speed = isSprinting ? RUNNER_SPRINT_SPEED : RUNNER_BASE_SPEED;
+
+        if (dist < fleeRange) {
+          moveDir.copy(toPlayer).normalize().multiplyScalar(-1);
+          jukeTimer.current -= delta;
+          if (jukeTimer.current <= 0) {
+            jukeDir.current = Math.random() > 0.5 ? 1 : -1;
+            jukeTimer.current = 0.5 + Math.random() * 1.0;
+          }
+          const jukeFactor = dist < panicRange ? 0.7 : 0.3;
+          const perp = new THREE.Vector3(-moveDir.z, 0, moveDir.x).multiplyScalar(jukeDir.current * jukeFactor);
+          moveDir.add(perp).normalize();
+          if (Math.abs(myPos.x) > 20) moveDir.x -= Math.sign(myPos.x) * 0.5;
+          if (myPos.z > 17 || myPos.z < -35) moveDir.z -= Math.sign(myPos.z) * 0.5;
+          moveDir.normalize();
+        } else {
+          wanderTimer.current -= delta;
+          if (wanderTimer.current <= 0) {
+            const tx = (Math.random() - 0.5) * 44;
+            const tz = -10 + (Math.random() - 0.5) * 50;
+            wanderDir.current.set(tx - myPos.x, 0, tz - myPos.z).normalize();
+            wanderTimer.current = 3 + Math.random() * 4;
+          }
+          moveDir.copy(wanderDir.current);
+          speed = RUNNER_BASE_SPEED * 0.6;
+        }
+
+        // Runner shooting
+        if (ammo.current > 0 && dist < 12) {
+          shootTimer.current -= delta;
+          if (shootTimer.current <= 0) {
+            const sd = toPlayer.clone().normalize();
+            sd.x += (Math.random() - 0.5) * 0.3;
+            sd.z += (Math.random() - 0.5) * 0.3;
+            sd.normalize();
+            addProjectile(myPos.clone().add(new THREE.Vector3(0, 1.2, 0)), sd, id);
+            ammo.current--;
+            shootTimer.current = 4 + Math.random() * 3;
+          }
+        }
+      } else {
+        // Hunter AI
+        const chaseRange = 15;
+        const isSprinting = dist < 6;
+        speed = isSprinting ? HUNTER_SPRINT_SPEED : HUNTER_BASE_SPEED;
+
+        if (dist < chaseRange) {
+          moveDir.copy(toPlayer).normalize();
+          const wobble = Math.sin(t * 3 + parseInt(id.replace(/\D/g, "")) * 2) * 0.15;
+          moveDir.x += wobble;
+          moveDir.normalize();
+        } else {
+          wanderTimer.current -= delta;
+          if (wanderTimer.current <= 0) {
+            wanderDir.current.set(
+              playerPosition.x + (Math.random() - 0.5) * 10 - myPos.x, 0,
+              playerPosition.z + (Math.random() - 0.5) * 10 - myPos.z
+            ).normalize();
+            wanderTimer.current = 2 + Math.random() * 3;
+          }
+          moveDir.copy(wanderDir.current);
+          speed = HUNTER_BASE_SPEED * 0.5;
+        }
+
+        // Hunter shooting
+        if (ammo.current > 0 && dist < 15) {
+          shootTimer.current -= delta;
+          if (shootTimer.current <= 0) {
+            const sd = toPlayer.clone().normalize();
+            sd.x += (Math.random() - 0.5) * 0.25;
+            sd.z += (Math.random() - 0.5) * 0.25;
+            sd.normalize();
+            addProjectile(myPos.clone().add(new THREE.Vector3(0, 1.2, 0)), sd, id);
+            ammo.current--;
+            shootTimer.current = 2.5 + Math.random() * 2;
+          }
+        }
+      }
+
+      // Tagging
+      const distToPlayer = myPos.distanceTo(playerPosition);
+      if (npcRole === "runner" && distToPlayer < TAG_DISTANCE) {
+        tagNPC(id);
+      }
+      if (npcRole === "hunter" && distToPlayer < TAG_DISTANCE) {
+        damagePlayer(3); // Runners lose ALL hearts when tagged
+      }
     }
 
-    if (moveDir.length() > 0) {
+    if (moveDir.lengthSq() > 0) {
       tryMove(myPos, moveDir, speed, delta);
       lastMoveDir.current.copy(moveDir);
     }
 
     ref.current.position.copy(myPos);
-
-    // Face movement direction
-    if (lastMoveDir.current.length() > 0.1) {
+    if (lastMoveDir.current.lengthSq() > 0.01) {
       const targetRot = Math.atan2(lastMoveDir.current.x, lastMoveDir.current.z);
       ref.current.rotation.y = THREE.MathUtils.lerp(ref.current.rotation.y, targetRot, 0.12);
     }
-
-    // Running animation
-    if (moveDir.length() > 0.1) {
+    if (moveDir.lengthSq() > 0.01) {
       const runSpeed = speed > 3 ? 14 : 8;
       ref.current.position.y = Math.abs(Math.sin(t * runSpeed)) * 0.06;
     } else {
       ref.current.position.y = 0;
     }
 
-    // Tagging
-    if (npcRole === "runner" && dist < TAG_DISTANCE) {
-      tagNPC(id);
+    // Projectile hit check
+    for (const p of projectiles) {
+      if (!p.alive || p.owner !== "player") continue;
+      const dx = p.position.x - myPos.x;
+      const dy = p.position.y - 1.0;
+      const dz = p.position.z - myPos.z;
+      if (Math.sqrt(dx * dx + dy * dy + dz * dz) < HIT_RADIUS) {
+        p.alive = false;
+        damageNPC(id, 1);
+        break;
+      }
     }
-    if (npcRole === "hunter" && dist < TAG_DISTANCE) {
-      setCaught();
+
+    // Health bar billboard
+    if (healthBarRef.current) {
+      healthBarRef.current.lookAt(state.camera.position);
     }
   });
 
-  if (isTagged) return null;
+  if (isTagged || health <= 0) return null;
 
   return (
     <group ref={ref} position={startPosition}>
       <NPCFigure color={color} npcRole={npcRole} />
+      <group ref={healthBarRef}>
+        <HealthBar health={health} maxHealth={3} />
+      </group>
       <pointLight
-        color={npcRole === "hunter" ? "#ff2200" : "#00ccff"}
+        color={npcRole === "hunter" ? "#ff2200" : npcRole === "ally" ? "#00ff88" : "#00ccff"}
         intensity={npcRole === "hunter" ? 1.5 : 0.8}
         distance={npcRole === "hunter" ? 5 : 3}
         position={[0, 2, 0]}
@@ -244,7 +310,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   );
 }
 
-// 7 runner NPCs for hunter mode (harder to catch)
 export const RUNNER_NPCS: Omit<NPCProps, "npcRole">[] = [
   { id: "r1", startPosition: [-18, 0, -15], color: "#4ecdc4" },
   { id: "r2", startPosition: [18, 0, -20], color: "#feca57" },
@@ -255,9 +320,12 @@ export const RUNNER_NPCS: Omit<NPCProps, "npcRole">[] = [
   { id: "r7", startPosition: [12, 0, -30], color: "#f8b500" },
 ];
 
-// 3 hunter NPCs for runner mode
 export const HUNTER_NPCS: Omit<NPCProps, "npcRole">[] = [
   { id: "h1", startPosition: [-18, 0, -20], color: "#ff3333" },
   { id: "h2", startPosition: [18, 0, -18], color: "#ff5533" },
   { id: "h3", startPosition: [0, 0, -30], color: "#cc2222" },
+];
+
+export const ALLY_HUNTERS: Omit<NPCProps, "npcRole">[] = [
+  { id: "ah1", startPosition: [3, 0, 2], color: "#ff8800" },
 ];
