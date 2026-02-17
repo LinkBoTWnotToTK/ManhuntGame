@@ -1,54 +1,101 @@
 import { useRef, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { wallColliders, ESCAPE_ZONE_POS, ESCAPE_ZONE_RADIUS } from "./House";
-import { useGame } from "./GameState";
+import { wallColliders } from "./House";
+import { useGame, MAP_BOUNDS, ESCAPE_POSITIONS } from "./GameState";
 import { playerPosition, projectiles, addProjectile } from "./SharedState";
+import { ESCAPE_ZONE_RADIUS } from "./House";
 
 const WALK_SPEED = 4.5;
 const SPRINT_SPEED = 7;
 const PLAYER_RADIUS = 0.3;
 const STAMINA_DRAIN = 25;
 const STAMINA_REGEN = 15;
-const CAMERA_DIST = 5;
-const CAMERA_HEIGHT = 3;
+const CAMERA_DIST = 6;
+const CAMERA_HEIGHT = 3.5;
 const HIT_RADIUS = 0.8;
 
 function PlayerFigure({ role }: { role: string | null }) {
   const isHunter = role === "hunter";
-  const bodyColor = isHunter ? "#664422" : "#2244aa";
-  const accentColor = isHunter ? "#ff8800" : "#44aaff";
+  const bodyColor = isHunter ? "#8B4513" : "#1a3a8a";
+  const skinColor = "#e8b89a";
+  const accentColor = isHunter ? "#ff6600" : "#3388ff";
+  const pantsColor = isHunter ? "#3a2a1a" : "#1a1a3a";
+  
   return (
     <group>
-      <mesh position={[0, 1.5, 0]} castShadow>
-        <sphereGeometry args={[0.16, 16, 16]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.6} />
+      {/* Head */}
+      <mesh position={[0, 1.6, 0]} castShadow>
+        <sphereGeometry args={[0.18, 16, 16]} />
+        <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0, 1.1, 0]} castShadow>
-        <capsuleGeometry args={[0.13, 0.4, 8, 16]} />
+      {/* Eyes */}
+      <mesh position={[0.06, 1.63, 0.14]}>
+        <sphereGeometry args={[0.03, 8, 8]} />
+        <meshStandardMaterial color="#222" />
+      </mesh>
+      <mesh position={[-0.06, 1.63, 0.14]}>
+        <sphereGeometry args={[0.03, 8, 8]} />
+        <meshStandardMaterial color="#222" />
+      </mesh>
+      {/* Hair/hat */}
+      <mesh position={[0, 1.72, -0.02]} castShadow>
+        <sphereGeometry args={[0.19, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color={isHunter ? "#2a1a0a" : "#1a1a2a"} roughness={0.9} />
+      </mesh>
+      {/* Torso */}
+      <mesh position={[0, 1.15, 0]} castShadow>
+        <capsuleGeometry args={[0.16, 0.45, 8, 16]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0, 1.35, 0]} castShadow>
-        <boxGeometry args={[0.35, 0.06, 0.2]} />
+      {/* Belt/strap */}
+      <mesh position={[0, 0.88, 0]} castShadow>
+        <cylinderGeometry args={[0.17, 0.17, 0.06, 12]} />
         <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={0.3} />
       </mesh>
-      <mesh position={[-0.22, 1.05, 0]} rotation={[0, 0, 0.3]} castShadow>
-        <capsuleGeometry args={[0.045, 0.32, 6, 10]} />
+      {/* Arms */}
+      <mesh position={[-0.25, 1.1, 0]} rotation={[0, 0, 0.25]} castShadow>
+        <capsuleGeometry args={[0.05, 0.35, 6, 10]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0.22, 1.05, 0]} rotation={[0, 0, -0.3]} castShadow>
-        <capsuleGeometry args={[0.045, 0.32, 6, 10]} />
+      <mesh position={[0.25, 1.1, 0]} rotation={[0, 0, -0.25]} castShadow>
+        <capsuleGeometry args={[0.05, 0.35, 6, 10]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[-0.08, 0.5, 0]} castShadow>
-        <capsuleGeometry args={[0.055, 0.42, 6, 10]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.7} />
+      {/* Hands */}
+      <mesh position={[-0.32, 0.88, 0]} castShadow>
+        <sphereGeometry args={[0.05, 8, 8]} />
+        <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0.08, 0.5, 0]} castShadow>
-        <capsuleGeometry args={[0.055, 0.42, 6, 10]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.7} />
+      <mesh position={[0.32, 0.88, 0]} castShadow>
+        <sphereGeometry args={[0.05, 8, 8]} />
+        <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      <pointLight color={accentColor} intensity={0.5} distance={3} position={[0, 2, 0]} />
+      {/* Slingshot in hand */}
+      <mesh position={[0.35, 0.9, 0.05]} rotation={[0.3, 0, -0.2]} castShadow>
+        <cylinderGeometry args={[0.015, 0.015, 0.3, 6]} />
+        <meshStandardMaterial color="#5a3a1a" roughness={0.8} />
+      </mesh>
+      {/* Legs */}
+      <mesh position={[-0.09, 0.5, 0]} castShadow>
+        <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
+        <meshStandardMaterial color={pantsColor} roughness={0.8} />
+      </mesh>
+      <mesh position={[0.09, 0.5, 0]} castShadow>
+        <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
+        <meshStandardMaterial color={pantsColor} roughness={0.8} />
+      </mesh>
+      {/* Shoes */}
+      <mesh position={[-0.09, 0.2, 0.03]} castShadow>
+        <boxGeometry args={[0.1, 0.08, 0.16]} />
+        <meshStandardMaterial color="#333" roughness={0.6} />
+      </mesh>
+      <mesh position={[0.09, 0.2, 0.03]} castShadow>
+        <boxGeometry args={[0.1, 0.08, 0.16]} />
+        <meshStandardMaterial color="#333" roughness={0.6} />
+      </mesh>
+      {/* Role glow */}
+      <pointLight color={accentColor} intensity={0.6} distance={4} position={[0, 1.2, 0]} />
     </group>
   );
 }
@@ -60,11 +107,14 @@ export default function Player() {
   const keys = useRef<Record<string, boolean>>({});
   const { camera, gl } = useThree();
   const {
-    role, isPlaying, gameOver, escapeOpen, setEscaped,
+    role, selectedMap, isPlaying, gameOver, escapeOpen, setEscaped,
     stamina, useStamina, regenStamina,
     playerHealth, useAmmo, damagePlayer,
     medkits, collectMedkit, healPlayer,
   } = useGame();
+
+  const bounds = MAP_BOUNDS[selectedMap || "suburban"];
+  const escapePos = ESCAPE_POSITIONS[selectedMap || "suburban"];
 
   const shootRef = useRef<() => void>(() => {});
   shootRef.current = () => {
@@ -125,8 +175,8 @@ export default function Player() {
     if (dir.lengthSq() > 0) {
       dir.normalize().multiplyScalar(speed * delta);
       const newPos = playerPosition.clone().add(dir);
-      newPos.x = THREE.MathUtils.clamp(newPos.x, -23.5, 23.5);
-      newPos.z = THREE.MathUtils.clamp(newPos.z, -37.5, 19.5);
+      newPos.x = THREE.MathUtils.clamp(newPos.x, bounds.minX, bounds.maxX);
+      newPos.z = THREE.MathUtils.clamp(newPos.z, bounds.minZ, bounds.maxZ);
       const pMin = new THREE.Vector3(newPos.x - PLAYER_RADIUS, 0, newPos.z - PLAYER_RADIUS);
       const pMax = new THREE.Vector3(newPos.x + PLAYER_RADIUS, 1.8, newPos.z + PLAYER_RADIUS);
       let blocked = false;
@@ -167,20 +217,20 @@ export default function Player() {
       meshRef.current.rotation.y = yaw.current + Math.PI;
     }
 
-    // Third-person camera
+    // Third-person camera — smooth follow
     const camOffset = new THREE.Vector3(
       Math.sin(yaw.current) * CAMERA_DIST,
-      CAMERA_HEIGHT * pitch.current + 1.5,
+      CAMERA_HEIGHT * pitch.current + 2,
       Math.cos(yaw.current) * CAMERA_DIST
     );
     const targetCamPos = playerPosition.clone().add(camOffset);
-    camera.position.lerp(targetCamPos, 0.12);
-    camera.lookAt(playerPosition.x, 1.2, playerPosition.z);
+    camera.position.lerp(targetCamPos, 0.1);
+    camera.lookAt(playerPosition.x, 1.3, playerPosition.z);
 
-    // Escape zone
+    // Escape zone check
     if (role === "runner" && escapeOpen) {
-      const dx = playerPosition.x - ESCAPE_ZONE_POS.x;
-      const dz = playerPosition.z - ESCAPE_ZONE_POS.z;
+      const dx = playerPosition.x - escapePos[0];
+      const dz = playerPosition.z - escapePos[2];
       if (Math.sqrt(dx * dx + dz * dz) < ESCAPE_ZONE_RADIUS) setEscaped();
     }
 
