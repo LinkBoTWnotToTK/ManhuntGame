@@ -2,6 +2,24 @@ import { createContext, useContext, useState, useCallback, useRef } from "react"
 import { resetSharedState } from "./SharedState";
 
 export type Role = "runner" | "hunter";
+export type GameMap = "suburban" | "industrial" | "forest";
+
+export interface MapBounds {
+  minX: number; maxX: number;
+  minZ: number; maxZ: number;
+}
+
+export const MAP_BOUNDS: Record<GameMap, MapBounds> = {
+  suburban:   { minX: -29.5, maxX: 29.5, minZ: -49.5, maxZ: 24.5 },
+  industrial: { minX: -34.5, maxX: 34.5, minZ: -54.5, maxZ: 24.5 },
+  forest:     { minX: -39.5, maxX: 39.5, minZ: -59.5, maxZ: 29.5 },
+};
+
+export const ESCAPE_POSITIONS: Record<GameMap, [number, number, number]> = {
+  suburban:   [0, 0, -44],
+  industrial: [0, 0, -49],
+  forest:     [0, 0, -54],
+};
 
 interface MedkitData {
   id: string;
@@ -10,6 +28,7 @@ interface MedkitData {
 
 interface GameState {
   role: Role | null;
+  selectedMap: GameMap | null;
   score: number;
   totalNPCs: number;
   tagged: Set<string>;
@@ -27,6 +46,7 @@ interface GameState {
   npcHealth: Record<string, number>;
   medkits: MedkitData[];
   selectRole: (role: Role) => void;
+  selectMap: (map: GameMap) => void;
   tagNPC: (id: string) => void;
   startGame: () => void;
   resetGame: () => void;
@@ -55,6 +75,7 @@ const MAX_AMMO = 5;
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role | null>(null);
+  const [selectedMap, setSelectedMap] = useState<GameMap | null>(null);
   const [score, setScore] = useState(0);
   const [tagged, setTagged] = useState<Set<string>>(new Set());
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -73,6 +94,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const startTimeRef = useRef<number>(0);
   const gameOverRef = useRef(false);
   const roleRef = useRef<Role | null>(null);
+  const mapRef = useRef<GameMap | null>(null);
   const playerHealthRef = useRef(MAX_HEALTH);
   const playerAmmoRef = useRef(MAX_AMMO);
   const npcHealthRef = useRef<Record<string, number>>({});
@@ -83,13 +105,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     roleRef.current = r;
   }, []);
 
-  const endGame = useCallback((result: "win" | "lose") => {
-    if (gameOverRef.current) return;
-    gameOverRef.current = true;
-    setGameOver(true);
-    setGameResult(result);
-    setIsPlaying(false);
-    if (timerRef.current) clearInterval(timerRef.current);
+  const selectMap = useCallback((m: GameMap) => {
+    setSelectedMap(m);
+    mapRef.current = m;
   }, []);
 
   const startGame = useCallback(() => {
@@ -122,11 +140,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       if (elapsed >= GAME_DURATION) setEscapeOpen(true);
 
-      // Spawn medkits every 30 seconds
       if (elapsed >= nextMedkitSpawn.current) {
         nextMedkitSpawn.current += 30;
-        const x = -20 + Math.random() * 40;
-        const z = -35 + Math.random() * 50;
+        const bounds = MAP_BOUNDS[mapRef.current || "suburban"];
+        const x = bounds.minX + 5 + Math.random() * (bounds.maxX - bounds.minX - 10);
+        const z = bounds.minZ + 5 + Math.random() * (bounds.maxZ - bounds.minZ - 10);
         setMedkits((prev) => [...prev.slice(-4), { id: `m${Date.now()}`, position: [x, 0.3, z] as [number, number, number] }]);
       }
 
@@ -170,8 +188,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const setEscaped = useCallback(() => {
     setEscapedState(true);
-    endGame("win");
-  }, [endGame]);
+    gameOverRef.current = true;
+    setGameOver(true);
+    setGameResult("win");
+    setIsPlaying(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+  }, []);
 
   const damagePlayer = useCallback((amount: number) => {
     if (gameOverRef.current) return;
@@ -224,6 +246,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const resetGame = useCallback(() => {
     resetSharedState();
     setRole(null);
+    setSelectedMap(null);
     setScore(0);
     setTagged(new Set());
     setGameOver(false);
@@ -242,6 +265,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     npcHealthRef.current = {};
     gameOverRef.current = false;
     roleRef.current = null;
+    mapRef.current = null;
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
@@ -250,11 +274,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   return (
     <GameContext.Provider
       value={{
-        role, score, totalNPCs, tagged, elapsedTime, timeLeft,
+        role, selectedMap, score, totalNPCs, tagged, elapsedTime, timeLeft,
         gameOver, gameResult, isPlaying, escapeOpen, escaped,
         stamina, maxStamina: MAX_STAMINA,
         playerHealth, playerAmmo, npcHealth, medkits,
-        selectRole, tagNPC, startGame, resetGame, setEscaped,
+        selectRole, selectMap, tagNPC, startGame, resetGame, setEscaped,
         damagePlayer, damageNPC, healPlayer, useAmmo: useAmmoFn,
         collectMedkit, useStamina: useStaminaFn, regenStamina,
       }}

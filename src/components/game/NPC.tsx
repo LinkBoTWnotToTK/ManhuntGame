@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { useGame } from "./GameState";
+import { useGame, MAP_BOUNDS, GameMap } from "./GameState";
 import { wallColliders } from "./House";
 import { playerPosition, npcPositions, projectiles, addProjectile } from "./SharedState";
 
@@ -22,45 +22,77 @@ const HIT_RADIUS = 0.8;
 
 function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
   const isHunter = npcRole === "hunter" || npcRole === "ally";
-  const bodyColor = isHunter ? "#2a0a0a" : color;
+  const bodyColor = isHunter ? "#4a1a0a" : color;
+  const skinColor = "#d4a574";
   const eyeColor = npcRole === "ally" ? "#00ff88" : isHunter ? "#ff2200" : "#ffffff";
+  const pantsColor = isHunter ? "#2a1a0a" : "#1a1a3a";
+  
   return (
     <group>
-      <mesh position={[0, 1.5, 0]} castShadow>
-        <sphereGeometry args={[isHunter ? 0.18 : 0.14, 16, 16]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.6} metalness={0.1} />
+      {/* Head */}
+      <mesh position={[0, 1.6, 0]} castShadow>
+        <sphereGeometry args={[isHunter ? 0.19 : 0.16, 16, 16]} />
+        <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0, 1.1, 0]} castShadow>
-        <capsuleGeometry args={[isHunter ? 0.15 : 0.12, isHunter ? 0.45 : 0.35, 8, 16]} />
+      {/* Eyes */}
+      <mesh position={[0.05, 1.63, 0.13]}>
+        <sphereGeometry args={[0.03, 8, 8]} />
+        <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={isHunter ? 2 : 0.5} />
+      </mesh>
+      <mesh position={[-0.05, 1.63, 0.13]}>
+        <sphereGeometry args={[0.03, 8, 8]} />
+        <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={isHunter ? 2 : 0.5} />
+      </mesh>
+      {/* Hair/headgear */}
+      <mesh position={[0, 1.72, -0.02]} castShadow>
+        <sphereGeometry args={[isHunter ? 0.2 : 0.17, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color={isHunter ? "#1a0a0a" : "#2a2a3a"} roughness={0.9} />
+      </mesh>
+      {/* Torso */}
+      <mesh position={[0, 1.15, 0]} castShadow>
+        <capsuleGeometry args={[isHunter ? 0.17 : 0.14, isHunter ? 0.48 : 0.4, 8, 16]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} metalness={0.05} />
       </mesh>
-      <mesh position={[0, 1.35, 0]} castShadow>
-        <boxGeometry args={[isHunter ? 0.4 : 0.3, 0.06, 0.2]} />
-        <meshStandardMaterial color={color} roughness={0.5} emissive={color} emissiveIntensity={0.2} />
+      {/* Accent belt */}
+      <mesh position={[0, 0.88, 0]} castShadow>
+        <cylinderGeometry args={[isHunter ? 0.18 : 0.15, isHunter ? 0.18 : 0.15, 0.06, 12]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.2} roughness={0.5} />
       </mesh>
-      <mesh position={[-0.22, 1.05, 0]} rotation={[0, 0, 0.3]} castShadow>
-        <capsuleGeometry args={[0.045, 0.32, 6, 10]} />
+      {/* Arms */}
+      <mesh position={[-0.24, 1.1, 0]} rotation={[0, 0, 0.25]} castShadow>
+        <capsuleGeometry args={[0.05, 0.35, 6, 10]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0.22, 1.05, 0]} rotation={[0, 0, -0.3]} castShadow>
-        <capsuleGeometry args={[0.045, 0.32, 6, 10]} />
+      <mesh position={[0.24, 1.1, 0]} rotation={[0, 0, -0.25]} castShadow>
+        <capsuleGeometry args={[0.05, 0.35, 6, 10]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[-0.08, 0.5, 0]} castShadow>
-        <capsuleGeometry args={[0.055, 0.42, 6, 10]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.7} />
+      {/* Hands */}
+      <mesh position={[-0.3, 0.88, 0]} castShadow>
+        <sphereGeometry args={[0.045, 8, 8]} />
+        <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0.08, 0.5, 0]} castShadow>
-        <capsuleGeometry args={[0.055, 0.42, 6, 10]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.7} />
+      <mesh position={[0.3, 0.88, 0]} castShadow>
+        <sphereGeometry args={[0.045, 8, 8]} />
+        <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0.05, 1.53, 0.12]}>
-        <sphereGeometry args={[0.028, 8, 8]} />
-        <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={isHunter ? 3 : 1} />
+      {/* Legs */}
+      <mesh position={[-0.09, 0.5, 0]} castShadow>
+        <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
+        <meshStandardMaterial color={pantsColor} roughness={0.8} />
       </mesh>
-      <mesh position={[-0.05, 1.53, 0.12]}>
-        <sphereGeometry args={[0.028, 8, 8]} />
-        <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={isHunter ? 3 : 1} />
+      <mesh position={[0.09, 0.5, 0]} castShadow>
+        <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
+        <meshStandardMaterial color={pantsColor} roughness={0.8} />
+      </mesh>
+      {/* Shoes */}
+      <mesh position={[-0.09, 0.2, 0.03]} castShadow>
+        <boxGeometry args={[0.1, 0.08, 0.15]} />
+        <meshStandardMaterial color="#222" roughness={0.6} />
+      </mesh>
+      <mesh position={[0.09, 0.2, 0.03]} castShadow>
+        <boxGeometry args={[0.1, 0.08, 0.15]} />
+        <meshStandardMaterial color="#222" roughness={0.6} />
       </mesh>
     </group>
   );
@@ -92,10 +124,10 @@ function checkCollision(pos: THREE.Vector3): boolean {
   return false;
 }
 
-function tryMove(myPos: THREE.Vector3, moveDir: THREE.Vector3, speed: number, delta: number): boolean {
+function tryMove(myPos: THREE.Vector3, moveDir: THREE.Vector3, speed: number, delta: number, bounds: { minX: number; maxX: number; minZ: number; maxZ: number }): boolean {
   const newPos = myPos.clone().addScaledVector(moveDir.clone().normalize(), speed * delta);
-  newPos.x = THREE.MathUtils.clamp(newPos.x, -23.5, 23.5);
-  newPos.z = THREE.MathUtils.clamp(newPos.z, -37.5, 19.5);
+  newPos.x = THREE.MathUtils.clamp(newPos.x, bounds.minX, bounds.maxX);
+  newPos.z = THREE.MathUtils.clamp(newPos.z, bounds.minZ, bounds.maxZ);
   if (!checkCollision(newPos)) { myPos.copy(newPos); return true; }
   const sx = myPos.clone(); sx.x += moveDir.x * speed * delta;
   if (!checkCollision(sx)) { myPos.x = sx.x; return true; }
@@ -110,7 +142,7 @@ function tryMove(myPos: THREE.Vector3, moveDir: THREE.Vector3, speed: number, de
 export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   const ref = useRef<THREE.Group>(null);
   const posRef = useRef(new THREE.Vector3(...startPosition));
-  const { tagged, tagNPC, isPlaying, damagePlayer, damageNPC, npcHealth } = useGame();
+  const { tagged, tagNPC, isPlaying, damagePlayer, damageNPC, npcHealth, selectedMap } = useGame();
   const wanderDir = useRef(new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize());
   const wanderTimer = useRef(Math.random() * 2);
   const jukeTimer = useRef(0);
@@ -120,12 +152,12 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   const ammo = useRef(5);
   const healthBarRef = useRef<THREE.Group>(null);
 
+  const bounds = MAP_BOUNDS[selectedMap || "suburban"];
   const isTagged = tagged.has(id);
   const health = npcHealth[id] ?? 3;
 
   useFrame((state, delta) => {
     if (!ref.current || !isPlaying || isTagged) return;
-
     if (health <= 0) { tagNPC(id); return; }
 
     npcPositions.set(id, posRef.current.clone());
@@ -136,7 +168,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
     let speed: number;
 
     if (npcRole === "ally") {
-      // Chase nearest alive runner NPC
       let nearestDist = Infinity;
       let nearestPos: THREE.Vector3 | null = null;
       let nearestId: string | null = null;
@@ -179,14 +210,14 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
           const jukeFactor = dist < panicRange ? 0.7 : 0.3;
           const perp = new THREE.Vector3(-moveDir.z, 0, moveDir.x).multiplyScalar(jukeDir.current * jukeFactor);
           moveDir.add(perp).normalize();
-          if (Math.abs(myPos.x) > 20) moveDir.x -= Math.sign(myPos.x) * 0.5;
-          if (myPos.z > 17 || myPos.z < -35) moveDir.z -= Math.sign(myPos.z) * 0.5;
+          if (Math.abs(myPos.x) > bounds.maxX - 4) moveDir.x -= Math.sign(myPos.x) * 0.5;
+          if (myPos.z > bounds.maxZ - 4 || myPos.z < bounds.minZ + 4) moveDir.z -= Math.sign(myPos.z) * 0.5;
           moveDir.normalize();
         } else {
           wanderTimer.current -= delta;
           if (wanderTimer.current <= 0) {
-            const tx = (Math.random() - 0.5) * 44;
-            const tz = -10 + (Math.random() - 0.5) * 50;
+            const tx = (Math.random() - 0.5) * (bounds.maxX - bounds.minX) * 0.8;
+            const tz = bounds.minZ * 0.4 + (Math.random() - 0.5) * (bounds.maxZ - bounds.minZ) * 0.6;
             wanderDir.current.set(tx - myPos.x, 0, tz - myPos.z).normalize();
             wanderTimer.current = 3 + Math.random() * 4;
           }
@@ -194,7 +225,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
           speed = RUNNER_BASE_SPEED * 0.6;
         }
 
-        // Runner shooting
         if (ammo.current > 0 && dist < 12) {
           shootTimer.current -= delta;
           if (shootTimer.current <= 0) {
@@ -208,7 +238,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
           }
         }
       } else {
-        // Hunter AI
         const chaseRange = 15;
         const isSprinting = dist < 6;
         speed = isSprinting ? HUNTER_SPRINT_SPEED : HUNTER_BASE_SPEED;
@@ -231,7 +260,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
           speed = HUNTER_BASE_SPEED * 0.5;
         }
 
-        // Hunter shooting
         if (ammo.current > 0 && dist < 15) {
           shootTimer.current -= delta;
           if (shootTimer.current <= 0) {
@@ -246,18 +274,17 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
         }
       }
 
-      // Tagging
       const distToPlayer = myPos.distanceTo(playerPosition);
       if (npcRole === "runner" && distToPlayer < TAG_DISTANCE) {
         tagNPC(id);
       }
       if (npcRole === "hunter" && distToPlayer < TAG_DISTANCE) {
-        damagePlayer(3); // Runners lose ALL hearts when tagged
+        damagePlayer(3);
       }
     }
 
     if (moveDir.lengthSq() > 0) {
-      tryMove(myPos, moveDir, speed, delta);
+      tryMove(myPos, moveDir, speed, delta, bounds);
       lastMoveDir.current.copy(moveDir);
     }
 
@@ -273,7 +300,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
       ref.current.position.y = 0;
     }
 
-    // Projectile hit check
     for (const p of projectiles) {
       if (!p.alive || p.owner !== "player") continue;
       const dx = p.position.x - myPos.x;
@@ -286,10 +312,7 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
       }
     }
 
-    // Health bar billboard
-    if (healthBarRef.current) {
-      healthBarRef.current.lookAt(state.camera.position);
-    }
+    if (healthBarRef.current) healthBarRef.current.lookAt(state.camera.position);
   });
 
   if (isTagged || health <= 0) return null;
@@ -310,22 +333,71 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   );
 }
 
-export const RUNNER_NPCS: Omit<NPCProps, "npcRole">[] = [
-  { id: "r1", startPosition: [-18, 0, -15], color: "#4ecdc4" },
-  { id: "r2", startPosition: [18, 0, -20], color: "#feca57" },
-  { id: "r3", startPosition: [-20, 0, -30], color: "#ff9ff3" },
-  { id: "r4", startPosition: [20, 0, -10], color: "#a8e6cf" },
-  { id: "r5", startPosition: [0, 0, 16], color: "#c792ea" },
-  { id: "r6", startPosition: [-15, 0, 10], color: "#48dbfb" },
-  { id: "r7", startPosition: [12, 0, -30], color: "#f8b500" },
-];
+// NPC spawn positions per map
+function getSpawnPositions(map: GameMap) {
+  switch (map) {
+    case "industrial":
+      return {
+        runners: [
+          { id: "r1", startPosition: [-25, 0, -20] as [number,number,number], color: "#4ecdc4" },
+          { id: "r2", startPosition: [25, 0, -25] as [number,number,number], color: "#feca57" },
+          { id: "r3", startPosition: [-28, 0, -40] as [number,number,number], color: "#ff9ff3" },
+          { id: "r4", startPosition: [28, 0, -10] as [number,number,number], color: "#a8e6cf" },
+          { id: "r5", startPosition: [0, 0, 20] as [number,number,number], color: "#c792ea" },
+          { id: "r6", startPosition: [-20, 0, 10] as [number,number,number], color: "#48dbfb" },
+          { id: "r7", startPosition: [15, 0, -40] as [number,number,number], color: "#f8b500" },
+        ],
+        hunters: [
+          { id: "h1", startPosition: [-25, 0, -25] as [number,number,number], color: "#ff3333" },
+          { id: "h2", startPosition: [25, 0, -22] as [number,number,number], color: "#ff5533" },
+          { id: "h3", startPosition: [0, 0, -40] as [number,number,number], color: "#cc2222" },
+        ],
+        allies: [
+          { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
+        ],
+      };
+    case "forest":
+      return {
+        runners: [
+          { id: "r1", startPosition: [-30, 0, -20] as [number,number,number], color: "#4ecdc4" },
+          { id: "r2", startPosition: [30, 0, -30] as [number,number,number], color: "#feca57" },
+          { id: "r3", startPosition: [-35, 0, -45] as [number,number,number], color: "#ff9ff3" },
+          { id: "r4", startPosition: [32, 0, -15] as [number,number,number], color: "#a8e6cf" },
+          { id: "r5", startPosition: [0, 0, 25] as [number,number,number], color: "#c792ea" },
+          { id: "r6", startPosition: [-25, 0, 15] as [number,number,number], color: "#48dbfb" },
+          { id: "r7", startPosition: [20, 0, -45] as [number,number,number], color: "#f8b500" },
+        ],
+        hunters: [
+          { id: "h1", startPosition: [-28, 0, -30] as [number,number,number], color: "#ff3333" },
+          { id: "h2", startPosition: [28, 0, -28] as [number,number,number], color: "#ff5533" },
+          { id: "h3", startPosition: [0, 0, -50] as [number,number,number], color: "#cc2222" },
+        ],
+        allies: [
+          { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
+        ],
+      };
+    default: // suburban
+      return {
+        runners: [
+          { id: "r1", startPosition: [-22, 0, -20] as [number,number,number], color: "#4ecdc4" },
+          { id: "r2", startPosition: [22, 0, -25] as [number,number,number], color: "#feca57" },
+          { id: "r3", startPosition: [-25, 0, -38] as [number,number,number], color: "#ff9ff3" },
+          { id: "r4", startPosition: [24, 0, -12] as [number,number,number], color: "#a8e6cf" },
+          { id: "r5", startPosition: [0, 0, 20] as [number,number,number], color: "#c792ea" },
+          { id: "r6", startPosition: [-18, 0, 12] as [number,number,number], color: "#48dbfb" },
+          { id: "r7", startPosition: [15, 0, -38] as [number,number,number], color: "#f8b500" },
+        ],
+        hunters: [
+          { id: "h1", startPosition: [-20, 0, -25] as [number,number,number], color: "#ff3333" },
+          { id: "h2", startPosition: [20, 0, -22] as [number,number,number], color: "#ff5533" },
+          { id: "h3", startPosition: [0, 0, -38] as [number,number,number], color: "#cc2222" },
+        ],
+        allies: [
+          { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
+        ],
+      };
+  }
+}
 
-export const HUNTER_NPCS: Omit<NPCProps, "npcRole">[] = [
-  { id: "h1", startPosition: [-18, 0, -20], color: "#ff3333" },
-  { id: "h2", startPosition: [18, 0, -18], color: "#ff5533" },
-  { id: "h3", startPosition: [0, 0, -30], color: "#cc2222" },
-];
-
-export const ALLY_HUNTERS: Omit<NPCProps, "npcRole">[] = [
-  { id: "ah1", startPosition: [3, 0, 2], color: "#ff8800" },
-];
+export { getSpawnPositions };
+export type { NPCProps };
