@@ -11,8 +11,8 @@ const SPRINT_SPEED = 7;
 const PLAYER_RADIUS = 0.3;
 const STAMINA_DRAIN = 25;
 const STAMINA_REGEN = 15;
-const CAMERA_DIST = 6;
-const CAMERA_HEIGHT = 3.5;
+const CAMERA_DIST = 5;
+const CAMERA_HEIGHT = 3;
 const HIT_RADIUS = 0.8;
 
 function PlayerFigure({ role }: { role: string | null }) {
@@ -71,11 +71,13 @@ function PlayerFigure({ role }: { role: string | null }) {
         <sphereGeometry args={[0.05, 8, 8]} />
         <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      {/* Slingshot in hand */}
-      <mesh position={[0.35, 0.9, 0.05]} rotation={[0.3, 0, -0.2]} castShadow>
-        <cylinderGeometry args={[0.015, 0.015, 0.3, 6]} />
-        <meshStandardMaterial color="#5a3a1a" roughness={0.8} />
-      </mesh>
+      {/* Slingshot in hand (runners only) */}
+      {!isHunter && (
+        <mesh position={[0.35, 0.9, 0.05]} rotation={[0.3, 0, -0.2]} castShadow>
+          <cylinderGeometry args={[0.015, 0.015, 0.3, 6]} />
+          <meshStandardMaterial color="#5a3a1a" roughness={0.8} />
+        </mesh>
+      )}
       {/* Legs */}
       <mesh position={[-0.09, 0.5, 0]} castShadow>
         <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
@@ -111,6 +113,7 @@ export default function Player() {
     stamina, useStamina, regenStamina,
     playerHealth, useAmmo, damagePlayer,
     medkits, collectMedkit, healPlayer,
+    ammoPickups, collectAmmo,
   } = useGame();
 
   const bounds = MAP_BOUNDS[selectedMap || "suburban"];
@@ -119,6 +122,7 @@ export default function Player() {
   const shootRef = useRef<() => void>(() => {});
   shootRef.current = () => {
     if (!isPlaying || gameOver) return;
+    if (role !== "runner") return; // Only runners can shoot
     if (!useAmmo()) return;
     const dir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
     const spawnPos = playerPosition.clone().add(new THREE.Vector3(0, 1.2, 0)).addScaledVector(dir, 0.5);
@@ -217,10 +221,10 @@ export default function Player() {
       meshRef.current.rotation.y = yaw.current + Math.PI;
     }
 
-    // Third-person camera — smooth follow
+    // Third-person camera
     const camOffset = new THREE.Vector3(
       Math.sin(yaw.current) * CAMERA_DIST,
-      CAMERA_HEIGHT * pitch.current + 2,
+      CAMERA_HEIGHT * pitch.current + 1.8,
       Math.cos(yaw.current) * CAMERA_DIST
     );
     const targetCamPos = playerPosition.clone().add(camOffset);
@@ -242,6 +246,18 @@ export default function Player() {
         healPlayer();
         collectMedkit(med.id);
         break;
+      }
+    }
+
+    // Ammo pickup collection (runners only)
+    if (role === "runner") {
+      for (const ap of ammoPickups) {
+        const dx = playerPosition.x - ap.position[0];
+        const dz = playerPosition.z - ap.position[2];
+        if (Math.sqrt(dx * dx + dz * dz) < 1.5) {
+          collectAmmo(ap.id);
+          break;
+        }
       }
     }
 
