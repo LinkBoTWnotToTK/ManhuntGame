@@ -55,7 +55,6 @@ function CrateStack({ position }: { position: [number, number, number] }) {
 
 // ===== DECORATIVE PROPS =====
 function Tree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
-  const mats = getMats();
   return (
     <group position={position} scale={scale}>
       <mesh position={[0, 1.5, 0]} castShadow receiveShadow>
@@ -69,6 +68,34 @@ function Tree({ position, scale = 1 }: { position: [number, number, number]; sca
       <mesh position={[0, 4.8, 0]} castShadow>
         <coneGeometry args={[1.0, 2, 8]} />
         <meshStandardMaterial color="#1e6e1e" roughness={0.85} />
+      </mesh>
+    </group>
+  );
+}
+
+function SnowTree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  return (
+    <group position={position} scale={scale}>
+      <mesh position={[0, 1.5, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.15, 0.2, 3, 8]} />
+        <meshStandardMaterial color="#4a3020" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 3.5, 0]} castShadow receiveShadow>
+        <coneGeometry args={[1.5, 3, 8]} />
+        <meshStandardMaterial color="#1a4a2a" roughness={0.85} />
+      </mesh>
+      <mesh position={[0, 5.0, 0]} castShadow>
+        <coneGeometry args={[1.0, 2, 8]} />
+        <meshStandardMaterial color="#2a5a3a" roughness={0.85} />
+      </mesh>
+      {/* Snow caps */}
+      <mesh position={[0, 5.9, 0]}>
+        <coneGeometry args={[0.6, 0.5, 8]} />
+        <meshStandardMaterial color="#eeeeff" roughness={0.4} />
+      </mesh>
+      <mesh position={[0, 4.5, 0]}>
+        <torusGeometry args={[1.2, 0.08, 4, 12]} />
+        <meshStandardMaterial color="#dde8f0" roughness={0.3} />
       </mesh>
     </group>
   );
@@ -114,6 +141,15 @@ function Rock({ position, scale = 1 }: { position: [number, number, number]; sca
   );
 }
 
+function IceRock({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  return (
+    <mesh position={[position[0], position[1] + 0.3 * scale, position[2]]} scale={scale} castShadow receiveShadow>
+      <dodecahedronGeometry args={[0.5, 1]} />
+      <meshStandardMaterial color="#8899bb" roughness={0.2} metalness={0.1} transparent opacity={0.85} />
+    </mesh>
+  );
+}
+
 function Container({ position, rotation = 0, color = "#cc4444" }: { position: [number, number, number]; rotation?: number; color?: string }) {
   const halfW = 1.5, halfH = 1.3, halfD = 3;
   useMemo(() => {
@@ -154,6 +190,33 @@ function Pipe({ position, length = 6 }: { position: [number, number, number]; le
   );
 }
 
+function VentDuct({ position, rotation = 0, length = 4 }: { position: [number, number, number]; rotation?: number; length?: number }) {
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
+        <boxGeometry args={[1.2, 1, length]} />
+        <meshStandardMaterial color="#555" metalness={0.6} roughness={0.4} />
+      </mesh>
+      {/* Vent grating */}
+      {Array.from({ length: Math.floor(length / 0.8) }).map((_, i) => (
+        <mesh key={i} position={[0, 1.01, -length / 2 + 0.4 + i * 0.8, ]} receiveShadow>
+          <boxGeometry args={[1.0, 0.02, 0.05]} />
+          <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
+        </mesh>
+      ))}
+      {/* Openings */}
+      <mesh position={[0, 0.5, length / 2 + 0.01]}>
+        <planeGeometry args={[1.0, 0.8]} />
+        <meshStandardMaterial color="#111" />
+      </mesh>
+      <mesh position={[0, 0.5, -length / 2 - 0.01]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[1.0, 0.8]} />
+        <meshStandardMaterial color="#111" />
+      </mesh>
+    </group>
+  );
+}
+
 function Campfire({ position }: { position: [number, number, number] }) {
   const lightRef = useRef<THREE.PointLight>(null);
   useFrame(({ clock }) => {
@@ -184,11 +247,46 @@ function Campfire({ position }: { position: [number, number, number] }) {
 function Tent({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <mesh position={[0, 1, 0]} rotation={[0, 0, 0]} castShadow receiveShadow>
+      <mesh position={[0, 1, 0]} castShadow receiveShadow>
         <coneGeometry args={[1.8, 2, 4]} />
         <meshStandardMaterial color="#cc8844" roughness={0.9} side={THREE.DoubleSide} />
       </mesh>
     </group>
+  );
+}
+
+function Igloo({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh position={[0, 1, 0]} castShadow receiveShadow>
+        <sphereGeometry args={[1.8, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#dde8f0" roughness={0.4} />
+      </mesh>
+      {/* Door opening */}
+      <mesh position={[0, 0.5, 1.7]} castShadow>
+        <boxGeometry args={[0.8, 1, 0.5]} />
+        <meshStandardMaterial color="#bbc8d0" roughness={0.5} />
+      </mesh>
+      {/* Snow blocks pattern */}
+      {Array.from({ length: 8 }).map((_, i) => {
+        const angle = (i / 8) * Math.PI * 2;
+        return (
+          <mesh key={i} position={[Math.cos(angle) * 1.82, 0.3, Math.sin(angle) * 1.82]}>
+            <boxGeometry args={[0.3, 0.15, 0.15]} />
+            <meshStandardMaterial color="#c8d8e0" roughness={0.3} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+function Snowdrift({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  return (
+    <mesh position={[position[0], position[1] + 0.2 * scale, position[2]]} scale={[scale * 2, scale * 0.5, scale * 1.5]} castShadow receiveShadow>
+      <sphereGeometry args={[1, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      <meshStandardMaterial color="#e0e8f0" roughness={0.3} />
+    </mesh>
   );
 }
 
@@ -252,7 +350,7 @@ function EscapeZone({ escapePos }: { escapePos: [number, number, number] }) {
 
 export const ESCAPE_ZONE_RADIUS = 2.5;
 
-// ===== MAPS =====
+// ===== SUBURBAN MAP =====
 function SuburbanMap({ escapePos }: { escapePos: [number, number, number] }) {
   const mats = getMats();
   const WH = 2.8, WT = 0.15;
@@ -262,9 +360,9 @@ function SuburbanMap({ escapePos }: { escapePos: [number, number, number] }) {
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} material={mats.floor} receiveShadow><planeGeometry args={[12, 10]} /></mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, WH, 0]} material={mats.ceiling} receiveShadow><planeGeometry args={[12, 10]} /></mesh>
       
-      {/* Outdoor ground */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, -20]} material={mats.grass} receiveShadow><planeGeometry args={[62, 50]} /></mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 15]} material={mats.grass} receiveShadow><planeGeometry args={[62, 20]} /></mesh>
+      {/* Outdoor ground — larger */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, -15]} material={mats.grass} receiveShadow><planeGeometry args={[72, 70]} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 20]} material={mats.grass} receiveShadow><planeGeometry args={[72, 25]} /></mesh>
 
       {/* House walls */}
       <Wall position={[-4.5, WH / 2, 5]} size={[3, WH, WT]} />
@@ -285,13 +383,13 @@ function SuburbanMap({ escapePos }: { escapePos: [number, number, number] }) {
       <Wall position={[-3, WH / 2, -2]} size={[6, WH, WT]} />
       <Wall position={[-3, WH / 2, -2]} size={[WT, WH, 6]} />
       
-      {/* Perimeter fence */}
-      <Wall position={[0, 0.6, -50]} size={[62, 1.2, WT]} material={mats.fence} />
-      <Wall position={[-30, 0.6, -14]} size={[WT, 1.2, 72]} material={mats.fence} />
-      <Wall position={[30, 0.6, -14]} size={[WT, 1.2, 72]} material={mats.fence} />
-      <Wall position={[0, 0.6, 25]} size={[60, 1.2, WT]} material={mats.fence} />
+      {/* Perimeter fence — expanded */}
+      <Wall position={[0, 0.6, -60]} size={[72, 1.2, WT]} material={mats.fence} />
+      <Wall position={[-35, 0.6, -17]} size={[WT, 1.2, 86]} material={mats.fence} />
+      <Wall position={[35, 0.6, -17]} size={[WT, 1.2, 86]} material={mats.fence} />
+      <Wall position={[0, 0.6, 30]} size={[70, 1.2, WT]} material={mats.fence} />
 
-      {/* Outdoor cover walls */}
+      {/* Outdoor cover walls — many more */}
       <Wall position={[-8, 1, -10]} size={[4, 2, WT]} material={mats.concrete} />
       <Wall position={[-8, 1, -10]} size={[WT, 2, 3]} material={mats.concrete} />
       <Wall position={[8, 1, -12]} size={[WT, 2, 5]} material={mats.concrete} />
@@ -319,6 +417,10 @@ function SuburbanMap({ escapePos }: { escapePos: [number, number, number] }) {
       <Wall position={[6, 1, -40]} size={[3, 2, WT]} material={mats.concrete} />
       <Wall position={[15, 1, -40]} size={[WT, 2, 4]} material={mats.concrete} />
       <Wall position={[-15, 1, -40]} size={[WT, 2, 4]} material={mats.concrete} />
+      <Wall position={[20, 1, -45]} size={[5, 2, WT]} material={mats.brick} />
+      <Wall position={[-20, 1, -48]} size={[4, 2, WT]} material={mats.brick} />
+      <Wall position={[25, 1, -35]} size={[WT, 2, 6]} material={mats.concrete} />
+      <Wall position={[-25, 1, -38]} size={[WT, 2, 5]} material={mats.concrete} />
 
       {/* Crates */}
       <CrateStack position={[-3, 0, -8]} />
@@ -336,12 +438,14 @@ function SuburbanMap({ escapePos }: { escapePos: [number, number, number] }) {
       <CrateStack position={[18, 0, 8]} />
       <CrateStack position={[25, 0, -30]} />
       <CrateStack position={[-25, 0, -35]} />
+      <CrateStack position={[10, 0, -50]} />
+      <CrateStack position={[-10, 0, -52]} />
 
       {/* Furniture */}
       <Sofa position={[-3, 0, 3.5]} rotation={Math.PI} />
       <KitchenCounter position={[4.5, 0, 4.5]} />
 
-      {/* Trees */}
+      {/* Trees — more spread */}
       <Tree position={[-12, 0, 8]} scale={1.2} />
       <Tree position={[14, 0, 10]} />
       <Tree position={[-20, 0, 15]} scale={1.3} />
@@ -350,9 +454,13 @@ function SuburbanMap({ escapePos }: { escapePos: [number, number, number] }) {
       <Tree position={[25, 0, -15]} />
       <Tree position={[-18, 0, -40]} scale={1.4} />
       <Tree position={[20, 0, -42]} scale={1.1} />
-      <Tree position={[0, 0, -47]} />
+      <Tree position={[0, 0, -50]} />
       <Tree position={[-10, 0, 20]} scale={0.8} />
       <Tree position={[10, 0, 18]} scale={1.0} />
+      <Tree position={[-30, 0, -20]} scale={1.5} />
+      <Tree position={[30, 0, -25]} scale={1.2} />
+      <Tree position={[-28, 0, -50]} scale={1.3} />
+      <Tree position={[28, 0, -50]} scale={1.1} />
 
       {/* Lampposts */}
       <Lamppost position={[-8, 0, 6]} />
@@ -363,234 +471,459 @@ function SuburbanMap({ escapePos }: { escapePos: [number, number, number] }) {
       <Lamppost position={[-10, 0, -30]} />
       <Lamppost position={[10, 0, -30]} />
       <Lamppost position={[0, 0, -40]} />
+      <Lamppost position={[-20, 0, -45]} />
+      <Lamppost position={[20, 0, -50]} />
 
       {/* Barrels */}
       <Barrel position={[-7, 0, -6]} />
       <Barrel position={[9, 0, -10]} />
       <Barrel position={[-18, 0, -25]} />
       <Barrel position={[16, 0, -20]} />
+      <Barrel position={[0, 0, -45]} />
 
       <EscapeZone escapePos={escapePos} />
 
-      {/* Bright daylight lighting */}
       <ambientLight intensity={0.5} color="#c8d8ff" />
       <directionalLight position={[30, 35, -20]} intensity={1.5} color="#fff8e0" castShadow
         shadow-mapSize-width={4096} shadow-mapSize-height={4096}
-        shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={40} shadow-camera-bottom={-55} shadow-bias={-0.0003} />
+        shadow-camera-left={-45} shadow-camera-right={45} shadow-camera-top={45} shadow-camera-bottom={-65} shadow-bias={-0.0003} />
       <directionalLight position={[-15, 10, 10]} intensity={0.4} color="#aabbdd" />
-      
-      {/* Indoor lights */}
       <pointLight position={[-3, 2.5, 3]} intensity={1.5} color="#ffe0a0" distance={10} decay={2} castShadow />
       <pointLight position={[3, 2.5, 3]} intensity={1.0} color="#fff0d0" distance={10} decay={2} />
       <pointLight position={[4, 2.5, -3.5]} intensity={0.7} color="#ffd080" distance={8} decay={2} />
-
-      {/* Sky color */}
       <hemisphereLight args={["#87CEEB", "#4a7a3a", 0.4]} />
-      <fog attach="fog" args={["#c8d8ff", 20, 75]} />
+      <fog attach="fog" args={["#c8d8ff", 25, 90]} />
     </group>
   );
 }
 
+// ===== INDUSTRIAL MAP =====
 function IndustrialMap({ escapePos }: { escapePos: [number, number, number] }) {
   const mats = getMats();
   return (
     <group>
-      {/* Concrete floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, -15]} material={mats.concrete} receiveShadow>
-        <planeGeometry args={[72, 80]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, -18]} material={mats.concrete} receiveShadow>
+        <planeGeometry args={[82, 90]} />
       </mesh>
 
       {/* Perimeter walls */}
-      <Wall position={[0, 1.5, -55]} size={[72, 3, 0.3]} material={mats.concrete} />
-      <Wall position={[-35, 1.5, -15]} size={[0.3, 3, 80]} material={mats.concrete} />
-      <Wall position={[35, 1.5, -15]} size={[0.3, 3, 80]} material={mats.concrete} />
-      <Wall position={[0, 1.5, 25]} size={[70, 3, 0.3]} material={mats.concrete} />
+      <Wall position={[0, 1.5, -65]} size={[82, 3, 0.3]} material={mats.concrete} />
+      <Wall position={[-40, 1.5, -18]} size={[0.3, 3, 94]} material={mats.concrete} />
+      <Wall position={[40, 1.5, -18]} size={[0.3, 3, 94]} material={mats.concrete} />
+      <Wall position={[0, 1.5, 30]} size={[80, 3, 0.3]} material={mats.concrete} />
 
       {/* Warehouse structure */}
-      <Wall position={[-15, 2, 15]} size={[16, 4, 0.2]} material={mats.brick} />
-      <Wall position={[-23, 2, 10]} size={[0.2, 4, 10]} material={mats.brick} />
-      <Wall position={[-7, 2, 10]} size={[0.2, 4, 10]} material={mats.brick} />
-      <Wall position={[-15, 2, 5]} size={[16, 4, 0.2]} material={mats.brick} />
+      <Wall position={[-15, 2, 18]} size={[16, 4, 0.2]} material={mats.brick} />
+      <Wall position={[-23, 2, 13]} size={[0.2, 4, 10]} material={mats.brick} />
+      <Wall position={[-7, 2, 13]} size={[0.2, 4, 10]} material={mats.brick} />
+      <Wall position={[-15, 2, 8]} size={[16, 4, 0.2]} material={mats.brick} />
 
-      {/* Shipping containers */}
-      <Container position={[10, 0, 10]} color="#cc3333" />
-      <Container position={[10, 0, 16]} color="#3366cc" />
-      <Container position={[20, 0, 5]} rotation={Math.PI / 2} color="#cc8833" />
+      {/* Shipping containers — more */}
+      <Container position={[10, 0, 12]} color="#cc3333" />
+      <Container position={[10, 0, 18]} color="#3366cc" />
+      <Container position={[22, 0, 8]} rotation={Math.PI / 2} color="#cc8833" />
       <Container position={[-5, 0, -10]} color="#339933" />
-      <Container position={[15, 0, -15]} rotation={0.3} color="#cc3333" />
-      <Container position={[-20, 0, -20]} rotation={-0.2} color="#3366cc" />
-      <Container position={[25, 0, -25]} color="#996633" />
-      <Container position={[-10, 0, -30]} rotation={Math.PI / 4} color="#cc8833" />
-      <Container position={[5, 0, -35]} color="#cc3333" />
-      <Container position={[-25, 0, -40]} rotation={0.5} color="#339933" />
-      <Container position={[20, 0, -42]} rotation={-0.3} color="#3366cc" />
+      <Container position={[15, 0, -18]} rotation={0.3} color="#cc3333" />
+      <Container position={[-22, 0, -22]} rotation={-0.2} color="#3366cc" />
+      <Container position={[28, 0, -28]} color="#996633" />
+      <Container position={[-12, 0, -35]} rotation={Math.PI / 4} color="#cc8833" />
+      <Container position={[5, 0, -40]} color="#cc3333" />
+      <Container position={[-28, 0, -48]} rotation={0.5} color="#339933" />
+      <Container position={[22, 0, -50]} rotation={-0.3} color="#3366cc" />
+      <Container position={[-18, 0, -55]} color="#996633" />
+      <Container position={[32, 0, -10]} rotation={0.8} color="#cc3333" />
 
-      {/* Walls for cover */}
+      {/* Cover walls */}
       <Wall position={[-12, 1.2, -8]} size={[4, 2.4, 0.2]} material={mats.concrete} />
       <Wall position={[8, 1.2, -5]} size={[0.2, 2.4, 5]} material={mats.concrete} />
-      <Wall position={[-8, 1.2, -25]} size={[6, 2.4, 0.2]} material={mats.concrete} />
-      <Wall position={[12, 1.2, -30]} size={[0.2, 2.4, 6]} material={mats.concrete} />
-      <Wall position={[-15, 1.2, -35]} size={[5, 2.4, 0.2]} material={mats.concrete} />
-      <Wall position={[0, 1.2, -42]} size={[4, 2.4, 0.2]} material={mats.concrete} />
-      <Wall position={[20, 1.2, -10]} size={[0.2, 2.4, 4]} material={mats.concrete} />
-      <Wall position={[-25, 1.2, -12]} size={[4, 2.4, 0.2]} material={mats.concrete} />
+      <Wall position={[-8, 1.2, -28]} size={[6, 2.4, 0.2]} material={mats.concrete} />
+      <Wall position={[12, 1.2, -33]} size={[0.2, 2.4, 6]} material={mats.concrete} />
+      <Wall position={[-15, 1.2, -40]} size={[5, 2.4, 0.2]} material={mats.concrete} />
+      <Wall position={[0, 1.2, -48]} size={[4, 2.4, 0.2]} material={mats.concrete} />
+      <Wall position={[22, 1.2, -12]} size={[0.2, 2.4, 4]} material={mats.concrete} />
+      <Wall position={[-28, 1.2, -15]} size={[4, 2.4, 0.2]} material={mats.concrete} />
+
+      {/* Vent ducts */}
+      <VentDuct position={[-30, 0, -5]} rotation={0} length={6} />
+      <VentDuct position={[25, 0, -20]} rotation={Math.PI / 2} length={5} />
+      <VentDuct position={[-15, 0, -50]} rotation={0.3} length={4} />
+      <VentDuct position={[10, 0, -55]} rotation={-0.2} length={5} />
 
       {/* Pipes */}
-      <Pipe position={[-30, 0.5, -15]} length={8} />
-      <Pipe position={[28, 0.5, -20]} length={6} />
-      <Pipe position={[-22, 0.5, -38]} length={5} />
+      <Pipe position={[-33, 0.5, -18]} length={8} />
+      <Pipe position={[30, 0.5, -22]} length={6} />
+      <Pipe position={[-25, 0.5, -45]} length={5} />
+      <Pipe position={[15, 1, -30]} length={7} />
 
-      {/* Barrels scattered */}
+      {/* Barrels */}
       <Barrel position={[-3, 0, 5]} />
       <Barrel position={[5, 0, -8]} />
-      <Barrel position={[-18, 0, -15]} />
-      <Barrel position={[22, 0, -18]} />
-      <Barrel position={[-12, 0, -38]} />
-      <Barrel position={[8, 0, -45]} />
-      <Barrel position={[-28, 0, 8]} />
-      <Barrel position={[30, 0, 15]} />
+      <Barrel position={[-18, 0, -18]} />
+      <Barrel position={[24, 0, -20]} />
+      <Barrel position={[-14, 0, -42]} />
+      <Barrel position={[8, 0, -52]} />
+      <Barrel position={[-30, 0, 10]} />
+      <Barrel position={[33, 0, 18]} />
 
       {/* Crate stacks */}
       <CrateStack position={[-8, 0, 0]} />
       <CrateStack position={[18, 0, -8]} />
-      <CrateStack position={[-22, 0, -28]} />
-      <CrateStack position={[8, 0, -22]} />
-      <CrateStack position={[-15, 0, -45]} />
-      <CrateStack position={[28, 0, -35]} />
+      <CrateStack position={[-24, 0, -32]} />
+      <CrateStack position={[8, 0, -25]} />
+      <CrateStack position={[-18, 0, -52]} />
+      <CrateStack position={[30, 0, -40]} />
+      <CrateStack position={[0, 0, -15]} />
 
       <EscapeZone escapePos={escapePos} />
 
-      {/* Industrial orange/sodium lighting */}
       <ambientLight intensity={0.35} color="#ffddaa" />
       <directionalLight position={[25, 30, -10]} intensity={1.2} color="#ffeedd" castShadow
         shadow-mapSize-width={4096} shadow-mapSize-height={4096}
-        shadow-camera-left={-45} shadow-camera-right={45} shadow-camera-top={40} shadow-camera-bottom={-60} shadow-bias={-0.0003} />
+        shadow-camera-left={-50} shadow-camera-right={50} shadow-camera-top={45} shadow-camera-bottom={-70} shadow-bias={-0.0003} />
       
-      {/* Sodium vapor lights */}
-      <Lamppost position={[-20, 0, 0]} />
-      <Lamppost position={[20, 0, 0]} />
-      <Lamppost position={[0, 0, -15]} />
-      <Lamppost position={[-15, 0, -25]} />
-      <Lamppost position={[15, 0, -25]} />
-      <Lamppost position={[0, 0, -35]} />
-      <Lamppost position={[-25, 0, -45]} />
-      <Lamppost position={[25, 0, -45]} />
-      <Lamppost position={[0, 0, 15]} />
-      <Lamppost position={[-30, 0, -15]} />
-      <Lamppost position={[30, 0, -15]} />
+      <Lamppost position={[-22, 0, 2]} />
+      <Lamppost position={[22, 0, 2]} />
+      <Lamppost position={[0, 0, -18]} />
+      <Lamppost position={[-18, 0, -28]} />
+      <Lamppost position={[18, 0, -28]} />
+      <Lamppost position={[0, 0, -40]} />
+      <Lamppost position={[-28, 0, -52]} />
+      <Lamppost position={[28, 0, -52]} />
+      <Lamppost position={[0, 0, 18]} />
+      <Lamppost position={[-33, 0, -18]} />
+      <Lamppost position={[33, 0, -18]} />
       
       <hemisphereLight args={["#ffddaa", "#554433", 0.3]} />
-      <fog attach="fog" args={["#332211", 25, 80]} />
+      <fog attach="fog" args={["#332211", 30, 95]} />
     </group>
   );
 }
 
+// ===== FOREST MAP =====
 function ForestMap({ escapePos }: { escapePos: [number, number, number] }) {
   const mats = getMats();
   return (
     <group>
-      {/* Grass ground */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, -15]} material={mats.grass} receiveShadow>
-        <planeGeometry args={[82, 90]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, -18]} material={mats.grass} receiveShadow>
+        <planeGeometry args={[92, 105]} />
       </mesh>
 
-      {/* Natural boundary - dense trees (no fence) */}
-      <Wall position={[0, 0.6, -60]} size={[82, 1.2, 0.15]} material={mats.fence} />
-      <Wall position={[-40, 0.6, -15]} size={[0.15, 1.2, 90]} material={mats.fence} />
-      <Wall position={[40, 0.6, -15]} size={[0.15, 1.2, 90]} material={mats.fence} />
-      <Wall position={[0, 0.6, 30]} size={[80, 1.2, 0.15]} material={mats.fence} />
+      {/* Natural boundary */}
+      <Wall position={[0, 0.6, -70]} size={[92, 1.2, 0.15]} material={mats.fence} />
+      <Wall position={[-45, 0.6, -18]} size={[0.15, 1.2, 105]} material={mats.fence} />
+      <Wall position={[45, 0.6, -18]} size={[0.15, 1.2, 105]} material={mats.fence} />
+      <Wall position={[0, 0.6, 35]} size={[90, 1.2, 0.15]} material={mats.fence} />
 
-      {/* Rock formations as cover */}
+      {/* Rock formations */}
       <Wall position={[-10, 0.8, -8]} size={[3, 1.6, 2]} material={mats.concrete} />
       <Wall position={[12, 0.8, -12]} size={[2, 1.6, 3]} material={mats.concrete} />
-      <Wall position={[-18, 0.8, -20]} size={[4, 1.6, 1.5]} material={mats.concrete} />
-      <Wall position={[8, 0.8, -25]} size={[1.5, 1.6, 4]} material={mats.concrete} />
-      <Wall position={[-5, 0.8, -35]} size={[3, 1.6, 2]} material={mats.concrete} />
-      <Wall position={[20, 0.8, -18]} size={[2, 1.6, 3]} material={mats.concrete} />
-      <Wall position={[-25, 0.8, -30]} size={[3, 1.6, 2]} material={mats.concrete} />
-      <Wall position={[15, 0.8, -38]} size={[2, 1.6, 4]} material={mats.concrete} />
-      <Wall position={[-12, 0.8, -45]} size={[4, 1.6, 2]} material={mats.concrete} />
-      <Wall position={[25, 0.8, -35]} size={[3, 1.6, 1.5]} material={mats.concrete} />
-      <Wall position={[0, 0.8, -15]} size={[2.5, 1.6, 2.5]} material={mats.concrete} />
-      <Wall position={[-30, 0.8, -10]} size={[3, 1.6, 2]} material={mats.concrete} />
-      <Wall position={[30, 0.8, -8]} size={[2, 1.6, 3]} material={mats.concrete} />
+      <Wall position={[-18, 0.8, -22]} size={[4, 1.6, 1.5]} material={mats.concrete} />
+      <Wall position={[8, 0.8, -28]} size={[1.5, 1.6, 4]} material={mats.concrete} />
+      <Wall position={[-5, 0.8, -38]} size={[3, 1.6, 2]} material={mats.concrete} />
+      <Wall position={[22, 0.8, -20]} size={[2, 1.6, 3]} material={mats.concrete} />
+      <Wall position={[-28, 0.8, -33]} size={[3, 1.6, 2]} material={mats.concrete} />
+      <Wall position={[15, 0.8, -42]} size={[2, 1.6, 4]} material={mats.concrete} />
+      <Wall position={[-14, 0.8, -50]} size={[4, 1.6, 2]} material={mats.concrete} />
+      <Wall position={[28, 0.8, -38]} size={[3, 1.6, 1.5]} material={mats.concrete} />
+      <Wall position={[0, 0.8, -18]} size={[2.5, 1.6, 2.5]} material={mats.concrete} />
+      <Wall position={[-33, 0.8, -12]} size={[3, 1.6, 2]} material={mats.concrete} />
+      <Wall position={[33, 0.8, -10]} size={[2, 1.6, 3]} material={mats.concrete} />
+      <Wall position={[-20, 0.8, -58]} size={[3, 1.6, 2]} material={mats.concrete} />
+      <Wall position={[20, 0.8, -55]} size={[2, 1.6, 3]} material={mats.concrete} />
 
       {/* Log walls */}
-      <Wall position={[-8, 0.6, -18]} size={[5, 1.2, 0.3]} material={mats.crate} />
-      <Wall position={[5, 0.6, -30]} size={[0.3, 1.2, 4]} material={mats.crate} />
-      <Wall position={[-20, 0.6, -38]} size={[4, 1.2, 0.3]} material={mats.crate} />
-      <Wall position={[18, 0.6, -28]} size={[5, 1.2, 0.3]} material={mats.crate} />
+      <Wall position={[-8, 0.6, -20]} size={[5, 1.2, 0.3]} material={mats.crate} />
+      <Wall position={[5, 0.6, -33]} size={[0.3, 1.2, 4]} material={mats.crate} />
+      <Wall position={[-22, 0.6, -42]} size={[4, 1.2, 0.3]} material={mats.crate} />
+      <Wall position={[20, 0.6, -30]} size={[5, 1.2, 0.3]} material={mats.crate} />
 
-      {/* Dense trees everywhere */}
+      {/* Dense trees */}
       <Tree position={[-8, 0, 5]} scale={1.3} />
       <Tree position={[10, 0, 8]} scale={1.1} />
-      <Tree position={[-20, 0, 12]} scale={1.5} />
-      <Tree position={[22, 0, 15]} />
-      <Tree position={[-30, 0, 5]} scale={1.4} />
-      <Tree position={[28, 0, 3]} scale={1.2} />
+      <Tree position={[-22, 0, 14]} scale={1.5} />
+      <Tree position={[24, 0, 18]} />
+      <Tree position={[-32, 0, 8]} scale={1.4} />
+      <Tree position={[30, 0, 5]} scale={1.2} />
       <Tree position={[-15, 0, -5]} />
       <Tree position={[18, 0, -3]} scale={1.3} />
-      <Tree position={[-25, 0, -15]} scale={1.6} />
-      <Tree position={[25, 0, -12]} scale={1.1} />
-      <Tree position={[-5, 0, -22]} scale={1.2} />
-      <Tree position={[15, 0, -20]} scale={1.4} />
-      <Tree position={[-18, 0, -28]} />
-      <Tree position={[22, 0, -30]} scale={1.3} />
-      <Tree position={[-30, 0, -35]} scale={1.5} />
-      <Tree position={[30, 0, -38]} scale={1.1} />
-      <Tree position={[-12, 0, -40]} />
-      <Tree position={[10, 0, -42]} scale={1.4} />
-      <Tree position={[0, 0, -50]} scale={1.6} />
-      <Tree position={[-35, 0, 20]} scale={1.7} />
-      <Tree position={[35, 0, 18]} scale={1.3} />
-      <Tree position={[-8, 0, 20]} scale={1.0} />
-      <Tree position={[12, 0, 22]} scale={1.2} />
-      <Tree position={[-22, 0, -50]} scale={1.5} />
-      <Tree position={[20, 0, -50]} scale={1.3} />
+      <Tree position={[-28, 0, -18]} scale={1.6} />
+      <Tree position={[28, 0, -15]} scale={1.1} />
+      <Tree position={[-5, 0, -25]} scale={1.2} />
+      <Tree position={[15, 0, -22]} scale={1.4} />
+      <Tree position={[-20, 0, -30]} />
+      <Tree position={[24, 0, -33]} scale={1.3} />
+      <Tree position={[-33, 0, -40]} scale={1.5} />
+      <Tree position={[33, 0, -42]} scale={1.1} />
+      <Tree position={[-14, 0, -45]} />
+      <Tree position={[10, 0, -48]} scale={1.4} />
+      <Tree position={[0, 0, -55]} scale={1.6} />
+      <Tree position={[-38, 0, 22]} scale={1.7} />
+      <Tree position={[38, 0, 20]} scale={1.3} />
+      <Tree position={[-8, 0, 22]} scale={1.0} />
+      <Tree position={[12, 0, 25]} scale={1.2} />
+      <Tree position={[-25, 0, -55]} scale={1.5} />
+      <Tree position={[22, 0, -58]} scale={1.3} />
+      <Tree position={[-38, 0, -55]} scale={1.4} />
+      <Tree position={[38, 0, -55]} scale={1.2} />
       {/* Border trees */}
-      {Array.from({ length: 20 }).map((_, i) => (
+      {Array.from({ length: 24 }).map((_, i) => (
         <Tree key={`bt-${i}`} position={[
-          i < 10 ? -38 + Math.random() * 4 : 36 + Math.random() * 4,
+          i < 12 ? -42 + Math.random() * 4 : 40 + Math.random() * 4,
           0,
-          -55 + (i % 10) * 9 + Math.random() * 3
+          -65 + (i % 12) * 8 + Math.random() * 3
         ]} scale={1.2 + Math.random() * 0.6} />
       ))}
 
       {/* Rocks */}
       <Rock position={[-6, 0, -10]} scale={1.5} />
       <Rock position={[8, 0, -8]} scale={1.2} />
-      <Rock position={[-15, 0, -22]} scale={1.8} />
-      <Rock position={[12, 0, -25]} />
-      <Rock position={[-22, 0, -35]} scale={1.3} />
-      <Rock position={[18, 0, -40]} scale={1.5} />
-      <Rock position={[0, 0, -10]} scale={0.8} />
-      <Rock position={[-28, 0, -5]} scale={1.4} />
-      <Rock position={[32, 0, -20]} scale={1.1} />
+      <Rock position={[-15, 0, -25]} scale={1.8} />
+      <Rock position={[12, 0, -28]} />
+      <Rock position={[-24, 0, -38]} scale={1.3} />
+      <Rock position={[20, 0, -45]} scale={1.5} />
+      <Rock position={[0, 0, -12]} scale={0.8} />
+      <Rock position={[-30, 0, -8]} scale={1.4} />
+      <Rock position={[35, 0, -22]} scale={1.1} />
 
       {/* Campsite */}
       <Campfire position={[0, 0, 5]} />
       <Tent position={[-4, 0, 8]} rotation={0.3} />
-      <Tent position={[3, 0, 9]} rotation={-0.5} />
+      <Tent position={[3, 0, 10]} rotation={-0.5} />
       <Barrel position={[2, 0, 4]} />
       <Barrel position={[-2, 0, 3]} />
       <CrateStack position={[5, 0, 5]} />
 
-      {/* More campfires for light */}
-      <Campfire position={[-20, 0, -10]} />
-      <Campfire position={[15, 0, -15]} />
-      <Campfire position={[0, 0, -30]} />
+      <Campfire position={[-22, 0, -12]} />
+      <Campfire position={[18, 0, -18]} />
+      <Campfire position={[0, 0, -35]} />
+      <Campfire position={[-15, 0, -55]} />
 
       <EscapeZone escapePos={escapePos} />
 
-      {/* Natural lighting — warm golden hour */}
       <ambientLight intensity={0.4} color="#eeddcc" />
       <directionalLight position={[35, 25, 10]} intensity={1.3} color="#ffe8c0" castShadow
         shadow-mapSize-width={4096} shadow-mapSize-height={4096}
-        shadow-camera-left={-50} shadow-camera-right={50} shadow-camera-top={45} shadow-camera-bottom={-65} shadow-bias={-0.0003} />
+        shadow-camera-left={-55} shadow-camera-right={55} shadow-camera-top={50} shadow-camera-bottom={-75} shadow-bias={-0.0003} />
       <directionalLight position={[-20, 15, -10]} intensity={0.3} color="#aaddff" />
-      
       <hemisphereLight args={["#87CEEB", "#2a5420", 0.5]} />
-      <fog attach="fog" args={["#aabbaa", 15, 70]} />
+      <fog attach="fog" args={["#aabbaa", 18, 80]} />
+    </group>
+  );
+}
+
+// ===== ARCTIC MAP =====
+function ArcticMap({ escapePos }: { escapePos: [number, number, number] }) {
+  const mats = getMats();
+  return (
+    <group>
+      {/* Snow ground */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, -18]} receiveShadow>
+        <planeGeometry args={[82, 94]} />
+        <meshStandardMaterial color="#dde8f0" roughness={0.3} />
+      </mesh>
+
+      {/* Ice wall perimeter */}
+      <Wall position={[0, 1.5, -65]} size={[82, 3, 0.3]} material={mats.concrete} />
+      <Wall position={[-40, 1.5, -18]} size={[0.3, 3, 94]} material={mats.concrete} />
+      <Wall position={[40, 1.5, -18]} size={[0.3, 3, 94]} material={mats.concrete} />
+      <Wall position={[0, 1.5, 30]} size={[80, 3, 0.3]} material={mats.concrete} />
+
+      {/* Ice walls for cover */}
+      <Wall position={[-10, 1, -10]} size={[4, 2, 0.4]} material={mats.concrete} />
+      <Wall position={[12, 1, -15]} size={[0.4, 2, 5]} material={mats.concrete} />
+      <Wall position={[-18, 1, -25]} size={[5, 2, 0.4]} material={mats.concrete} />
+      <Wall position={[8, 1, -20]} size={[4, 2, 0.4]} material={mats.concrete} />
+      <Wall position={[-5, 1, -35]} size={[0.4, 2, 4]} material={mats.concrete} />
+      <Wall position={[20, 1, -30]} size={[4, 2, 0.4]} material={mats.concrete} />
+      <Wall position={[-25, 1, -40]} size={[3, 2, 0.4]} material={mats.concrete} />
+      <Wall position={[15, 1, -45]} size={[0.4, 2, 5]} material={mats.concrete} />
+      <Wall position={[-12, 1, -50]} size={[5, 2, 0.4]} material={mats.concrete} />
+      <Wall position={[25, 1, -15]} size={[0.4, 2, 4]} material={mats.concrete} />
+      <Wall position={[-30, 1, -20]} size={[4, 2, 0.4]} material={mats.concrete} />
+      <Wall position={[0, 1, -28]} size={[3, 2, 3]} material={mats.concrete} />
+      <Wall position={[30, 1, -40]} size={[0.4, 2, 5]} material={mats.concrete} />
+      <Wall position={[-20, 1, -55]} size={[4, 2, 0.4]} material={mats.concrete} />
+
+      {/* Igloos */}
+      <Igloo position={[-15, 0, 10]} />
+      <Igloo position={[18, 0, 15]} />
+      <Igloo position={[-25, 0, -8]} />
+      <Igloo position={[5, 0, -5]} />
+
+      {/* Snow trees */}
+      <SnowTree position={[-8, 0, 5]} scale={1.2} />
+      <SnowTree position={[10, 0, 8]} scale={1.0} />
+      <SnowTree position={[-22, 0, 18]} scale={1.4} />
+      <SnowTree position={[25, 0, 20]} scale={1.1} />
+      <SnowTree position={[-30, 0, -12]} scale={1.3} />
+      <SnowTree position={[30, 0, -10]} />
+      <SnowTree position={[-15, 0, -20]} scale={1.5} />
+      <SnowTree position={[18, 0, -25]} scale={1.2} />
+      <SnowTree position={[-8, 0, -35]} scale={1.1} />
+      <SnowTree position={[12, 0, -38]} scale={1.4} />
+      <SnowTree position={[-25, 0, -45]} scale={1.6} />
+      <SnowTree position={[25, 0, -48]} scale={1.2} />
+      <SnowTree position={[0, 0, -55]} scale={1.3} />
+      <SnowTree position={[-35, 0, -30]} scale={1.5} />
+      <SnowTree position={[35, 0, -35]} scale={1.1} />
+      {/* Border */}
+      {Array.from({ length: 20 }).map((_, i) => (
+        <SnowTree key={`sbt-${i}`} position={[
+          i < 10 ? -38 + Math.random() * 3 : 37 + Math.random() * 3,
+          0,
+          -60 + (i % 10) * 9 + Math.random() * 3
+        ]} scale={1.2 + Math.random() * 0.5} />
+      ))}
+
+      {/* Snowdrifts */}
+      <Snowdrift position={[-5, 0, 0]} scale={1.5} />
+      <Snowdrift position={[8, 0, -12]} scale={1.2} />
+      <Snowdrift position={[-20, 0, -30]} scale={1.8} />
+      <Snowdrift position={[15, 0, -20]} scale={1.0} />
+      <Snowdrift position={[-10, 0, -42]} scale={1.4} />
+      <Snowdrift position={[22, 0, -50]} scale={1.3} />
+      <Snowdrift position={[0, 0, 15]} scale={2.0} />
+      <Snowdrift position={[-30, 0, -50]} scale={1.6} />
+
+      {/* Ice rocks */}
+      <IceRock position={[-12, 0, -5]} scale={1.5} />
+      <IceRock position={[15, 0, -8]} scale={1.2} />
+      <IceRock position={[-22, 0, -35]} scale={1.8} />
+      <IceRock position={[10, 0, -30]} scale={1.0} />
+      <IceRock position={[-8, 0, -48]} scale={1.4} />
+      <IceRock position={[28, 0, -22]} scale={1.1} />
+
+      {/* Crates */}
+      <CrateStack position={[-6, 0, 12]} />
+      <CrateStack position={[12, 0, -18]} />
+      <CrateStack position={[-18, 0, -38]} />
+      <CrateStack position={[22, 0, -42]} />
+      <CrateStack position={[0, 0, -48]} />
+
+      <EscapeZone escapePos={escapePos} />
+
+      {/* Cold blue-white lighting */}
+      <ambientLight intensity={0.6} color="#dde8ff" />
+      <directionalLight position={[30, 30, -15]} intensity={1.4} color="#eef4ff" castShadow
+        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
+        shadow-camera-left={-50} shadow-camera-right={50} shadow-camera-top={45} shadow-camera-bottom={-70} shadow-bias={-0.0003} />
+      <directionalLight position={[-20, 15, 15]} intensity={0.4} color="#ccddff" />
+      <hemisphereLight args={["#aabbdd", "#667788", 0.5]} />
+      <fog attach="fog" args={["#c0d0e0", 25, 90]} />
+    </group>
+  );
+}
+
+// ===== UNDERGROUND MAP =====
+function UndergroundMap({ escapePos }: { escapePos: [number, number, number] }) {
+  const mats = getMats();
+  return (
+    <group>
+      {/* Concrete floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, -18]} material={mats.concrete} receiveShadow>
+        <planeGeometry args={[72, 84]} />
+      </mesh>
+      {/* Ceiling */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 4, -18]} receiveShadow>
+        <planeGeometry args={[72, 84]} />
+        <meshStandardMaterial color="#2a2a2a" roughness={0.95} />
+      </mesh>
+
+      {/* Perimeter walls (bunker walls) */}
+      <Wall position={[0, 2, -60]} size={[72, 4, 0.5]} material={mats.concrete} />
+      <Wall position={[-35, 2, -18]} size={[0.5, 4, 84]} material={mats.concrete} />
+      <Wall position={[35, 2, -18]} size={[0.5, 4, 84]} material={mats.concrete} />
+      <Wall position={[0, 2, 25]} size={[70, 4, 0.5]} material={mats.concrete} />
+
+      {/* Tunnel corridors — walls creating passages */}
+      <Wall position={[-15, 2, 10]} size={[0.4, 4, 12]} material={mats.brick} />
+      <Wall position={[-15, 2, -10]} size={[0.4, 4, 12]} material={mats.brick} />
+      <Wall position={[15, 2, 8]} size={[0.4, 4, 10]} material={mats.brick} />
+      <Wall position={[15, 2, -12]} size={[0.4, 4, 14]} material={mats.brick} />
+      
+      {/* Cross corridors */}
+      <Wall position={[-8, 2, -4]} size={[14, 4, 0.4]} material={mats.brick} />
+      <Wall position={[8, 2, -5]} size={[14, 4, 0.4]} material={mats.brick} />
+      <Wall position={[0, 2, -20]} size={[30, 4, 0.4]} material={mats.brick} />
+      <Wall position={[-10, 2, -30]} size={[0.4, 4, 8]} material={mats.brick} />
+      <Wall position={[10, 2, -32]} size={[0.4, 4, 10]} material={mats.brick} />
+      <Wall position={[0, 2, -38]} size={[20, 4, 0.4]} material={mats.brick} />
+      <Wall position={[-20, 2, -42]} size={[0.4, 4, 8]} material={mats.brick} />
+      <Wall position={[20, 2, -44]} size={[0.4, 4, 10]} material={mats.brick} />
+      <Wall position={[0, 2, -50]} size={[40, 4, 0.4]} material={mats.brick} />
+
+      {/* Room dividers */}
+      <Wall position={[-25, 2, 0]} size={[8, 4, 0.3]} material={mats.concrete} />
+      <Wall position={[25, 2, -2]} size={[8, 4, 0.3]} material={mats.concrete} />
+      <Wall position={[-25, 2, -25]} size={[0.3, 4, 6]} material={mats.concrete} />
+      <Wall position={[25, 2, -28]} size={[0.3, 4, 8]} material={mats.concrete} />
+
+      {/* Vent ducts — key feature */}
+      <VentDuct position={[-5, 0, 15]} rotation={0} length={8} />
+      <VentDuct position={[20, 0, 0]} rotation={Math.PI / 2} length={6} />
+      <VentDuct position={[-20, 0, -15]} rotation={0} length={5} />
+      <VentDuct position={[5, 0, -25]} rotation={Math.PI / 2} length={4} />
+      <VentDuct position={[-25, 0, -35]} rotation={0.3} length={6} />
+      <VentDuct position={[15, 0, -45]} rotation={-0.2} length={5} />
+      <VentDuct position={[0, 0, -52]} rotation={Math.PI / 4} length={4} />
+      <VentDuct position={[-12, 0, -48]} rotation={0} length={3} />
+
+      {/* Overhead pipes */}
+      <Pipe position={[-8, 3, -10]} length={12} />
+      <Pipe position={[8, 3, -20]} length={10} />
+      <Pipe position={[-20, 3, -35]} length={8} />
+      <Pipe position={[12, 3, -42]} length={6} />
+      <Pipe position={[0, 3, 5]} length={15} />
+
+      {/* Barrels & crates */}
+      <Barrel position={[-3, 0, 8]} />
+      <Barrel position={[7, 0, -3]} />
+      <Barrel position={[-22, 0, -8]} />
+      <Barrel position={[22, 0, -10]} />
+      <Barrel position={[-8, 0, -25]} />
+      <Barrel position={[5, 0, -35]} />
+      <Barrel position={[-28, 0, -45]} />
+      <Barrel position={[28, 0, -48]} />
+      <CrateStack position={[-12, 0, 5]} />
+      <CrateStack position={[12, 0, 3]} />
+      <CrateStack position={[-18, 0, -22]} />
+      <CrateStack position={[18, 0, -25]} />
+      <CrateStack position={[-5, 0, -42]} />
+      <CrateStack position={[8, 0, -50]} />
+      <CrateStack position={[-28, 0, 15]} />
+      <CrateStack position={[28, 0, 12]} />
+
+      <EscapeZone escapePos={escapePos} />
+
+      {/* Dim underground lighting — lots of point lights */}
+      <ambientLight intensity={0.15} color="#aabbcc" />
+      <directionalLight position={[0, 10, -20]} intensity={0.3} color="#ddeeff" castShadow
+        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
+        shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={35} shadow-camera-bottom={-65} shadow-bias={-0.0003} />
+      
+      {/* Fluorescent ceiling lights */}
+      <pointLight position={[0, 3.5, 10]} color="#ccddff" intensity={4} distance={15} decay={2} castShadow />
+      <pointLight position={[-20, 3.5, 5]} color="#ccddff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[20, 3.5, 5]} color="#ccddff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[0, 3.5, -5]} color="#ccddff" intensity={4} distance={15} decay={2} castShadow />
+      <pointLight position={[-15, 3.5, -15]} color="#ccddff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[15, 3.5, -15]} color="#ccddff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[0, 3.5, -25]} color="#ccddff" intensity={4} distance={15} decay={2} castShadow />
+      <pointLight position={[-20, 3.5, -30]} color="#aaccee" intensity={2.5} distance={10} decay={2} />
+      <pointLight position={[20, 3.5, -30]} color="#aaccee" intensity={2.5} distance={10} decay={2} />
+      <pointLight position={[0, 3.5, -40]} color="#ccddff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[-15, 3.5, -48]} color="#aaccee" intensity={2.5} distance={10} decay={2} />
+      <pointLight position={[15, 3.5, -48]} color="#aaccee" intensity={2.5} distance={10} decay={2} />
+      <pointLight position={[0, 3.5, -55]} color="#ccddff" intensity={3} distance={12} decay={2} />
+      
+      {/* Emergency red lights */}
+      <pointLight position={[-30, 2, -5]} color="#ff2200" intensity={1.5} distance={8} decay={2} />
+      <pointLight position={[30, 2, -8]} color="#ff2200" intensity={1.5} distance={8} decay={2} />
+      <pointLight position={[-30, 2, -40]} color="#ff2200" intensity={1.5} distance={8} decay={2} />
+      <pointLight position={[30, 2, -42]} color="#ff2200" intensity={1.5} distance={8} decay={2} />
+
+      <hemisphereLight args={["#556677", "#222233", 0.2]} />
+      <fog attach="fog" args={["#1a1a22", 10, 55]} />
     </group>
   );
 }
@@ -600,7 +933,6 @@ export default function House() {
   const map = selectedMap || "suburban";
   const escapePos = ESCAPE_POSITIONS[map];
 
-  // Clear colliders when map changes
   useMemo(() => {
     wallColliders.length = 0;
     registeredColliders.clear();
@@ -611,6 +943,8 @@ export default function House() {
       {map === "suburban" && <SuburbanMap escapePos={escapePos} />}
       {map === "industrial" && <IndustrialMap escapePos={escapePos} />}
       {map === "forest" && <ForestMap escapePos={escapePos} />}
+      {map === "arctic" && <ArcticMap escapePos={escapePos} />}
+      {map === "underground" && <UndergroundMap escapePos={escapePos} />}
     </>
   );
 }

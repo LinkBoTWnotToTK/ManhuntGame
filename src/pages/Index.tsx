@@ -41,7 +41,7 @@ const Index = () => (
       <GameUI />
       <Canvas
         shadows
-        camera={{ fov: 70, near: 0.1, far: 120 }}
+        camera={{ fov: 55, near: 0.1, far: 150 }}
         gl={{ antialias: true, toneMapping: 3, toneMappingExposure: 1.4 }}
         dpr={[1, 1.5]}
       >

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useGame, Role, GameMap } from "./GameState";
 
 function formatTime(secs: number) {
@@ -11,7 +11,7 @@ const MAP_INFO: Record<GameMap, { name: string; emoji: string; desc: string; col
   suburban: {
     name: "SUBURBAN",
     emoji: "🏡",
-    desc: "House + garden with trees, fences & lampposts",
+    desc: "House & garden with trees, fences & lampposts",
     color: "bg-emerald-950/50 hover:bg-emerald-900/60",
     borderColor: "border-emerald-500/20 hover:border-emerald-500/50",
   },
@@ -25,19 +25,37 @@ const MAP_INFO: Record<GameMap, { name: string; emoji: string; desc: string; col
   forest: {
     name: "FOREST",
     emoji: "🌲",
-    desc: "Woodland clearing with trees, rocks & a campsite",
+    desc: "Woodland clearing with trees, rocks & campfires",
     color: "bg-teal-950/50 hover:bg-teal-900/60",
     borderColor: "border-teal-500/20 hover:border-teal-500/50",
+  },
+  arctic: {
+    name: "ARCTIC",
+    emoji: "❄️",
+    desc: "Frozen tundra with igloos, ice walls & snowdrifts",
+    color: "bg-cyan-950/50 hover:bg-cyan-900/60",
+    borderColor: "border-cyan-500/20 hover:border-cyan-500/50",
+  },
+  underground: {
+    name: "UNDERGROUND",
+    emoji: "🕳️",
+    desc: "Bunker tunnels with vents, pipes & dim lighting",
+    color: "bg-purple-950/50 hover:bg-purple-900/60",
+    borderColor: "border-purple-500/20 hover:border-purple-500/50",
   },
 };
 
 export default function GameUI() {
-  const [isLocked, setIsLocked] = useState(false);
   const {
     role, selectedMap, score, totalNPCs, elapsedTime, timeLeft, gameOver, gameResult,
     isPlaying, escapeOpen, stamina, maxStamina, playerHealth, playerAmmo,
     selectRole, selectMap, startGame, resetGame,
   } = useGame();
+
+  // Menu animation states
+  const [menuStep, setMenuStep] = useState<"role" | "map" | "ready">("role");
+  const [transitioning, setTransitioning] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
     const onChange = () => setIsLocked(!!document.pointerLockElement);
@@ -45,18 +63,54 @@ export default function GameUI() {
     return () => document.removeEventListener("pointerlockchange", onChange);
   }, []);
 
+  // Auto-start game when pointer locks AND we're on "ready" step
   useEffect(() => {
-    if (isLocked && !isPlaying && !gameOver && role && selectedMap) startGame();
-  }, [isLocked, isPlaying, gameOver, role, selectedMap, startGame]);
+    if (isLocked && !isPlaying && !gameOver && role && selectedMap && menuStep === "ready") {
+      startGame();
+    }
+  }, [isLocked, isPlaying, gameOver, role, selectedMap, menuStep, startGame]);
+
+  // Reset menu step when game resets
+  useEffect(() => {
+    if (!role && !selectedMap) setMenuStep("role");
+  }, [role, selectedMap]);
+
+  const handleSelectRole = (r: Role) => {
+    setTransitioning(true);
+    selectRole(r);
+    setTimeout(() => {
+      setMenuStep("map");
+      setTransitioning(false);
+    }, 300);
+  };
+
+  const handleSelectMap = (m: GameMap) => {
+    setTransitioning(true);
+    selectMap(m);
+    setTimeout(() => {
+      setMenuStep("ready");
+      setTransitioning(false);
+    }, 300);
+  };
+
+  const handleBack = () => {
+    setTransitioning(true);
+    if (menuStep === "map") {
+      selectRole(null as unknown as Role);
+      setTimeout(() => { setMenuStep("role"); setTransitioning(false); }, 300);
+    } else if (menuStep === "ready") {
+      selectMap(null as unknown as GameMap);
+      setTimeout(() => { setMenuStep("map"); setTransitioning(false); }, 300);
+    }
+  };
 
   const staminaPct = (stamina / maxStamina) * 100;
   const staminaColor = staminaPct > 50 ? "#00cc66" : staminaPct > 20 ? "#ffaa00" : "#ff3333";
-
-  // Determine selection step
-  const selectionStep = !role ? "role" : !selectedMap ? "map" : "ready";
+  const showMenu = !isPlaying && !gameOver;
 
   return (
     <>
+      {/* === IN-GAME HUD === */}
       {isLocked && isPlaying && (
         <>
           {/* Crosshair */}
@@ -99,18 +153,20 @@ export default function GameUI() {
             </div>
           </div>
 
-          {/* Ammo */}
-          <div className="fixed top-4 right-4 z-50 pointer-events-none">
-            <div className="bg-black/70 backdrop-blur-md rounded-xl px-5 py-3 border border-white/10 shadow-2xl">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🪃</span>
-                <div>
-                  <div className="text-white font-bold text-xl tabular-nums">{playerAmmo}</div>
-                  <div className="text-white/40 text-[10px] uppercase tracking-[0.2em]">Slingshot</div>
+          {/* Ammo (runners only) */}
+          {role === "runner" && (
+            <div className="fixed top-4 right-4 z-50 pointer-events-none">
+              <div className="bg-black/70 backdrop-blur-md rounded-xl px-5 py-3 border border-white/10 shadow-2xl">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🪃</span>
+                  <div>
+                    <div className="text-white font-bold text-xl tabular-nums">{playerAmmo}</div>
+                    <div className="text-white/40 text-[10px] uppercase tracking-[0.2em]">Slingshot</div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Timer */}
           <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
@@ -172,7 +228,7 @@ export default function GameUI() {
         </>
       )}
 
-      {/* Game over */}
+      {/* === GAME OVER === */}
       {gameOver && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-lg">
           <div className="text-center space-y-6 animate-scale-in">
@@ -195,74 +251,95 @@ export default function GameUI() {
         </div>
       )}
 
-      {/* Selection screens */}
-      {!isLocked && !gameOver && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/90 backdrop-blur-sm">
-          <div className="text-center space-y-8 animate-fade-in max-w-2xl">
-            <h1 className="text-6xl font-black text-white tracking-tight">HIDE & SEEK</h1>
-            <p className="text-sm text-white/30 uppercase tracking-[0.3em]">Third Person Combat</p>
+      {/* === MAIN MENU (single smooth flow) === */}
+      {showMenu && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-b from-black via-black/95 to-black/90 backdrop-blur-sm">
+          <div className={`text-center max-w-3xl transition-all duration-300 ${transitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}>
+            {/* Title */}
+            <div className="mb-8 animate-fade-in">
+              <h1 className="text-7xl font-black text-white tracking-tight mb-2"
+                style={{ textShadow: "0 0 40px rgba(255,255,255,0.15)" }}>
+                HIDE & SEEK
+              </h1>
+              <p className="text-sm text-white/30 uppercase tracking-[0.4em]">Third Person Combat</p>
+              {/* Step indicator */}
+              <div className="flex items-center justify-center gap-2 mt-4">
+                {["role", "map", "ready"].map((s, i) => (
+                  <div key={s} className={`h-1 rounded-full transition-all duration-500 ${
+                    menuStep === s ? "w-8 bg-white" : i < ["role", "map", "ready"].indexOf(menuStep) ? "w-4 bg-white/40" : "w-4 bg-white/10"
+                  }`} />
+                ))}
+              </div>
+            </div>
 
-            {selectionStep === "role" && (
-              <>
-                <p className="text-lg text-white/60">Choose your role</p>
+            {/* Step: Role */}
+            {menuStep === "role" && (
+              <div className="animate-fade-in space-y-6">
+                <p className="text-lg text-white/60 font-medium">Choose your role</p>
                 <div className="flex gap-5 justify-center">
-                  <button onClick={() => selectRole("hunter")}
-                    className="group px-8 py-7 bg-red-950/50 hover:bg-red-900/60 text-white rounded-2xl border border-red-500/20 hover:border-red-500/50 transition-all hover:scale-105 active:scale-95 space-y-3 w-48">
-                    <div className="text-5xl">🏹</div>
+                  <button onClick={() => handleSelectRole("hunter")}
+                    className="group px-8 py-7 bg-red-950/50 hover:bg-red-900/60 text-white rounded-2xl border border-red-500/20 hover:border-red-500/50 transition-all duration-200 hover:scale-105 active:scale-95 space-y-3 w-52">
+                    <div className="text-5xl group-hover:scale-110 transition-transform">🏹</div>
                     <div className="text-xl font-black">HUNTER</div>
-                    <div className="text-xs text-white/40 leading-relaxed">Eliminate 7 runners<br />with tag or slingshot</div>
+                    <div className="text-xs text-white/40 leading-relaxed">Tag & eliminate runners<br />Melee only — no slingshot</div>
                     <div className="text-[10px] text-red-400/50 uppercase tracking-wider">+ 1 Ally Hunter</div>
                   </button>
-                  <button onClick={() => selectRole("runner")}
-                    className="group px-8 py-7 bg-blue-950/50 hover:bg-blue-900/60 text-white rounded-2xl border border-blue-500/20 hover:border-blue-500/50 transition-all hover:scale-105 active:scale-95 space-y-3 w-48">
-                    <div className="text-5xl">🏃</div>
+                  <button onClick={() => handleSelectRole("runner")}
+                    className="group px-8 py-7 bg-blue-950/50 hover:bg-blue-900/60 text-white rounded-2xl border border-blue-500/20 hover:border-blue-500/50 transition-all duration-200 hover:scale-105 active:scale-95 space-y-3 w-52">
+                    <div className="text-5xl group-hover:scale-110 transition-transform">🏃</div>
                     <div className="text-xl font-black">RUNNER</div>
-                    <div className="text-xs text-white/40 leading-relaxed">Survive 1 minute<br />then reach the portal</div>
-                    <div className="text-[10px] text-blue-400/50 uppercase tracking-wider">Fight Back!</div>
+                    <div className="text-xs text-white/40 leading-relaxed">Survive & reach the portal<br />Slingshot with 3 ammo</div>
+                    <div className="text-[10px] text-blue-400/50 uppercase tracking-wider">Ammo spawns every 10s</div>
                   </button>
                 </div>
-              </>
+              </div>
             )}
 
-            {selectionStep === "map" && (
-              <>
-                <p className="text-lg text-white/60">Choose your arena</p>
-                <div className="flex gap-4 justify-center flex-wrap">
-                  {(["suburban", "industrial", "forest"] as GameMap[]).map((m) => {
+            {/* Step: Map */}
+            {menuStep === "map" && (
+              <div className="animate-fade-in space-y-6">
+                <p className="text-lg text-white/60 font-medium">Choose your arena</p>
+                <div className="flex gap-3 justify-center flex-wrap">
+                  {(Object.keys(MAP_INFO) as GameMap[]).map((m) => {
                     const info = MAP_INFO[m];
                     return (
-                      <button key={m} onClick={() => selectMap(m)}
-                        className={`group px-6 py-6 ${info.color} text-white rounded-2xl border ${info.borderColor} transition-all hover:scale-105 active:scale-95 space-y-3 w-44`}>
-                        <div className="text-5xl">{info.emoji}</div>
-                        <div className="text-lg font-black">{info.name}</div>
-                        <div className="text-xs text-white/40 leading-relaxed">{info.desc}</div>
+                      <button key={m} onClick={() => handleSelectMap(m)}
+                        className={`group px-5 py-5 ${info.color} text-white rounded-2xl border ${info.borderColor} transition-all duration-200 hover:scale-105 active:scale-95 space-y-2 w-36`}>
+                        <div className="text-4xl group-hover:scale-110 transition-transform">{info.emoji}</div>
+                        <div className="text-sm font-black">{info.name}</div>
+                        <div className="text-[10px] text-white/40 leading-relaxed">{info.desc}</div>
                       </button>
                     );
                   })}
                 </div>
-                <button onClick={() => selectRole(null as unknown as Role)}
-                  className="text-white/20 text-xs hover:text-white/50 underline transition-colors">← Change role</button>
-              </>
+                <button onClick={handleBack}
+                  className="text-white/20 text-xs hover:text-white/50 underline transition-colors mt-2">← Change role</button>
+              </div>
             )}
 
-            {selectionStep === "ready" && (
-              <div className="space-y-5 cursor-pointer" onClick={() => document.body.requestPointerLock()}>
-                <div className="bg-white/5 rounded-2xl p-5 border border-white/10 max-w-sm mx-auto">
-                  <p className="text-white/70 leading-relaxed">
+            {/* Step: Ready */}
+            {menuStep === "ready" && (
+              <div className="animate-fade-in space-y-5">
+                <div className="bg-white/5 rounded-2xl p-5 border border-white/10 max-w-md mx-auto">
+                  <p className="text-white/70 leading-relaxed text-sm">
                     {role === "hunter"
-                      ? "Hunt all 7 runners! Tag them up close or shoot with your slingshot (5 ammo). Your ally hunter helps the chase. Medkits spawn every 30s."
-                      : "Evade 3 hunters for 60 seconds, then reach the portal! Shoot back with your slingshot (5 ammo). Being tagged = instant KO!"}
+                      ? "Hunt all 7 runners! Tag them up close for instant elimination. Your ally hunter helps the chase. Medkits spawn every 30s."
+                      : "Evade 3 hunters for 60 seconds, then reach the portal! Shoot back with your slingshot (3 ammo, more spawns every 10s). Being tagged = instant KO!"}
                   </p>
                 </div>
-                <p className="text-white/90 text-lg font-bold">Click to start</p>
+                <div className="cursor-pointer group" onClick={() => document.body.requestPointerLock()}>
+                  <p className="text-white/90 text-xl font-bold group-hover:text-white transition-colors">
+                    🎮 Click to Start
+                  </p>
+                </div>
                 <div className="flex gap-4 justify-center text-white/40 text-xs flex-wrap">
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">WASD</kbd> Move</span>
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">Shift</kbd> Sprint</span>
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">Mouse</kbd> Look</span>
-                  <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">LMB</kbd> Shoot</span>
+                  {role === "runner" && <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">LMB</kbd> Shoot</span>}
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); selectMap(null as unknown as GameMap); }}
-                  className="text-white/20 text-xs hover:text-white/50 underline mt-4 transition-colors">← Change map</button>
+                <button onClick={handleBack}
+                  className="text-white/20 text-xs hover:text-white/50 underline mt-3 transition-colors">← Change map</button>
               </div>
             )}
           </div>
