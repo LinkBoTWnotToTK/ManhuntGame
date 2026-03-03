@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useGame, Role, GameMap } from "./GameState";
+import Shop from "./Shop";
 
 function formatTime(secs: number) {
   const mins = Math.floor(secs / 60);
@@ -9,36 +10,31 @@ function formatTime(secs: number) {
 
 const MAP_INFO: Record<GameMap, { name: string; emoji: string; desc: string; color: string; borderColor: string }> = {
   suburban: {
-    name: "SUBURBAN",
-    emoji: "🏡",
+    name: "SUBURBAN", emoji: "🏡",
     desc: "House & garden with trees, fences & lampposts",
     color: "bg-emerald-950/50 hover:bg-emerald-900/60",
     borderColor: "border-emerald-500/20 hover:border-emerald-500/50",
   },
   industrial: {
-    name: "INDUSTRIAL",
-    emoji: "🏭",
+    name: "INDUSTRIAL", emoji: "🏭",
     desc: "Warehouse yard with containers, pipes & machinery",
     color: "bg-orange-950/50 hover:bg-orange-900/60",
     borderColor: "border-orange-500/20 hover:border-orange-500/50",
   },
   forest: {
-    name: "FOREST",
-    emoji: "🌲",
+    name: "FOREST", emoji: "🌲",
     desc: "Woodland clearing with trees, rocks & campfires",
     color: "bg-teal-950/50 hover:bg-teal-900/60",
     borderColor: "border-teal-500/20 hover:border-teal-500/50",
   },
   arctic: {
-    name: "ARCTIC",
-    emoji: "❄️",
+    name: "ARCTIC", emoji: "❄️",
     desc: "Frozen tundra with igloos, ice walls & snowdrifts",
     color: "bg-cyan-950/50 hover:bg-cyan-900/60",
     borderColor: "border-cyan-500/20 hover:border-cyan-500/50",
   },
   underground: {
-    name: "UNDERGROUND",
-    emoji: "🕳️",
+    name: "UNDERGROUND", emoji: "🕳️",
     desc: "Bunker tunnels with vents, pipes & dim lighting",
     color: "bg-purple-950/50 hover:bg-purple-900/60",
     borderColor: "border-purple-500/20 hover:border-purple-500/50",
@@ -48,12 +44,12 @@ const MAP_INFO: Record<GameMap, { name: string; emoji: string; desc: string; col
 export default function GameUI() {
   const {
     role, selectedMap, score, totalNPCs, elapsedTime, timeLeft, gameOver, gameResult,
-    isPlaying, escapeOpen, stamina, maxStamina, playerHealth, playerAmmo,
+    isPlaying, escapeOpen, stamina, maxStamina, playerHealth, playerAmmo, maxHealth,
+    coins, matchCoins,
     selectRole, selectMap, startGame, resetGame,
   } = useGame();
 
-  // Menu animation states
-  const [menuStep, setMenuStep] = useState<"role" | "map" | "ready">("role");
+  const [menuStep, setMenuStep] = useState<"role" | "shop" | "map" | "ready">("role");
   const [transitioning, setTransitioning] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
 
@@ -63,14 +59,12 @@ export default function GameUI() {
     return () => document.removeEventListener("pointerlockchange", onChange);
   }, []);
 
-  // Auto-start game when pointer locks AND we're on "ready" step
   useEffect(() => {
     if (isLocked && !isPlaying && !gameOver && role && selectedMap && menuStep === "ready") {
       startGame();
     }
   }, [isLocked, isPlaying, gameOver, role, selectedMap, menuStep, startGame]);
 
-  // Reset menu step when game resets
   useEffect(() => {
     if (!role && !selectedMap) setMenuStep("role");
   }, [role, selectedMap]);
@@ -78,24 +72,20 @@ export default function GameUI() {
   const handleSelectRole = (r: Role) => {
     setTransitioning(true);
     selectRole(r);
-    setTimeout(() => {
-      setMenuStep("map");
-      setTransitioning(false);
-    }, 300);
+    setTimeout(() => { setMenuStep("map"); setTransitioning(false); }, 300);
   };
 
   const handleSelectMap = (m: GameMap) => {
     setTransitioning(true);
     selectMap(m);
-    setTimeout(() => {
-      setMenuStep("ready");
-      setTransitioning(false);
-    }, 300);
+    setTimeout(() => { setMenuStep("ready"); setTransitioning(false); }, 300);
   };
 
   const handleBack = () => {
     setTransitioning(true);
-    if (menuStep === "map") {
+    if (menuStep === "shop") {
+      setTimeout(() => { setMenuStep("role"); setTransitioning(false); }, 300);
+    } else if (menuStep === "map") {
       selectRole(null as unknown as Role);
       setTimeout(() => { setMenuStep("role"); setTransitioning(false); }, 300);
     } else if (menuStep === "ready") {
@@ -144,7 +134,7 @@ export default function GameUI() {
                 </div>
               </div>
               <div className="flex gap-1">
-                {Array.from({ length: 3 }, (_, i) => (
+                {Array.from({ length: maxHealth }, (_, i) => (
                   <span key={i} className={`text-xl transition-all ${i < playerHealth ? "opacity-100 scale-100" : "opacity-20 scale-75 grayscale"}`}>
                     ❤️
                   </span>
@@ -167,6 +157,15 @@ export default function GameUI() {
               </div>
             </div>
           )}
+
+          {/* Coin counter */}
+          <div className="fixed bottom-4 right-4 z-50 pointer-events-none">
+            <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 border border-yellow-500/20 flex items-center gap-2">
+              <span className="text-lg">🪙</span>
+              <span className="text-yellow-400 font-bold tabular-nums">{coins}</span>
+              {matchCoins > 0 && <span className="text-yellow-400/50 text-xs">(+{matchCoins})</span>}
+            </div>
+          </div>
 
           {/* Timer */}
           <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
@@ -241,6 +240,21 @@ export default function GameUI() {
             {role === "hunter" && gameResult === "lose" && <p className="text-white/40">You were taken down! Try again.</p>}
             {role === "runner" && gameResult === "win" && <p className="text-green-400/60">You escaped! 🎉</p>}
             {role === "runner" && gameResult === "lose" && <p className="text-red-400/60">Defeated by the hunters!</p>}
+            {/* Coin summary */}
+            <div className="bg-white/5 rounded-xl p-4 border border-white/10 max-w-xs mx-auto space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-white/40">Coins collected</span>
+                <span className="text-yellow-400 font-bold">🪙 {matchCoins}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-white/40">{gameResult === "win" ? "Win bonus" : "Consolation"}</span>
+                <span className="text-yellow-400 font-bold">🪙 {gameResult === "win" ? 5 : 2}</span>
+              </div>
+              <div className="border-t border-white/10 pt-1 flex justify-between text-sm">
+                <span className="text-white/60 font-bold">Total wallet</span>
+                <span className="text-yellow-300 font-black">🪙 {coins}</span>
+              </div>
+            </div>
             <button
               onClick={() => { resetGame(); window.location.reload(); }}
               className="mt-4 px-10 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl border border-white/20 text-lg font-bold transition-all hover:scale-105 active:scale-95"
@@ -251,7 +265,7 @@ export default function GameUI() {
         </div>
       )}
 
-      {/* === MAIN MENU (single smooth flow) === */}
+      {/* === MAIN MENU === */}
       {showMenu && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-b from-black via-black/95 to-black/90 backdrop-blur-sm">
           <div className={`text-center max-w-3xl transition-all duration-300 ${transitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}>
@@ -262,11 +276,19 @@ export default function GameUI() {
                 HIDE & SEEK
               </h1>
               <p className="text-sm text-white/30 uppercase tracking-[0.4em]">Third Person Combat</p>
+              {/* Coin balance always visible */}
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <span className="text-lg">🪙</span>
+                <span className="text-yellow-400 font-bold tabular-nums">{coins}</span>
+              </div>
               {/* Step indicator */}
-              <div className="flex items-center justify-center gap-2 mt-4">
+              <div className="flex items-center justify-center gap-2 mt-3">
                 {["role", "map", "ready"].map((s, i) => (
                   <div key={s} className={`h-1 rounded-full transition-all duration-500 ${
-                    menuStep === s ? "w-8 bg-white" : i < ["role", "map", "ready"].indexOf(menuStep) ? "w-4 bg-white/40" : "w-4 bg-white/10"
+                    (menuStep === s || (menuStep === "shop" && s === "role"))
+                      ? "w-8 bg-white"
+                      : i < ["role", "map", "ready"].indexOf(menuStep === "shop" ? "role" : menuStep)
+                        ? "w-4 bg-white/40" : "w-4 bg-white/10"
                   }`} />
                 ))}
               </div>
@@ -292,7 +314,16 @@ export default function GameUI() {
                     <div className="text-[10px] text-blue-400/50 uppercase tracking-wider">Ammo spawns every 10s</div>
                   </button>
                 </div>
+                <button onClick={() => { setTransitioning(true); setTimeout(() => { setMenuStep("shop"); setTransitioning(false); }, 300); }}
+                  className="mt-4 px-6 py-3 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-300 rounded-xl border border-yellow-500/20 hover:border-yellow-500/40 transition-all text-sm font-bold">
+                  🛒 Shop & Powerups
+                </button>
               </div>
+            )}
+
+            {/* Step: Shop */}
+            {menuStep === "shop" && (
+              <Shop onBack={handleBack} />
             )}
 
             {/* Step: Map */}
