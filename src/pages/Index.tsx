@@ -1,4 +1,5 @@
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
+import * as THREE from "three";
 import House from "@/components/game/House";
 import Player from "@/components/game/Player";
 import GameUI from "@/components/game/GameUI";
@@ -40,9 +41,10 @@ function GameScene() {
 }
 
 function DynamicFOV({ fov }: { fov: number }) {
-  const { camera } = require("@react-three/fiber").useThree();
-  camera.fov = fov;
-  camera.updateProjectionMatrix();
+  const { camera } = useThree();
+  const cam = camera as THREE.PerspectiveCamera;
+  cam.fov = fov;
+  cam.updateProjectionMatrix();
   return null;
 }
 
