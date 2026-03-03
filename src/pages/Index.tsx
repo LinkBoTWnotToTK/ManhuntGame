@@ -1,4 +1,5 @@
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
+import * as THREE from "three";
 import House from "@/components/game/House";
 import Player from "@/components/game/Player";
 import GameUI from "@/components/game/GameUI";
@@ -8,11 +9,13 @@ import AudioSystem from "@/components/game/AudioSystem";
 import { DustParticles, PortalParticles } from "@/components/game/Particles";
 import ProjectileSystem from "@/components/game/ProjectileSystem";
 import Medkits from "@/components/game/Medkits";
+import Coins from "@/components/game/Coins";
 
 function GameScene() {
-  const { role, selectedMap } = useGame();
+  const { role, selectedMap, ownedPowerups } = useGame();
   const map = selectedMap || "suburban";
   const spawns = getSpawnPositions(map);
+  const fov = ownedPowerups.includes("eagle_eye") ? 65 : 55;
 
   return (
     <>
@@ -30,9 +33,19 @@ function GameScene() {
       <Player />
       <ProjectileSystem />
       <Medkits />
+      <Coins />
       <AudioSystem />
+      <DynamicFOV fov={fov} />
     </>
   );
+}
+
+function DynamicFOV({ fov }: { fov: number }) {
+  const { camera } = useThree();
+  const cam = camera as THREE.PerspectiveCamera;
+  cam.fov = fov;
+  cam.updateProjectionMatrix();
+  return null;
 }
 
 const Index = () => (

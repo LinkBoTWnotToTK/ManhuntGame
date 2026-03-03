@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useCallback, useRef } from "react";
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
 import { resetSharedState } from "./SharedState";
+import { POWERUPS } from "./ShopData";
+import { autoSave, autoLoad, SaveData } from "./SaveSystem";
 
 export type Role = "runner" | "hunter";
 export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground";
@@ -35,6 +37,11 @@ interface AmmoPickupData {
   position: [number, number, number];
 }
 
+interface CoinData {
+  id: string;
+  position: [number, number, number];
+}
+
 interface GameState {
   role: Role | null;
   selectedMap: GameMap | null;
@@ -55,6 +62,15 @@ interface GameState {
   npcHealth: Record<string, number>;
   medkits: MedkitData[];
   ammoPickups: AmmoPickupData[];
+  // Coin & shop
+  coins: number;
+  matchCoins: number;
+  coinPickups: CoinData[];
+  ownedPowerups: string[];
+  // Powerup-derived values
+  speedMultiplier: number;
+  staminaDrainMultiplier: number;
+  maxHealth: number;
   selectRole: (role: Role) => void;
   selectMap: (map: GameMap) => void;
   tagNPC: (id: string) => void;
@@ -67,8 +83,11 @@ interface GameState {
   useAmmo: () => boolean;
   collectMedkit: (id: string) => void;
   collectAmmo: (id: string) => void;
+  collectCoin: (id: string) => void;
   useStamina: (amount: number) => boolean;
   regenStamina: (amount: number) => void;
+  buyPowerup: (id: string) => boolean;
+  loadSaveData: (data: SaveData) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -81,9 +100,19 @@ export function useGame() {
 
 const GAME_DURATION = 60;
 const MAX_STAMINA = 100;
-const MAX_HEALTH = 3;
+const BASE_MAX_HEALTH = 3;
 const RUNNER_START_AMMO = 3;
 const HUNTER_START_AMMO = 0;
+
+function spawnCoins(bounds: MapBounds, count: number): CoinData[] {
+  const coins: CoinData[] = [];
+  for (let i = 0; i < count; i++) {
+    const x = bounds.minX + 5 + Math.random() * (bounds.maxX - bounds.minX - 10);
+    const z = bounds.minZ + 5 + Math.random() * (bounds.maxZ - bounds.minZ - 10);
+    coins.push({ id: `coin${i}_${Date.now()}`, position: [x, 0.3, z] });
+  }
+  return coins;
+}
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role | null>(null);
@@ -97,22 +126,51 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [escapeOpen, setEscapeOpen] = useState(false);
   const [escaped, setEscapedState] = useState(false);
   const [stamina, setStamina] = useState(MAX_STAMINA);
-  const [playerHealth, setPlayerHealth] = useState(MAX_HEALTH);
+  const [playerHealth, setPlayerHealth] = useState(BASE_MAX_HEALTH);
   const [playerAmmo, setPlayerAmmo] = useState(0);
   const [npcHealth, setNpcHealth] = useState<Record<string, number>>({});
   const [medkits, setMedkits] = useState<MedkitData[]>([]);
   const [ammoPickups, setAmmoPickups] = useState<AmmoPickupData[]>([]);
+  const [coinPickups, setCoinPickups] = useState<CoinData[]>([]);
+  const [coins, setCoins] = useState(0);
+  const [matchCoins, setMatchCoins] = useState(0);
+  const [ownedPowerups, setOwnedPowerups] = useState<string[]>([]);
 
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const gameOverRef = useRef(false);
   const roleRef = useRef<Role | null>(null);
   const mapRef = useRef<GameMap | null>(null);
-  const playerHealthRef = useRef(MAX_HEALTH);
+  const playerHealthRef = useRef(BASE_MAX_HEALTH);
   const playerAmmoRef = useRef(0);
   const npcHealthRef = useRef<Record<string, number>>({});
   const nextMedkitSpawn = useRef(30);
   const nextAmmoSpawn = useRef(10);
+  const secondWindUsed = useRef(false);
+  const ownedRef = useRef<string[]>([]);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = autoLoad();
+    if (saved) {
+      setCoins(saved.coins);
+      setOwnedPowerups(saved.powerups);
+      ownedRef.current = saved.powerups;
+    }
+  }, []);
+
+  // Auto-save whenever coins or powerups change
+  useEffect(() => {
+    autoSave({ coins, powerups: ownedPowerups });
+    ownedRef.current = ownedPowerups;
+  }, [coins, ownedPowerups]);
+
+  // Derived powerup values
+  const hasP = (id: string) => ownedPowerups.includes(id);
+  const speedMultiplier = hasP("iron_boots") ? 1.2 : 1.0;
+  const staminaDrainMultiplier = hasP("ghost_step") ? 0.5 : 1.0;
+  const maxHealth = hasP("extra_heart") ? 4 : BASE_MAX_HEALTH;
+  const ammoSpawnInterval = hasP("quick_reload") ? 6 : 10;
 
   const selectRole = useCallback((r: Role) => {
     setRole(r);
@@ -126,7 +184,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const startGame = useCallback(() => {
     resetSharedState();
-    const startAmmo = roleRef.current === "runner" ? RUNNER_START_AMMO : HUNTER_START_AMMO;
+    const owned = ownedRef.current;
+    const extraAmmo = owned.includes("lucky_start") ? 2 : 0;
+    const currentMaxHealth = owned.includes("extra_heart") ? 4 : BASE_MAX_HEALTH;
+    const startAmmo = roleRef.current === "runner" ? RUNNER_START_AMMO + extraAmmo : HUNTER_START_AMMO;
+    const ammoInterval = owned.includes("quick_reload") ? 6 : 10;
+
     setScore(0);
     setTagged(new Set());
     setGameOver(false);
@@ -135,19 +198,25 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setEscapeOpen(false);
     setEscapedState(false);
     setStamina(MAX_STAMINA);
-    setPlayerHealth(MAX_HEALTH);
+    setPlayerHealth(currentMaxHealth);
     setPlayerAmmo(startAmmo);
     setNpcHealth({});
     setMedkits([]);
     setAmmoPickups([]);
-    playerHealthRef.current = MAX_HEALTH;
+    setMatchCoins(0);
+    playerHealthRef.current = currentMaxHealth;
     playerAmmoRef.current = startAmmo;
     npcHealthRef.current = {};
     nextMedkitSpawn.current = 30;
-    nextAmmoSpawn.current = 10;
+    nextAmmoSpawn.current = ammoInterval;
     gameOverRef.current = false;
+    secondWindUsed.current = false;
     startTimeRef.current = Date.now();
     setElapsedTime(0);
+
+    // Spawn coins
+    const bounds = MAP_BOUNDS[mapRef.current || "suburban"];
+    setCoinPickups(spawnCoins(bounds, 18));
 
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = window.setInterval(() => {
@@ -157,21 +226,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       if (elapsed >= GAME_DURATION) setEscapeOpen(true);
 
-      const bounds = MAP_BOUNDS[mapRef.current || "suburban"];
+      const b = MAP_BOUNDS[mapRef.current || "suburban"];
 
-      // Medkit spawn every 30s
       if (elapsed >= nextMedkitSpawn.current) {
         nextMedkitSpawn.current += 30;
-        const x = bounds.minX + 5 + Math.random() * (bounds.maxX - bounds.minX - 10);
-        const z = bounds.minZ + 5 + Math.random() * (bounds.maxZ - bounds.minZ - 10);
+        const x = b.minX + 5 + Math.random() * (b.maxX - b.minX - 10);
+        const z = b.minZ + 5 + Math.random() * (b.maxZ - b.minZ - 10);
         setMedkits((prev) => [...prev.slice(-4), { id: `m${Date.now()}`, position: [x, 0.3, z] as [number, number, number] }]);
       }
 
-      // Ammo spawn every 10s (only relevant for runners)
       if (roleRef.current === "runner" && elapsed >= nextAmmoSpawn.current) {
-        nextAmmoSpawn.current += 10;
-        const x = bounds.minX + 5 + Math.random() * (bounds.maxX - bounds.minX - 10);
-        const z = bounds.minZ + 5 + Math.random() * (bounds.maxZ - bounds.minZ - 10);
+        nextAmmoSpawn.current += ammoInterval;
+        const x = b.minX + 5 + Math.random() * (b.maxX - b.minX - 10);
+        const z = b.minZ + 5 + Math.random() * (b.maxZ - b.minZ - 10);
         setAmmoPickups((prev) => [...prev.slice(-6), { id: `a${Date.now()}`, position: [x, 0.3, z] as [number, number, number] }]);
       }
 
@@ -180,6 +247,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         setGameOver(true);
         setGameResult("lose");
         setIsPlaying(false);
+        // Award loss bonus
+        setCoins((prev) => prev + 2);
+        setMatchCoins((prev) => prev); // keep as is, bonus added to wallet
         if (timerRef.current) clearInterval(timerRef.current);
       }
     }, 100);
@@ -207,6 +277,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         setGameOver(true);
         setGameResult("win");
         setIsPlaying(false);
+        setCoins((prev) => prev + 5);
         if (timerRef.current) clearInterval(timerRef.current);
       }
       return next;
@@ -219,18 +290,28 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setGameOver(true);
     setGameResult("win");
     setIsPlaying(false);
+    setCoins((prev) => prev + 5);
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
   const damagePlayer = useCallback((amount: number) => {
     if (gameOverRef.current) return;
-    playerHealthRef.current = Math.max(0, playerHealthRef.current - amount);
+    const dmg = ownedRef.current.includes("thick_skin") ? Math.max(1, Math.ceil(amount / 2)) : amount;
+    playerHealthRef.current = Math.max(0, playerHealthRef.current - dmg);
     setPlayerHealth(playerHealthRef.current);
     if (playerHealthRef.current <= 0) {
+      // Second wind check
+      if (ownedRef.current.includes("second_wind") && !secondWindUsed.current) {
+        secondWindUsed.current = true;
+        playerHealthRef.current = 1;
+        setPlayerHealth(1);
+        return;
+      }
       gameOverRef.current = true;
       setGameOver(true);
       setGameResult("lose");
       setIsPlaying(false);
+      setCoins((prev) => prev + 2);
       if (timerRef.current) clearInterval(timerRef.current);
     }
   }, []);
@@ -242,12 +323,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const healPlayer = useCallback(() => {
-    playerHealthRef.current = Math.min(MAX_HEALTH, playerHealthRef.current + 1);
+    const mh = ownedRef.current.includes("extra_heart") ? 4 : BASE_MAX_HEALTH;
+    playerHealthRef.current = Math.min(mh, playerHealthRef.current + 1);
     setPlayerHealth(playerHealthRef.current);
   }, []);
 
   const useAmmoFn = useCallback(() => {
-    if (roleRef.current !== "runner") return false; // Only runners can shoot
+    if (roleRef.current !== "runner") return false;
     if (playerAmmoRef.current <= 0) return false;
     playerAmmoRef.current--;
     setPlayerAmmo(playerAmmoRef.current);
@@ -264,6 +346,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setPlayerAmmo(playerAmmoRef.current);
   }, []);
 
+  const collectCoin = useCallback((id: string) => {
+    setCoinPickups((prev) => prev.filter((c) => c.id !== id));
+    setCoins((prev) => prev + 1);
+    setMatchCoins((prev) => prev + 1);
+  }, []);
+
   const useStaminaFn = useCallback((amount: number) => {
     let canUse = false;
     setStamina((prev) => {
@@ -275,6 +363,31 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const regenStamina = useCallback((amount: number) => {
     setStamina((prev) => Math.min(MAX_STAMINA, prev + amount));
+  }, []);
+
+  const buyPowerup = useCallback((id: string): boolean => {
+    const def = POWERUPS.find((p) => p.id === id);
+    if (!def) return false;
+    // Check via refs to avoid stale closures
+    let success = false;
+    setOwnedPowerups((prev) => {
+      if (prev.includes(id)) return prev;
+      setCoins((prevCoins) => {
+        if (prevCoins >= def.cost) {
+          success = true;
+          return prevCoins - def.cost;
+        }
+        return prevCoins;
+      });
+      if (success) return [...prev, id];
+      return prev;
+    });
+    return success;
+  }, []);
+
+  const loadSaveData = useCallback((data: SaveData) => {
+    setCoins(data.coins);
+    setOwnedPowerups(data.powerups);
   }, []);
 
   const resetGame = useCallback(() => {
@@ -290,12 +403,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setEscapedState(false);
     setElapsedTime(0);
     setStamina(MAX_STAMINA);
-    setPlayerHealth(MAX_HEALTH);
+    setPlayerHealth(BASE_MAX_HEALTH);
     setPlayerAmmo(0);
     setNpcHealth({});
     setMedkits([]);
     setAmmoPickups([]);
-    playerHealthRef.current = MAX_HEALTH;
+    setCoinPickups([]);
+    setMatchCoins(0);
+    playerHealthRef.current = BASE_MAX_HEALTH;
     playerAmmoRef.current = 0;
     npcHealthRef.current = {};
     gameOverRef.current = false;
@@ -313,9 +428,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         gameOver, gameResult, isPlaying, escapeOpen, escaped,
         stamina, maxStamina: MAX_STAMINA,
         playerHealth, playerAmmo, npcHealth, medkits, ammoPickups,
+        coins, matchCoins, coinPickups, ownedPowerups,
+        speedMultiplier, staminaDrainMultiplier, maxHealth,
         selectRole, selectMap, tagNPC, startGame, resetGame, setEscaped,
         damagePlayer, damageNPC, healPlayer, useAmmo: useAmmoFn,
-        collectMedkit, collectAmmo, useStamina: useStaminaFn, regenStamina,
+        collectMedkit, collectAmmo, collectCoin,
+        useStamina: useStaminaFn, regenStamina,
+        buyPowerup, loadSaveData,
       }}
     >
       {children}

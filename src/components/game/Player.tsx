@@ -6,10 +6,10 @@ import { useGame, MAP_BOUNDS, ESCAPE_POSITIONS } from "./GameState";
 import { playerPosition, projectiles, addProjectile } from "./SharedState";
 import { ESCAPE_ZONE_RADIUS } from "./House";
 
-const WALK_SPEED = 4.5;
-const SPRINT_SPEED = 7;
+const BASE_WALK_SPEED = 4.5;
+const BASE_SPRINT_SPEED = 7;
 const PLAYER_RADIUS = 0.3;
-const STAMINA_DRAIN = 25;
+const BASE_STAMINA_DRAIN = 25;
 const STAMINA_REGEN = 15;
 const CAMERA_DIST = 5;
 const CAMERA_HEIGHT = 3;
@@ -24,12 +24,10 @@ function PlayerFigure({ role }: { role: string | null }) {
   
   return (
     <group>
-      {/* Head */}
       <mesh position={[0, 1.6, 0]} castShadow>
         <sphereGeometry args={[0.18, 16, 16]} />
         <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      {/* Eyes */}
       <mesh position={[0.06, 1.63, 0.14]}>
         <sphereGeometry args={[0.03, 8, 8]} />
         <meshStandardMaterial color="#222" />
@@ -38,22 +36,18 @@ function PlayerFigure({ role }: { role: string | null }) {
         <sphereGeometry args={[0.03, 8, 8]} />
         <meshStandardMaterial color="#222" />
       </mesh>
-      {/* Hair/hat */}
       <mesh position={[0, 1.72, -0.02]} castShadow>
         <sphereGeometry args={[0.19, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <meshStandardMaterial color={isHunter ? "#2a1a0a" : "#1a1a2a"} roughness={0.9} />
       </mesh>
-      {/* Torso */}
       <mesh position={[0, 1.15, 0]} castShadow>
         <capsuleGeometry args={[0.16, 0.45, 8, 16]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      {/* Belt/strap */}
       <mesh position={[0, 0.88, 0]} castShadow>
         <cylinderGeometry args={[0.17, 0.17, 0.06, 12]} />
         <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={0.3} />
       </mesh>
-      {/* Arms */}
       <mesh position={[-0.25, 1.1, 0]} rotation={[0, 0, 0.25]} castShadow>
         <capsuleGeometry args={[0.05, 0.35, 6, 10]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
@@ -62,7 +56,6 @@ function PlayerFigure({ role }: { role: string | null }) {
         <capsuleGeometry args={[0.05, 0.35, 6, 10]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      {/* Hands */}
       <mesh position={[-0.32, 0.88, 0]} castShadow>
         <sphereGeometry args={[0.05, 8, 8]} />
         <meshStandardMaterial color={skinColor} roughness={0.7} />
@@ -71,14 +64,12 @@ function PlayerFigure({ role }: { role: string | null }) {
         <sphereGeometry args={[0.05, 8, 8]} />
         <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      {/* Slingshot in hand (runners only) */}
       {!isHunter && (
         <mesh position={[0.35, 0.9, 0.05]} rotation={[0.3, 0, -0.2]} castShadow>
           <cylinderGeometry args={[0.015, 0.015, 0.3, 6]} />
           <meshStandardMaterial color="#5a3a1a" roughness={0.8} />
         </mesh>
       )}
-      {/* Legs */}
       <mesh position={[-0.09, 0.5, 0]} castShadow>
         <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
         <meshStandardMaterial color={pantsColor} roughness={0.8} />
@@ -87,7 +78,6 @@ function PlayerFigure({ role }: { role: string | null }) {
         <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
         <meshStandardMaterial color={pantsColor} roughness={0.8} />
       </mesh>
-      {/* Shoes */}
       <mesh position={[-0.09, 0.2, 0.03]} castShadow>
         <boxGeometry args={[0.1, 0.08, 0.16]} />
         <meshStandardMaterial color="#333" roughness={0.6} />
@@ -96,7 +86,6 @@ function PlayerFigure({ role }: { role: string | null }) {
         <boxGeometry args={[0.1, 0.08, 0.16]} />
         <meshStandardMaterial color="#333" roughness={0.6} />
       </mesh>
-      {/* Role glow */}
       <pointLight color={accentColor} intensity={0.6} distance={4} position={[0, 1.2, 0]} />
     </group>
   );
@@ -114,6 +103,8 @@ export default function Player() {
     playerHealth, useAmmo, damagePlayer,
     medkits, collectMedkit, healPlayer,
     ammoPickups, collectAmmo,
+    coinPickups, collectCoin,
+    speedMultiplier, staminaDrainMultiplier, maxHealth,
   } = useGame();
 
   const bounds = MAP_BOUNDS[selectedMap || "suburban"];
@@ -122,7 +113,7 @@ export default function Player() {
   const shootRef = useRef<() => void>(() => {});
   shootRef.current = () => {
     if (!isPlaying || gameOver) return;
-    if (role !== "runner") return; // Only runners can shoot
+    if (role !== "runner") return;
     if (!useAmmo()) return;
     const dir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
     const spawnPos = playerPosition.clone().add(new THREE.Vector3(0, 1.2, 0)).addScaledVector(dir, 0.5);
@@ -160,12 +151,16 @@ export default function Player() {
   useFrame((state, delta) => {
     if (!isPlaying || gameOver) return;
 
+    const walkSpeed = BASE_WALK_SPEED * speedMultiplier;
+    const sprintSpeed = BASE_SPRINT_SPEED * speedMultiplier;
+    const staminaDrain = BASE_STAMINA_DRAIN * staminaDrainMultiplier;
+
     const wantsSprint = keys.current["ShiftLeft"] || keys.current["ShiftRight"];
     const canSprint = stamina > 5;
     const isSprinting = wantsSprint && canSprint;
-    if (isSprinting) useStamina(STAMINA_DRAIN * delta);
+    if (isSprinting) useStamina(staminaDrain * delta);
     else regenStamina(STAMINA_REGEN * delta);
-    const speed = isSprinting ? SPRINT_SPEED : WALK_SPEED;
+    const speed = isSprinting ? sprintSpeed : walkSpeed;
 
     const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
     const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
@@ -221,7 +216,6 @@ export default function Player() {
       meshRef.current.rotation.y = yaw.current + Math.PI;
     }
 
-    // Third-person camera
     const camOffset = new THREE.Vector3(
       Math.sin(yaw.current) * CAMERA_DIST,
       CAMERA_HEIGHT * pitch.current + 1.8,
@@ -231,7 +225,6 @@ export default function Player() {
     camera.position.lerp(targetCamPos, 0.1);
     camera.lookAt(playerPosition.x, 1.3, playerPosition.z);
 
-    // Escape zone check
     if (role === "runner" && escapeOpen) {
       const dx = playerPosition.x - escapePos[0];
       const dz = playerPosition.z - escapePos[2];
@@ -242,14 +235,14 @@ export default function Player() {
     for (const med of medkits) {
       const dx = playerPosition.x - med.position[0];
       const dz = playerPosition.z - med.position[2];
-      if (Math.sqrt(dx * dx + dz * dz) < 1.5 && playerHealth < 3) {
+      if (Math.sqrt(dx * dx + dz * dz) < 1.5 && playerHealth < maxHealth) {
         healPlayer();
         collectMedkit(med.id);
         break;
       }
     }
 
-    // Ammo pickup collection (runners only)
+    // Ammo pickup
     if (role === "runner") {
       for (const ap of ammoPickups) {
         const dx = playerPosition.x - ap.position[0];
@@ -261,7 +254,17 @@ export default function Player() {
       }
     }
 
-    // Check NPC projectiles hitting player
+    // Coin collection
+    for (const coin of coinPickups) {
+      const dx = playerPosition.x - coin.position[0];
+      const dz = playerPosition.z - coin.position[2];
+      if (Math.sqrt(dx * dx + dz * dz) < 1.5) {
+        collectCoin(coin.id);
+        break;
+      }
+    }
+
+    // NPC projectile hits
     for (const p of projectiles) {
       if (!p.alive || p.owner === "player") continue;
       const dx = p.position.x - playerPosition.x;
