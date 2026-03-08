@@ -170,9 +170,9 @@ export default function MobileControls({ role, currentWeapon, onSwitchWeapon, ga
   onSwitchWeapon: (w: string) => void;
   gameMode: string;
 }) {
-  if (!isMobilePlatform) return null;
-
   const [sprintActive, setSprintActive] = useState(false);
+
+  if (!isMobilePlatform) return null;
 
   return (
     <div className="fixed inset-0 z-45 pointer-events-none">

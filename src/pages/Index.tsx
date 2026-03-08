@@ -198,8 +198,31 @@ function HatchPrompt() {
   );
 }
 
+function MobileGameHUD() {
+  const { role, currentWeapon, switchWeapon, gameMode, isPlaying } = useGame();
+  if (!isPlaying || !isMobilePlatform) return null;
+  return (
+    <MobileControls
+      role={role}
+      currentWeapon={currentWeapon}
+      onSwitchWeapon={switchWeapon as (w: string) => void}
+      gameMode={gameMode}
+    />
+  );
+}
+
 function GameContent() {
   const [showEditor, setShowEditor] = useState(false);
+  const [platformChosen, setPlatformChosen] = useState(false);
+
+  if (!platformChosen) {
+    return (
+      <PlatformSelector onSelect={(mobile) => {
+        setMobilePlatform(mobile);
+        setPlatformChosen(true);
+      }} />
+    );
+  }
 
   if (showEditor) {
     return <LevelEditor onExit={() => setShowEditor(false)} />;
@@ -212,6 +235,7 @@ function GameContent() {
       <ScreenEffects />
       <Tutorial />
       <HatchPrompt />
+      <MobileGameHUD />
       <Canvas
         shadows
         camera={{ fov: 55, near: 0.1, far: 100 }}
