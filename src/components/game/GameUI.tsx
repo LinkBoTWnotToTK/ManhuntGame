@@ -3,6 +3,9 @@ import { useGame, Role, GameMap, Difficulty, GameMode, DIFFICULTY_SETTINGS, GAME
 import Shop from "./Shop";
 import { xpForLevel, prestigeMultiplier } from "./SaveSystem";
 import { TUTORIAL_STEPS } from "./Tutorial";
+import { loadCustomLevels } from "./LevelEditorData";
+import { CAMPAIGN_CHAPTERS, loadCampaignProgress, completeCampaignChallenge, isChallengeUnlocked } from "./CampaignData";
+import type { CampaignChallenge } from "./CampaignData";
 
 function formatTime(secs: number) {
   const mins = Math.floor(secs / 60);
@@ -38,7 +41,9 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     startTutorial,
   } = useGame();
 
-  const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready">("main");
+  const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter">("main");
+  const [selectedChapter, setSelectedChapter] = useState(0);
+  const [campaignProgress, setCampaignProgress] = useState(loadCampaignProgress());
   const [transitioning, setTransitioning] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
 
@@ -72,7 +77,8 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   const handleBack = () => {
     setTransitioning(true);
     const flow: Record<string, string> = {
-      shop: "main", leaderboard: "main", play: "main",
+      shop: "main", leaderboard: "main", play: "main", campaign: "main",
+      campaign_chapter: "campaign",
       mode: "play", difficulty: "mode", map: "difficulty", ready: "map",
     };
     const prev = flow[menuStep] || "main";
@@ -343,31 +349,36 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
             {/* MAIN MENU */}
             {menuStep === "main" && (
               <div className="animate-fade-in space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 max-w-2xl mx-auto">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 max-w-3xl mx-auto">
                   <button onClick={() => transition("play")}
-                    className="group p-5 bg-gradient-to-b from-blue-900/40 to-blue-950/60 text-white rounded-2xl border border-blue-500/20 hover:border-blue-400/50 transition-all hover:scale-105 active:scale-95 space-y-2">
-                    <div className="text-3xl group-hover:scale-110 transition-transform">🎮</div>
-                    <div className="text-sm font-black">PLAY</div>
+                    className="group p-4 bg-gradient-to-b from-blue-900/40 to-blue-950/60 text-white rounded-2xl border border-blue-500/20 hover:border-blue-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
+                    <div className="text-2xl group-hover:scale-110 transition-transform">🎮</div>
+                    <div className="text-xs font-black">PLAY</div>
+                  </button>
+                  <button onClick={() => { setCampaignProgress(loadCampaignProgress()); transition("campaign"); }}
+                    className="group p-4 bg-gradient-to-b from-amber-900/40 to-amber-950/60 text-white rounded-2xl border border-amber-500/20 hover:border-amber-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
+                    <div className="text-2xl group-hover:scale-110 transition-transform">🎖️</div>
+                    <div className="text-xs font-black">CAMPAIGN</div>
                   </button>
                   <button onClick={() => transition("shop")}
-                    className="group p-5 bg-gradient-to-b from-yellow-900/40 to-yellow-950/60 text-white rounded-2xl border border-yellow-500/20 hover:border-yellow-400/50 transition-all hover:scale-105 active:scale-95 space-y-2">
-                    <div className="text-3xl group-hover:scale-110 transition-transform">🛒</div>
-                    <div className="text-sm font-black">SHOP</div>
+                    className="group p-4 bg-gradient-to-b from-yellow-900/40 to-yellow-950/60 text-white rounded-2xl border border-yellow-500/20 hover:border-yellow-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
+                    <div className="text-2xl group-hover:scale-110 transition-transform">🛒</div>
+                    <div className="text-xs font-black">SHOP</div>
                   </button>
                   <button onClick={() => transition("leaderboard")}
-                    className="group p-5 bg-gradient-to-b from-purple-900/40 to-purple-950/60 text-white rounded-2xl border border-purple-500/20 hover:border-purple-400/50 transition-all hover:scale-105 active:scale-95 space-y-2">
-                    <div className="text-3xl group-hover:scale-110 transition-transform">🏅</div>
-                    <div className="text-sm font-black">SCORES</div>
+                    className="group p-4 bg-gradient-to-b from-purple-900/40 to-purple-950/60 text-white rounded-2xl border border-purple-500/20 hover:border-purple-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
+                    <div className="text-2xl group-hover:scale-110 transition-transform">🏅</div>
+                    <div className="text-xs font-black">SCORES</div>
                   </button>
                   <button onClick={onOpenEditor}
-                    className="group p-5 bg-gradient-to-b from-cyan-900/40 to-cyan-950/60 text-white rounded-2xl border border-cyan-500/20 hover:border-cyan-400/50 transition-all hover:scale-105 active:scale-95 space-y-2">
-                    <div className="text-3xl group-hover:scale-110 transition-transform">🗺️</div>
-                    <div className="text-sm font-black">EDITOR</div>
+                    className="group p-4 bg-gradient-to-b from-cyan-900/40 to-cyan-950/60 text-white rounded-2xl border border-cyan-500/20 hover:border-cyan-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
+                    <div className="text-2xl group-hover:scale-110 transition-transform">🗺️</div>
+                    <div className="text-xs font-black">EDITOR</div>
                   </button>
                   <button onClick={() => startTutorial()}
-                    className="group p-5 bg-gradient-to-b from-emerald-900/40 to-emerald-950/60 text-white rounded-2xl border border-emerald-500/20 hover:border-emerald-400/50 transition-all hover:scale-105 active:scale-95 space-y-2">
-                    <div className="text-3xl group-hover:scale-110 transition-transform">📖</div>
-                    <div className="text-sm font-black">TUTORIAL</div>
+                    className="group p-4 bg-gradient-to-b from-emerald-900/40 to-emerald-950/60 text-white rounded-2xl border border-emerald-500/20 hover:border-emerald-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
+                    <div className="text-2xl group-hover:scale-110 transition-transform">📖</div>
+                    <div className="text-xs font-black">TUTORIAL</div>
                   </button>
                 </div>
               </div>
@@ -456,6 +467,140 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                         <div className="text-[10px] font-black">{info.name}</div>
                         <div className="text-[8px] text-white/30 leading-relaxed">{info.desc}</div>
                       </button>
+                    );
+                  })}
+                  {/* Custom levels from editor */}
+                  {loadCustomLevels().map(lvl => (
+                    <button key={lvl.id} onClick={() => handleSelectMap("suburban" as GameMap)}
+                      className="group px-4 py-4 bg-cyan-950/50 hover:bg-cyan-900/60 text-white rounded-xl border border-cyan-500/20 hover:border-cyan-500/50 transition-all hover:scale-105 active:scale-95 space-y-1.5 w-28">
+                      <div className="text-3xl group-hover:scale-110 transition-transform">🗺️</div>
+                      <div className="text-[10px] font-black truncate">{lvl.name}</div>
+                      <div className="text-[8px] text-white/30 leading-relaxed">{lvl.items.length} objects</div>
+                    </button>
+                  ))}
+                </div>
+                <button onClick={handleBack} className="text-white/15 text-xs hover:text-white/40 transition-colors">← Back</button>
+              </div>
+            )}
+
+            {/* CAMPAIGN */}
+            {menuStep === "campaign" && (
+              <div className="animate-fade-in space-y-5">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-3xl">🎖️</span>
+                  <h2 className="text-xl font-black text-white">CAMPAIGN</h2>
+                </div>
+                <p className="text-white/40 text-xs">Complete challenges to unlock the next chapter. Earn bonus coins & XP!</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto">
+                  {CAMPAIGN_CHAPTERS.map((chapter, idx) => {
+                    const completedCount = chapter.challenges.filter(c => campaignProgress.completed.includes(c.id)).length;
+                    const totalCount = chapter.challenges.length;
+                    const allDone = completedCount === totalCount;
+                    const isUnlocked = idx === 0 || CAMPAIGN_CHAPTERS[idx - 1].challenges.every(c => campaignProgress.completed.includes(c.id));
+                    return (
+                      <button
+                        key={chapter.id}
+                        onClick={() => { if (isUnlocked) { setSelectedChapter(idx); transition("campaign_chapter"); } }}
+                        disabled={!isUnlocked}
+                        className={`group p-5 rounded-2xl border transition-all space-y-2 text-left ${
+                          !isUnlocked
+                            ? "bg-white/[0.02] border-white/5 opacity-40 cursor-not-allowed"
+                            : allDone
+                            ? "bg-green-950/40 border-green-500/20 hover:border-green-400/50 hover:scale-105 active:scale-95"
+                            : "bg-white/[0.04] border-white/10 hover:border-white/25 hover:scale-105 active:scale-95"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{isUnlocked ? chapter.emoji : "🔒"}</span>
+                          <div>
+                            <div className="text-sm font-black text-white">{chapter.name}</div>
+                            <div className="text-[9px] text-white/30">{chapter.description}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-green-400/60 rounded-full transition-all" style={{ width: `${(completedCount / totalCount) * 100}%` }} />
+                          </div>
+                          <span className="text-[10px] text-white/30 font-bold">{completedCount}/{totalCount}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button onClick={handleBack} className="text-white/15 text-xs hover:text-white/40 transition-colors">← Back</button>
+              </div>
+            )}
+
+            {/* CAMPAIGN CHAPTER DETAIL */}
+            {menuStep === "campaign_chapter" && (
+              <div className="animate-fade-in space-y-5 max-w-lg mx-auto">
+                <div className="flex items-center gap-2 justify-center">
+                  <span className="text-2xl">{CAMPAIGN_CHAPTERS[selectedChapter]?.emoji}</span>
+                  <h2 className="text-lg font-black text-white">{CAMPAIGN_CHAPTERS[selectedChapter]?.name}</h2>
+                </div>
+                <div className="space-y-2">
+                  {CAMPAIGN_CHAPTERS[selectedChapter]?.challenges.map((challenge) => {
+                    const done = campaignProgress.completed.includes(challenge.id);
+                    const unlocked = isChallengeUnlocked(challenge.id);
+                    const bestTime = campaignProgress.bestTimes[challenge.id];
+                    return (
+                      <div
+                        key={challenge.id}
+                        className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                          !unlocked
+                            ? "bg-white/[0.02] border-white/5 opacity-40"
+                            : done
+                            ? "bg-green-950/30 border-green-500/15"
+                            : "bg-white/[0.04] border-white/10 hover:border-white/25"
+                        }`}
+                      >
+                        <span className="text-2xl">{unlocked ? challenge.emoji : "🔒"}</span>
+                        <div className="flex-1 text-left">
+                          <div className="text-sm font-bold text-white flex items-center gap-2">
+                            {challenge.name}
+                            {done && <span className="text-green-400 text-[10px]">✅</span>}
+                          </div>
+                          <div className="text-[10px] text-white/40">{challenge.description}</div>
+                          <div className="flex gap-2 mt-1">
+                            {challenge.objectives.map((obj, i) => (
+                              <span key={i} className="text-[8px] bg-white/5 rounded px-1.5 py-0.5 text-white/30 border border-white/5">{obj}</span>
+                            ))}
+                          </div>
+                          {bestTime && <div className="text-[9px] text-white/20 mt-1">⏱ Best: {formatTime(bestTime)}</div>}
+                        </div>
+                        <div className="text-right space-y-1">
+                          <div className="text-[9px] text-yellow-400/60">🪙 {challenge.reward.coins}</div>
+                          <div className="text-[9px] text-cyan-400/60">⚡ {challenge.reward.xp} XP</div>
+                          {unlocked && !done && (
+                            <button
+                              onClick={() => {
+                                selectRole(challenge.role as Role);
+                                setGameMode(challenge.mode);
+                                setDifficulty(challenge.difficulty);
+                                selectMap(challenge.map);
+                                transition("ready");
+                              }}
+                              className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-white text-[10px] font-bold border border-white/15 hover:scale-105 active:scale-95 transition-all"
+                            >
+                              ▶ Play
+                            </button>
+                          )}
+                          {unlocked && done && (
+                            <button
+                              onClick={() => {
+                                selectRole(challenge.role as Role);
+                                setGameMode(challenge.mode);
+                                setDifficulty(challenge.difficulty);
+                                selectMap(challenge.map);
+                                transition("ready");
+                              }}
+                              className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-white/40 text-[10px] font-bold border border-white/5 hover:scale-105 active:scale-95 transition-all"
+                            >
+                              ↻ Replay
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
