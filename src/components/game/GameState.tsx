@@ -143,6 +143,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [coins, setCoins] = useState(0);
   const [matchCoins, setMatchCoins] = useState(0);
   const [ownedPowerups, setOwnedPowerups] = useState<string[]>([]);
+  const [currentWeapon, setCurrentWeapon] = useState<WeaponType>("slingshot");
+  const [meleeCooldown, setMeleeCooldownState] = useState(0);
 
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
