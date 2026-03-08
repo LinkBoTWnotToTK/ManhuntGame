@@ -3,7 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { wallColliders } from "./House";
 import { useGame, MAP_BOUNDS, ESCAPE_POSITIONS } from "./GameState";
-import { playerPosition, projectiles, addProjectile, npcPositions, playerY, playerVelocityY, setPlayerY, setPlayerVelocityY, platformColliders, disguisedAs, setDisguise } from "./SharedState";
+import { playerPosition, projectiles, addProjectile, npcPositions, playerY, playerVelocityY, setPlayerY, setPlayerVelocityY, platformColliders, disguisedAs, setDisguise, isMobilePlatform, mobileInput } from "./SharedState";
 import { windForce } from "./WeatherSystem";
 import { ESCAPE_ZONE_RADIUS } from "./House";
 import { WEAPONS, throwRock, throwableRocks } from "./WeaponSystem";
