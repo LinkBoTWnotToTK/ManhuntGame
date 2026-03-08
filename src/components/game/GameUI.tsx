@@ -41,7 +41,9 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     startTutorial,
   } = useGame();
 
-  const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready">("main");
+  const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter">("main");
+  const [selectedChapter, setSelectedChapter] = useState(0);
+  const [campaignProgress, setCampaignProgress] = useState(loadCampaignProgress());
   const [transitioning, setTransitioning] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
 
