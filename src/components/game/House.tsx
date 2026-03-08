@@ -1,8 +1,9 @@
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import * as THREE from "three";
 import { useGame, GameMap, ESCAPE_POSITIONS } from "./GameState";
 import { useFrame } from "@react-three/fiber";
 import { createTexturedMaterials } from "./Textures";
+import { platformColliders, addPlatformCollider } from "./SharedState";
 
 let _mats: ReturnType<typeof createTexturedMaterials> | null = null;
 function getMats() {
