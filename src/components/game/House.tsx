@@ -216,25 +216,14 @@ function Tent({ position, rotation = 0 }: { position: [number, number, number]; 
 function Igloo({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
-      <mesh position={[0, 1, 0]} castShadow receiveShadow>
-        <sphereGeometry args={[1.8, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      <mesh position={[0, 1, 0]}>
+        <sphereGeometry args={[1.8, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <meshStandardMaterial color="#dde8f0" roughness={0.4} />
       </mesh>
-      {/* Door opening */}
-      <mesh position={[0, 0.5, 1.7]} castShadow>
+      <mesh position={[0, 0.5, 1.7]}>
         <boxGeometry args={[0.8, 1, 0.5]} />
         <meshStandardMaterial color="#bbc8d0" roughness={0.5} />
       </mesh>
-      {/* Snow blocks pattern */}
-      {Array.from({ length: 8 }).map((_, i) => {
-        const angle = (i / 8) * Math.PI * 2;
-        return (
-          <mesh key={i} position={[Math.cos(angle) * 1.82, 0.3, Math.sin(angle) * 1.82]}>
-            <boxGeometry args={[0.3, 0.15, 0.15]} />
-            <meshStandardMaterial color="#c8d8e0" roughness={0.3} />
-          </mesh>
-        );
-      })}
     </group>
   );
 }
