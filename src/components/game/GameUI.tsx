@@ -204,14 +204,15 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
 
           {/* Stamina */}
           <div className="fixed bottom-4 left-4 z-50 pointer-events-none">
-            <div className="bg-black/50 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/5 w-32">
-              <div className="flex items-center gap-1 mb-0.5">
-                <span className="text-[9px] text-white/30 uppercase">Stamina</span>
+            <div className="bg-black/50 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/5 w-36">
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-[9px] text-white/30 uppercase font-bold">Stamina</span>
                 <kbd className="text-[8px] px-1 bg-white/10 rounded text-white/40 ml-auto">⇧</kbd>
               </div>
-              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-150" style={{ width: `${staminaPct}%`, backgroundColor: staminaColor }} />
+              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-100" style={{ width: `${staminaPct}%`, backgroundColor: staminaColor }} />
               </div>
+              <div className="text-[8px] text-white/20 text-center mt-0.5 tabular-nums">{Math.floor(stamina)}%</div>
             </div>
           </div>
 

@@ -3,7 +3,6 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame, GameMap } from "./GameState";
 
-// Weather types per map
 export type WeatherType = "clear" | "rain" | "snow" | "fog" | "ash" | "storm";
 
 export const MAP_WEATHER: Record<GameMap, WeatherType> = {
@@ -16,12 +15,11 @@ export const MAP_WEATHER: Record<GameMap, WeatherType> = {
   space_station: "clear",
 };
 
-// Shared wind vector that Player.tsx reads
 export const windForce = new THREE.Vector3(0, 0, 0);
 
 function RainDrops({ heavy }: { heavy?: boolean }) {
   const ref = useRef<THREE.Points>(null);
-  const count = heavy ? 1500 : 800;
+  const count = heavy ? 600 : 350; // reduced from 1500/800
   const positions = useRef(new Float32Array(count * 3));
   const velocities = useRef(new Float32Array(count));
 
@@ -40,7 +38,6 @@ function RainDrops({ heavy }: { heavy?: boolean }) {
 
     for (let i = 0; i < count; i++) {
       arr[i * 3 + 1] -= velocities.current[i] * delta;
-      // Wind pushes rain sideways
       arr[i * 3] += windForce.x * delta * 2;
       arr[i * 3 + 2] += windForce.z * delta * 2;
       if (arr[i * 3 + 1] < -1) {
@@ -64,7 +61,7 @@ function RainDrops({ heavy }: { heavy?: boolean }) {
 
 function SnowFlakes() {
   const ref = useRef<THREE.Points>(null);
-  const count = 500;
+  const count = 200; // reduced from 500
   const positions = useRef(new Float32Array(count * 3));
   const drifts = useRef(new Float32Array(count * 2));
 
@@ -107,7 +104,7 @@ function SnowFlakes() {
 
 function AshParticles() {
   const ref = useRef<THREE.Points>(null);
-  const count = 300;
+  const count = 120; // reduced from 300
   const positions = useRef(new Float32Array(count * 3));
 
   for (let i = 0; i < count; i++) {
@@ -143,7 +140,6 @@ function AshParticles() {
   );
 }
 
-// Lightning flash — random bursts of bright light
 function LightningSystem() {
   const lightRef = useRef<THREE.PointLight>(null);
   const [flash, setFlash] = useState(false);
@@ -155,8 +151,8 @@ function LightningSystem() {
 
     if (nextFlash.current <= 0 && !flash) {
       setFlash(true);
-      flashTimer.current = 0.1 + Math.random() * 0.15; // flash duration
-      nextFlash.current = 3 + Math.random() * 8; // next flash in 3-11s
+      flashTimer.current = 0.1 + Math.random() * 0.15;
+      nextFlash.current = 3 + Math.random() * 8;
     }
 
     if (flash) {
@@ -188,26 +184,20 @@ function LightningSystem() {
   );
 }
 
-// Wind system — updates the shared windForce vector
 function WindSystem() {
   useFrame((state) => {
     const t = state.clock.elapsedTime;
-    // Gusty wind that changes over time
     windForce.x = Math.sin(t * 0.3) * 2 + Math.sin(t * 1.1) * 1.5;
     windForce.z = Math.cos(t * 0.2) * 1.5 + Math.cos(t * 0.8) * 1;
   });
 
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      windForce.set(0, 0, 0);
-    };
+    return () => { windForce.set(0, 0, 0); };
   }, []);
 
   return null;
 }
 
-// Fog effect — uses Three.js scene fog
 function FogEffect({ density }: { density: number }) {
   useFrame(({ scene }) => {
     if (!scene.fog) {
@@ -216,19 +206,12 @@ function FogEffect({ density }: { density: number }) {
     (scene.fog as THREE.FogExp2).density = density;
   });
 
-  useEffect(() => {
-    return () => {
-      // Clear fog on unmount — will be set in useFrame with a ref
-    };
-  }, []);
-
   return null;
 }
 
-// Day/night cycle affects lighting
+// Simplified day/night — single directional light, reduced shadow map
 function DayNightCycle({ darkened }: { darkened?: boolean }) {
   const lightRef = useRef<THREE.DirectionalLight>(null);
-  const ambientRef = useRef<THREE.AmbientLight>(null);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
@@ -237,22 +220,16 @@ function DayNightCycle({ darkened }: { darkened?: boolean }) {
 
     if (lightRef.current) {
       lightRef.current.intensity = (0.3 + cycle * 1.2) * dimFactor;
-      const r = 0.9 + cycle * 0.1;
-      const g = 0.7 + cycle * 0.3;
-      const b = 0.5 + cycle * 0.5;
-      lightRef.current.color.setRGB(r, g, b);
-    }
-    if (ambientRef.current) {
-      ambientRef.current.intensity = (0.1 + cycle * 0.4) * dimFactor;
+      lightRef.current.color.setRGB(0.9 + cycle * 0.1, 0.7 + cycle * 0.3, 0.5 + cycle * 0.5);
     }
   });
 
   return (
     <>
       <directionalLight ref={lightRef} position={[20, 25, -10]} intensity={1} castShadow
-        shadow-mapSize-width={2048} shadow-mapSize-height={2048}
+        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
         shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={40} shadow-camera-bottom={-60} />
-      <ambientLight ref={ambientRef} intensity={0.3} />
+      <ambientLight intensity={darkened ? 0.15 : 0.3} />
     </>
   );
 }
@@ -260,7 +237,6 @@ function DayNightCycle({ darkened }: { darkened?: boolean }) {
 export default function WeatherSystem() {
   const { selectedMap, isPlaying } = useGame();
 
-  // Clear wind when not playing
   useEffect(() => {
     if (!isPlaying) windForce.set(0, 0, 0);
   }, [isPlaying]);
@@ -273,7 +249,6 @@ export default function WeatherSystem() {
   return (
     <>
       <DayNightCycle darkened={weather === "storm" || weather === "fog"} />
-      {weather === "rain" && <RainDrops />}
       {weather === "storm" && (
         <>
           <RainDrops heavy />

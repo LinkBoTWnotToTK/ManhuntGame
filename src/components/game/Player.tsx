@@ -26,17 +26,11 @@ const WALL_CHECK_DIST = 0.6;
 
 function PlayerFigure({ role, isDisguised }: { role: string | null; isDisguised: boolean }) {
   if (isDisguised) {
-    // Show as a crate block
     return (
       <group>
         <mesh position={[0, 0.4, 0]} castShadow>
           <boxGeometry args={[0.8, 0.8, 0.8]} />
           <meshStandardMaterial color="#8B6914" roughness={0.9} />
-        </mesh>
-        {/* Crate lines */}
-        <mesh position={[0, 0.4, 0.41]} castShadow>
-          <planeGeometry args={[0.7, 0.7]} />
-          <meshStandardMaterial color="#6B4914" roughness={0.9} />
         </mesh>
       </group>
     );
@@ -45,74 +39,47 @@ function PlayerFigure({ role, isDisguised }: { role: string | null; isDisguised:
   const isHunter = role === "hunter";
   const bodyColor = isHunter ? "#8B4513" : "#1a3a8a";
   const skinColor = "#e8b89a";
-  const accentColor = isHunter ? "#ff6600" : "#3388ff";
   const pantsColor = isHunter ? "#3a2a1a" : "#1a1a3a";
   
   return (
     <group>
+      {/* Head */}
       <mesh position={[0, 1.6, 0]} castShadow>
-        <sphereGeometry args={[0.18, 16, 16]} />
+        <sphereGeometry args={[0.18, 8, 6]} />
         <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
+      {/* Eyes */}
       <mesh position={[0.06, 1.63, 0.14]}>
-        <sphereGeometry args={[0.03, 8, 8]} />
+        <sphereGeometry args={[0.03, 4, 4]} />
         <meshStandardMaterial color="#222" />
       </mesh>
       <mesh position={[-0.06, 1.63, 0.14]}>
-        <sphereGeometry args={[0.03, 8, 8]} />
+        <sphereGeometry args={[0.03, 4, 4]} />
         <meshStandardMaterial color="#222" />
       </mesh>
-      <mesh position={[0, 1.72, -0.02]} castShadow>
-        <sphereGeometry args={[0.19, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color={isHunter ? "#2a1a0a" : "#1a1a2a"} roughness={0.9} />
-      </mesh>
+      {/* Body */}
       <mesh position={[0, 1.15, 0]} castShadow>
-        <capsuleGeometry args={[0.16, 0.45, 8, 16]} />
+        <capsuleGeometry args={[0.16, 0.45, 4, 8]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0, 0.88, 0]} castShadow>
-        <cylinderGeometry args={[0.17, 0.17, 0.06, 12]} />
-        <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={0.3} />
-      </mesh>
-      <mesh position={[-0.25, 1.1, 0]} rotation={[0, 0, 0.25]} castShadow>
-        <capsuleGeometry args={[0.05, 0.35, 6, 10]} />
+      {/* Arms */}
+      <mesh position={[-0.25, 1.1, 0]} rotation={[0, 0, 0.25]}>
+        <capsuleGeometry args={[0.05, 0.35, 3, 6]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0.25, 1.1, 0]} rotation={[0, 0, -0.25]} castShadow>
-        <capsuleGeometry args={[0.05, 0.35, 6, 10]} />
+      <mesh position={[0.25, 1.1, 0]} rotation={[0, 0, -0.25]}>
+        <capsuleGeometry args={[0.05, 0.35, 3, 6]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[-0.32, 0.88, 0]} castShadow>
-        <sphereGeometry args={[0.05, 8, 8]} />
-        <meshStandardMaterial color={skinColor} roughness={0.7} />
-      </mesh>
-      <mesh position={[0.32, 0.88, 0]} castShadow>
-        <sphereGeometry args={[0.05, 8, 8]} />
-        <meshStandardMaterial color={skinColor} roughness={0.7} />
-      </mesh>
-      {!isHunter && (
-        <mesh position={[0.35, 0.9, 0.05]} rotation={[0.3, 0, -0.2]} castShadow>
-          <cylinderGeometry args={[0.015, 0.015, 0.3, 6]} />
-          <meshStandardMaterial color="#5a3a1a" roughness={0.8} />
-        </mesh>
-      )}
-      <mesh position={[-0.09, 0.5, 0]} castShadow>
-        <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
+      {/* Legs */}
+      <mesh position={[-0.09, 0.5, 0]}>
+        <capsuleGeometry args={[0.06, 0.45, 3, 6]} />
         <meshStandardMaterial color={pantsColor} roughness={0.8} />
       </mesh>
-      <mesh position={[0.09, 0.5, 0]} castShadow>
-        <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
+      <mesh position={[0.09, 0.5, 0]}>
+        <capsuleGeometry args={[0.06, 0.45, 3, 6]} />
         <meshStandardMaterial color={pantsColor} roughness={0.8} />
       </mesh>
-      <mesh position={[-0.09, 0.2, 0.03]} castShadow>
-        <boxGeometry args={[0.1, 0.08, 0.16]} />
-        <meshStandardMaterial color="#333" roughness={0.6} />
-      </mesh>
-      <mesh position={[0.09, 0.2, 0.03]} castShadow>
-        <boxGeometry args={[0.1, 0.08, 0.16]} />
-        <meshStandardMaterial color="#333" roughness={0.6} />
-      </mesh>
-      <pointLight color={accentColor} intensity={0.6} distance={4} position={[0, 1.2, 0]} />
     </group>
   );
 }
