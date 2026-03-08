@@ -6,6 +6,9 @@ export interface SaveData {
   prestige: number;
   totalWins: number;
   totalGames: number;
+  equippedSkin: string;
+  equippedTrail: string;
+  equippedHat: string;
 }
 
 export interface LeaderboardEntry {
@@ -49,6 +52,9 @@ export function decodeSave(code: string): SaveData | null {
       prestige: parsed.prestige ?? 0,
       totalWins: parsed.totalWins ?? 0,
       totalGames: parsed.totalGames ?? 0,
+      equippedSkin: parsed.equippedSkin ?? "",
+      equippedTrail: parsed.equippedTrail ?? "",
+      equippedHat: parsed.equippedHat ?? "",
     };
   } catch {
     return null;
@@ -76,6 +82,9 @@ export function autoLoad(): SaveData | null {
         prestige: parsed.prestige ?? 0,
         totalWins: parsed.totalWins ?? 0,
         totalGames: parsed.totalGames ?? 0,
+        equippedSkin: parsed.equippedSkin ?? "",
+        equippedTrail: parsed.equippedTrail ?? "",
+        equippedHat: parsed.equippedHat ?? "",
       };
     }
   } catch {}
@@ -94,12 +103,10 @@ export function loadLeaderboard(): LeaderboardEntry[] {
   } catch { return []; }
 }
 
-// XP required for each level
 export function xpForLevel(level: number): number {
   return Math.floor(50 * Math.pow(1.3, level - 1));
 }
 
-// Coin multiplier from prestige
 export function prestigeMultiplier(prestige: number): number {
   return 1 + prestige * 0.25;
 }

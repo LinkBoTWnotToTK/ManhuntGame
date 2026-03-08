@@ -113,6 +113,20 @@ interface GameState {
   basePosition: [number, number, number] | null;
   parkourFinished: boolean;
   isDisguised: boolean;
+  // Cosmetics
+  equippedSkin: string;
+  equippedTrail: string;
+  equippedHat: string;
+  // Hatch prompt
+  nearHatch: boolean;
+  hatchPromptText: string;
+  setNearHatch: (near: boolean, text?: string) => void;
+  // Tutorial
+  tutorialActive: boolean;
+  tutorialStep: number;
+  startTutorial: () => void;
+  advanceTutorial: () => void;
+  endTutorial: () => void;
   selectRole: (role: Role) => void;
   selectMap: (map: GameMap) => void;
   setDifficulty: (d: Difficulty) => void;
@@ -142,6 +156,9 @@ interface GameState {
   finishParkour: () => void;
   toggleDisguise: () => void;
   advanceSurvivalWave: () => void;
+  equipSkin: (id: string) => void;
+  equipTrail: (id: string) => void;
+  equipHat: (id: string) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -229,6 +246,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [basePosition, setBasePosition] = useState<[number, number, number] | null>(null);
   const [parkourFinished, setParkourFinished] = useState(false);
   const [isDisguised, setIsDisguised] = useState(false);
+  const [equippedSkin, setEquippedSkin] = useState("");
+  const [equippedTrail, setEquippedTrail] = useState("");
+  const [equippedHat, setEquippedHat] = useState("");
+  const [nearHatch, setNearHatchState] = useState(false);
+  const [hatchPromptText, setHatchPromptText] = useState("");
+  const [tutorialActive, setTutorialActive] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
 
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -259,14 +283,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setPrestige(saved.prestige);
       setTotalWins(saved.totalWins);
       setTotalGames(saved.totalGames);
+      setEquippedSkin(saved.equippedSkin);
+      setEquippedTrail(saved.equippedTrail);
+      setEquippedHat(saved.equippedHat);
     }
     setLeaderboard(loadLeaderboard());
   }, []);
 
   useEffect(() => {
-    autoSave({ coins, powerups: ownedPowerups, level, xp, prestige, totalWins, totalGames });
+    autoSave({ coins, powerups: ownedPowerups, level, xp, prestige, totalWins, totalGames, equippedSkin, equippedTrail, equippedHat });
     ownedRef.current = ownedPowerups;
-  }, [coins, ownedPowerups, level, xp, prestige, totalWins, totalGames]);
+  }, [coins, ownedPowerups, level, xp, prestige, totalWins, totalGames, equippedSkin, equippedTrail, equippedHat]);
 
   const hasP = (id: string) => ownedPowerups.includes(id);
   const speedMultiplier = hasP("iron_boots") ? 1.2 : 1.0;
@@ -584,7 +611,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setPrestige(data.prestige);
     setTotalWins(data.totalWins);
     setTotalGames(data.totalGames);
+    setEquippedSkin(data.equippedSkin);
+    setEquippedTrail(data.equippedTrail);
+    setEquippedHat(data.equippedHat);
   }, []);
+
+  const equipSkin = useCallback((id: string) => setEquippedSkin(id), []);
+  const equipTrail = useCallback((id: string) => setEquippedTrail(id), []);
+  const equipHat = useCallback((id: string) => setEquippedHat(id), []);
+  const setNearHatch = useCallback((near: boolean, text?: string) => {
+    setNearHatchState(near);
+    setHatchPromptText(text || "");
+  }, []);
+  const startTutorial = useCallback(() => { setTutorialActive(true); setTutorialStep(0); }, []);
+  const advanceTutorial = useCallback(() => setTutorialStep(prev => prev + 1), []);
+  const endTutorial = useCallback(() => { setTutorialActive(false); setTutorialStep(0); }, []);
 
   const switchWeapon = useCallback((w: WeaponType) => setCurrentWeapon(w), []);
   const setMeleeCooldown = useCallback((cd: number) => setMeleeCooldownVal(cd), []);
@@ -698,6 +739,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         kothScore, kothZone, checkpoints, checkpointIndex,
         survivalWave, flagCarried, flagPosition, basePosition,
         parkourFinished, isDisguised,
+        equippedSkin, equippedTrail, equippedHat,
+        nearHatch, hatchPromptText, setNearHatch,
+        tutorialActive, tutorialStep, startTutorial, advanceTutorial, endTutorial,
         selectRole, selectMap, setDifficulty, setGameMode,
         tagNPC, startGame, resetGame, setEscaped,
         damagePlayer, damageNPC, healPlayer, useAmmo: useAmmoFn,
@@ -708,6 +752,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         doPrestige, advanceCheckpoint, addKothScore,
         grabFlag, returnFlag, finishParkour,
         toggleDisguise, advanceSurvivalWave,
+        equipSkin, equipTrail, equipHat,
       }}
     >
       {children}

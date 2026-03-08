@@ -18,9 +18,10 @@ const CAMERA_HEIGHT = 3;
 const HIT_RADIUS = 0.8;
 const GRAVITY = -20;
 const JUMP_VELOCITY = 8;
-
-// Disguise block shapes for Block Hunt
-const DISGUISE_BLOCKS = ["crate", "barrel", "rock"];
+const DOUBLE_JUMP_VELOCITY = 7;
+const WALL_RUN_SPEED = 5;
+const WALL_RUN_DURATION = 0.8; // seconds
+const WALL_CHECK_DIST = 0.6;
 
 function PlayerFigure({ role, isDisguised }: { role: string | null; isDisguised: boolean }) {
   if (isDisguised) {
@@ -156,6 +157,10 @@ export default function Player() {
   const meleeCooldownRef = useRef(0);
   const isGrounded = useRef(true);
   const jumpBuffered = useRef(false);
+  const doubleJumpUsed = useRef(false);
+  const wallRunTimer = useRef(0);
+  const wallRunSide = useRef(0); // -1 left, 1 right, 0 none
+  const isWallRunning = useRef(false);
 
   const shootRef = useRef<() => void>(() => {});
   shootRef.current = () => {
@@ -266,22 +271,76 @@ export default function Player() {
     else regenStamina(STAMINA_REGEN * delta);
     const speed = isDisguised ? 0 : (isSprinting ? sprintSpeed : walkSpeed); // Can't move while disguised
 
-    // --- Jumping physics ---
+    // --- Jumping physics with double jump & wall run ---
     const groundH = getGroundHeight(playerPosition.x, playerPosition.z, playerY);
     const onGround = playerY <= groundH + 0.05;
 
-    if (jumpBuffered.current && onGround) {
-      setPlayerVelocityY(JUMP_VELOCITY);
+    if (onGround) {
+      doubleJumpUsed.current = false;
+      isWallRunning.current = false;
+      wallRunTimer.current = 0;
+    }
+
+    // Wall run detection
+    const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
+    const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    if (!onGround && !isWallRunning.current && playerVelocityY < 0) {
+      // Check for walls on left and right
+      for (const side of [-1, 1]) {
+        const checkPos = playerPosition.clone().addScaledVector(right, side * WALL_CHECK_DIST);
+        const pMin = new THREE.Vector3(checkPos.x - 0.1, playerY, checkPos.z - 0.1);
+        const pMax = new THREE.Vector3(checkPos.x + 0.1, playerY + 1.5, checkPos.z + 0.1);
+        for (const c of wallColliders) {
+          if (pMin.x < c.max.x && pMax.x > c.min.x && pMin.y < c.max.y && pMax.y > c.min.y && pMin.z < c.max.z && pMax.z > c.min.z) {
+            // Touching wall — start wall run
+            if ((keys.current["KeyW"] || keys.current["ArrowUp"]) && wallRunTimer.current < WALL_RUN_DURATION) {
+              isWallRunning.current = true;
+              wallRunSide.current = side;
+              setPlayerVelocityY(0); // cancel falling
+            }
+            break;
+          }
+        }
+        if (isWallRunning.current) break;
+      }
+    }
+
+    // Wall running
+    if (isWallRunning.current) {
+      wallRunTimer.current += delta;
+      if (wallRunTimer.current >= WALL_RUN_DURATION || !(keys.current["KeyW"] || keys.current["ArrowUp"])) {
+        isWallRunning.current = false;
+      } else {
+        // Move forward along wall, slight upward
+        setPlayerVelocityY(1); // slight lift
+      }
+    }
+
+    if (jumpBuffered.current) {
+      if (onGround) {
+        setPlayerVelocityY(JUMP_VELOCITY);
+        isGrounded.current = false;
+        doubleJumpUsed.current = false;
+      } else if (isWallRunning.current) {
+        // Wall jump — launch away from wall
+        setPlayerVelocityY(JUMP_VELOCITY * 0.9);
+        isWallRunning.current = false;
+        // Push away from wall
+        playerPosition.addScaledVector(right, -wallRunSide.current * 2);
+      } else if (!doubleJumpUsed.current) {
+        // Double jump
+        setPlayerVelocityY(DOUBLE_JUMP_VELOCITY);
+        doubleJumpUsed.current = true;
+      }
       jumpBuffered.current = false;
-      isGrounded.current = false;
     }
     jumpBuffered.current = false; // consume
 
     // Apply gravity
-    let vy = playerVelocityY + GRAVITY * delta;
+    let vy = isWallRunning.current ? playerVelocityY : playerVelocityY + GRAVITY * delta;
     let newY = playerY + vy * delta;
 
-    // Check landing on platforms
     const newGroundH = getGroundHeight(playerPosition.x, playerPosition.z, newY);
     if (newY <= newGroundH) {
       newY = newGroundH;
@@ -293,8 +352,6 @@ export default function Player() {
     setPlayerVelocityY(vy);
 
     // --- Horizontal movement ---
-    const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
-    const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
     const dir = new THREE.Vector3();
     if (keys.current["KeyW"] || keys.current["ArrowUp"]) dir.add(forward);

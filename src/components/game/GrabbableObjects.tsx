@@ -262,7 +262,7 @@ function UndergroundBase({ map }: { map: GameMap }) {
 }
 
 export default function GrabbableObjects() {
-  const { selectedMap, isPlaying } = useGame();
+  const { selectedMap, isPlaying, setNearHatch } = useGame();
   const map = selectedMap || "suburban";
   const [objects, setObjects] = useState<LooseObject[]>([]);
   const [hatches, setHatches] = useState<HatchData[]>([]);
@@ -301,6 +301,19 @@ export default function GrabbableObjects() {
   useFrame((_, delta) => {
     if (!isPlaying) return;
     eCooldown.current = Math.max(0, eCooldown.current - delta);
+
+    // Check proximity to hatches for prompt
+    let foundNearHatch = false;
+    for (const hatch of hatches) {
+      if (!hatch.isRevealed) continue;
+      const dx = playerPosition.x - hatch.position.x;
+      const dz = playerPosition.z - hatch.position.z;
+      if (Math.sqrt(dx * dx + dz * dz) < 2.5) {
+        foundNearHatch = true;
+        break;
+      }
+    }
+    setNearHatch(foundNearHatch, foundNearHatch ? "Press E to go underground" : "");
 
     if (ePressed.current && eCooldown.current <= 0) {
       ePressed.current = false;
