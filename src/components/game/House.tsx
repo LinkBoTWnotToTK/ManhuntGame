@@ -192,21 +192,6 @@ function VentDuct({ position, rotation = 0, length = 4 }: { position: [number, n
         <meshStandardMaterial color="#555" metalness={0.6} roughness={0.4} />
       </mesh>
       {/* Vent grating */}
-      {Array.from({ length: Math.floor(length / 0.8) }).map((_, i) => (
-        <mesh key={i} position={[0, 1.01, -length / 2 + 0.4 + i * 0.8, ]} receiveShadow>
-          <boxGeometry args={[1.0, 0.02, 0.05]} />
-          <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
-        </mesh>
-      ))}
-      {/* Openings */}
-      <mesh position={[0, 0.5, length / 2 + 0.01]}>
-        <planeGeometry args={[1.0, 0.8]} />
-        <meshStandardMaterial color="#111" />
-      </mesh>
-      <mesh position={[0, 0.5, -length / 2 - 0.01]} rotation={[0, Math.PI, 0]}>
-        <planeGeometry args={[1.0, 0.8]} />
-        <meshStandardMaterial color="#111" />
-      </mesh>
     </group>
   );
 }
