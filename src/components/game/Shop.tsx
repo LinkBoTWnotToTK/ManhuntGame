@@ -8,13 +8,17 @@ interface ShopProps {
 }
 
 export default function Shop({ onBack }: ShopProps) {
-  const { coins, ownedPowerups, buyPowerup, loadSaveData, level, xp, prestige, totalWins, totalGames, doPrestige } = useGame();
+  const {
+    coins, ownedPowerups, buyPowerup, loadSaveData, level, xp, prestige,
+    totalWins, totalGames, doPrestige, equippedSkin, equippedTrail, equippedHat,
+    equipSkin, equipTrail, equipHat,
+  } = useGame();
   const [saveCode, setSaveCode] = useState("");
   const [showCode, setShowCode] = useState(false);
   const [generatedCode, setGeneratedCode] = useState("");
   const [loadError, setLoadError] = useState("");
   const [justBought, setJustBought] = useState<string | null>(null);
-  const [tab, setTab] = useState<"powerups" | "prestige" | "save">("powerups");
+  const [tab, setTab] = useState<"powerups" | "skins" | "trails" | "hats" | "prestige" | "save">("powerups");
 
   const handleBuy = (id: string) => {
     if (buyPowerup(id)) {
@@ -24,7 +28,10 @@ export default function Shop({ onBack }: ShopProps) {
   };
 
   const handleGenerateCode = () => {
-    const code = encodeSave({ coins, powerups: ownedPowerups, level, xp, prestige, totalWins, totalGames });
+    const code = encodeSave({
+      coins, powerups: ownedPowerups, level, xp, prestige, totalWins, totalGames,
+      equippedSkin, equippedTrail, equippedHat,
+    });
     setGeneratedCode(code);
     setShowCode(true);
   };
@@ -35,56 +42,78 @@ export default function Shop({ onBack }: ShopProps) {
     else setLoadError("Invalid code!");
   };
 
+  const powerups = POWERUPS.filter(p => p.category === "powerup");
+  const skins = POWERUPS.filter(p => p.category === "skin");
+  const trails = POWERUPS.filter(p => p.category === "trail");
+  const hats = POWERUPS.filter(p => p.category === "hat");
+
+  const renderItems = (items: typeof POWERUPS, equippedId?: string, equipFn?: (id: string) => void) => (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      {items.map(p => {
+        const owned = ownedPowerups.includes(p.id);
+        const canAfford = coins >= p.cost;
+        const isEquipped = equippedId === p.id;
+        return (
+          <div key={p.id} className={`relative rounded-xl border p-2.5 text-center transition-all ${
+            isEquipped ? "bg-blue-950/50 border-blue-400/40 ring-1 ring-blue-400/30"
+              : owned ? "bg-green-950/40 border-green-500/30"
+              : canAfford ? "bg-white/5 border-white/10 hover:border-white/25 hover:bg-white/8"
+              : "bg-white/[0.02] border-white/5 opacity-50"
+          } ${justBought === p.id ? "scale-95" : ""}`}>
+            <div className="text-2xl mb-0.5">{p.emoji}</div>
+            <div className="text-[10px] font-bold text-white mb-0.5">{p.name}</div>
+            <div className="text-[8px] text-white/30 leading-tight mb-1.5">{p.description}</div>
+            {isEquipped ? (
+              <div className="text-blue-400 text-[10px] font-bold">✦ Equipped</div>
+            ) : owned && equipFn ? (
+              <button onClick={() => equipFn(p.id)}
+                className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/30 transition-all">
+                Equip
+              </button>
+            ) : owned ? (
+              <div className="text-green-400 text-[10px] font-bold">✓ Owned</div>
+            ) : (
+              <button onClick={() => handleBuy(p.id)} disabled={!canAfford}
+                className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                  canAfford ? "bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 border border-yellow-500/30"
+                    : "bg-white/5 text-white/15 cursor-not-allowed border border-white/5"
+                }`}>🪙 {p.cost}</button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="animate-fade-in space-y-4 max-w-2xl mx-auto">
-      {/* Coin balance */}
       <div className="flex items-center justify-center gap-3">
         <span className="text-3xl">🪙</span>
         <span className="text-2xl font-black text-yellow-400 tabular-nums">{coins}</span>
         {prestige > 0 && <span className="text-yellow-500/50 text-xs">★{prestige} (×{prestigeMultiplier(prestige).toFixed(1)})</span>}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 justify-center">
-        {([["powerups","⚡ Powerups"],["prestige","★ Prestige"],["save","💾 Save"]] as const).map(([id,label]) => (
+      <div className="flex gap-1 justify-center flex-wrap">
+        {([
+          ["powerups", "⚡ Power"],
+          ["skins", "🎨 Skins"],
+          ["trails", "✨ Trails"],
+          ["hats", "🎩 Hats"],
+          ["prestige", "★ Prestige"],
+          ["save", "💾 Save"],
+        ] as const).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${
               tab === id ? "bg-white/10 border-white/20 text-white" : "bg-transparent border-transparent text-white/30 hover:text-white/50"
             }`}>{label}</button>
         ))}
       </div>
 
-      {/* Powerups */}
-      {tab === "powerups" && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {POWERUPS.map(p => {
-            const owned = ownedPowerups.includes(p.id);
-            const canAfford = coins >= p.cost;
-            return (
-              <div key={p.id} className={`relative rounded-xl border p-2.5 text-center transition-all ${
-                owned ? "bg-green-950/40 border-green-500/30"
-                  : canAfford ? "bg-white/5 border-white/10 hover:border-white/25 hover:bg-white/8"
-                  : "bg-white/[0.02] border-white/5 opacity-50"
-              } ${justBought === p.id ? "scale-95" : ""}`}>
-                <div className="text-2xl mb-0.5">{p.emoji}</div>
-                <div className="text-[10px] font-bold text-white mb-0.5">{p.name}</div>
-                <div className="text-[8px] text-white/30 leading-tight mb-1.5">{p.description}</div>
-                {owned ? (
-                  <div className="text-green-400 text-[10px] font-bold">✓ Owned</div>
-                ) : (
-                  <button onClick={() => handleBuy(p.id)} disabled={!canAfford}
-                    className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all ${
-                      canAfford ? "bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 border border-yellow-500/30"
-                        : "bg-white/5 text-white/15 cursor-not-allowed border border-white/5"
-                    }`}>🪙 {p.cost}</button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {tab === "powerups" && renderItems(powerups)}
+      {tab === "skins" && renderItems(skins, equippedSkin, equipSkin)}
+      {tab === "trails" && renderItems(trails, equippedTrail, equipTrail)}
+      {tab === "hats" && renderItems(hats, equippedHat, equipHat)}
 
-      {/* Prestige */}
       {tab === "prestige" && (
         <div className="space-y-4 max-w-xs mx-auto">
           <div className="bg-gradient-to-b from-yellow-900/20 to-yellow-950/40 rounded-xl p-5 border border-yellow-500/20 space-y-3 text-center">
@@ -95,8 +124,7 @@ export default function Shop({ onBack }: ShopProps) {
               <span className="text-yellow-300 font-bold">+25% coin & XP multiplier</span>
             </div>
             <div className="text-white/30 text-[10px]">
-              Current multiplier: ×{prestigeMultiplier(prestige).toFixed(2)}<br/>
-              Next: ×{prestigeMultiplier(prestige + 1).toFixed(2)}
+              Current: ×{prestigeMultiplier(prestige).toFixed(2)} | Next: ×{prestigeMultiplier(prestige + 1).toFixed(2)}
             </div>
             {level >= 10 ? (
               <button onClick={doPrestige}
@@ -115,7 +143,6 @@ export default function Shop({ onBack }: ShopProps) {
         </div>
       )}
 
-      {/* Save/Load */}
       {tab === "save" && (
         <div className="space-y-3 max-w-sm mx-auto">
           <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-3">
