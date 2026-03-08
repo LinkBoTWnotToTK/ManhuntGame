@@ -246,6 +246,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [basePosition, setBasePosition] = useState<[number, number, number] | null>(null);
   const [parkourFinished, setParkourFinished] = useState(false);
   const [isDisguised, setIsDisguised] = useState(false);
+  const [equippedSkin, setEquippedSkin] = useState("");
+  const [equippedTrail, setEquippedTrail] = useState("");
+  const [equippedHat, setEquippedHat] = useState("");
+  const [nearHatch, setNearHatchState] = useState(false);
+  const [hatchPromptText, setHatchPromptText] = useState("");
+  const [tutorialActive, setTutorialActive] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
 
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
