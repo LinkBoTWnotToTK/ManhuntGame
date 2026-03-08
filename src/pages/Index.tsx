@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import House from "@/components/game/House";
@@ -16,6 +17,9 @@ import ScreenEffects from "@/components/game/ScreenEffects";
 import WeaponSystem from "@/components/game/WeaponSystem";
 import Tutorial from "@/components/game/Tutorial";
 import WeatherSystem from "@/components/game/WeatherSystem";
+import LevelEditor from "@/components/game/LevelEditor";
+
+// ... keep existing code (KothZone, Checkpoints, FlagObject, SurvivalWaveIndicator, GameScene, DynamicFOV, HatchPrompt components - lines 20-201)
 
 function KothZone() {
   const { kothZone, isPlaying } = useGame();
@@ -60,7 +64,6 @@ function Checkpoints() {
             {isCurrent && (
               <pointLight color={color} intensity={3} distance={8} position={[0, 2, 0]} />
             )}
-            {/* Ring marker for parkour */}
             {isParkour && isCurrent && (
               <mesh position={[0, 2.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
                 <torusGeometry args={[1, 0.1, 8, 24]} />
@@ -80,7 +83,6 @@ function FlagObject() {
 
   return (
     <>
-      {/* Flag */}
       {flagPosition && !flagCarried && (
         <group position={flagPosition}>
           <mesh position={[0, 1.5, 0]} castShadow>
@@ -94,7 +96,6 @@ function FlagObject() {
           <pointLight position={[0, 3, 0]} color="#ff0000" intensity={3} distance={10} />
         </group>
       )}
-      {/* Base beacon */}
       {basePosition && (
         <group position={basePosition}>
           <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -119,7 +120,7 @@ function FlagObject() {
 function SurvivalWaveIndicator() {
   const { survivalWave, isPlaying, gameMode } = useGame();
   if (!isPlaying || gameMode !== "survival") return null;
-  return null; // Wave info is shown in HUD
+  return null;
 }
 
 function GameScene() {
@@ -129,10 +130,7 @@ function GameScene() {
   const fov = ownedPowerups.includes("eagle_eye") ? 65 : 55;
   const diff = DIFFICULTY_SETTINGS[difficulty];
 
-  // In survival mode, more hunters spawn with each wave
   const survivalHunterCount = gameMode === "survival" ? Math.min(7, 2 + survivalWave) : diff.hunterCount;
-
-  // Parkour/deathrun: fewer NPCs, focus on platforming
   const isPlatformMode = gameMode === "parkour" || gameMode === "deathrun";
   const isBlockHunt = gameMode === "blockhunt";
 
@@ -155,11 +153,9 @@ function GameScene() {
           }
         </>
       )}
-      {/* Block Hunt: seekers (hunters) roam looking for disguised players */}
       {isBlockHunt && role === "runner" && (
         spawns.hunters.slice(0, 3).map((npc) => <NPC key={npc.id} {...npc} npcRole="hunter" />)
       )}
-      {/* Parkour: minimal chasers to keep pressure */}
       {isPlatformMode && role === "runner" && (
         spawns.hunters.slice(0, 1).map((npc) => <NPC key={npc.id} {...npc} npcRole="hunter" />)
       )}
@@ -200,10 +196,16 @@ function HatchPrompt() {
   );
 }
 
-const Index = () => (
-  <GameProvider>
+function GameContent() {
+  const [showEditor, setShowEditor] = useState(false);
+
+  if (showEditor) {
+    return <LevelEditor onExit={() => setShowEditor(false)} />;
+  }
+
+  return (
     <div className="w-screen h-screen bg-black overflow-hidden">
-      <GameUI />
+      <GameUI onOpenEditor={() => setShowEditor(true)} />
       <Minimap />
       <ScreenEffects />
       <Tutorial />
@@ -217,6 +219,12 @@ const Index = () => (
         <GameScene />
       </Canvas>
     </div>
+  );
+}
+
+const Index = () => (
+  <GameProvider>
+    <GameContent />
   </GameProvider>
 );
 
