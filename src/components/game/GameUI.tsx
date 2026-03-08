@@ -349,31 +349,36 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
             {/* MAIN MENU */}
             {menuStep === "main" && (
               <div className="animate-fade-in space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 max-w-2xl mx-auto">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 max-w-3xl mx-auto">
                   <button onClick={() => transition("play")}
-                    className="group p-5 bg-gradient-to-b from-blue-900/40 to-blue-950/60 text-white rounded-2xl border border-blue-500/20 hover:border-blue-400/50 transition-all hover:scale-105 active:scale-95 space-y-2">
-                    <div className="text-3xl group-hover:scale-110 transition-transform">🎮</div>
-                    <div className="text-sm font-black">PLAY</div>
+                    className="group p-4 bg-gradient-to-b from-blue-900/40 to-blue-950/60 text-white rounded-2xl border border-blue-500/20 hover:border-blue-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
+                    <div className="text-2xl group-hover:scale-110 transition-transform">🎮</div>
+                    <div className="text-xs font-black">PLAY</div>
+                  </button>
+                  <button onClick={() => { setCampaignProgress(loadCampaignProgress()); transition("campaign"); }}
+                    className="group p-4 bg-gradient-to-b from-amber-900/40 to-amber-950/60 text-white rounded-2xl border border-amber-500/20 hover:border-amber-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
+                    <div className="text-2xl group-hover:scale-110 transition-transform">🎖️</div>
+                    <div className="text-xs font-black">CAMPAIGN</div>
                   </button>
                   <button onClick={() => transition("shop")}
-                    className="group p-5 bg-gradient-to-b from-yellow-900/40 to-yellow-950/60 text-white rounded-2xl border border-yellow-500/20 hover:border-yellow-400/50 transition-all hover:scale-105 active:scale-95 space-y-2">
-                    <div className="text-3xl group-hover:scale-110 transition-transform">🛒</div>
-                    <div className="text-sm font-black">SHOP</div>
+                    className="group p-4 bg-gradient-to-b from-yellow-900/40 to-yellow-950/60 text-white rounded-2xl border border-yellow-500/20 hover:border-yellow-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
+                    <div className="text-2xl group-hover:scale-110 transition-transform">🛒</div>
+                    <div className="text-xs font-black">SHOP</div>
                   </button>
                   <button onClick={() => transition("leaderboard")}
-                    className="group p-5 bg-gradient-to-b from-purple-900/40 to-purple-950/60 text-white rounded-2xl border border-purple-500/20 hover:border-purple-400/50 transition-all hover:scale-105 active:scale-95 space-y-2">
-                    <div className="text-3xl group-hover:scale-110 transition-transform">🏅</div>
-                    <div className="text-sm font-black">SCORES</div>
+                    className="group p-4 bg-gradient-to-b from-purple-900/40 to-purple-950/60 text-white rounded-2xl border border-purple-500/20 hover:border-purple-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
+                    <div className="text-2xl group-hover:scale-110 transition-transform">🏅</div>
+                    <div className="text-xs font-black">SCORES</div>
                   </button>
                   <button onClick={onOpenEditor}
-                    className="group p-5 bg-gradient-to-b from-cyan-900/40 to-cyan-950/60 text-white rounded-2xl border border-cyan-500/20 hover:border-cyan-400/50 transition-all hover:scale-105 active:scale-95 space-y-2">
-                    <div className="text-3xl group-hover:scale-110 transition-transform">🗺️</div>
-                    <div className="text-sm font-black">EDITOR</div>
+                    className="group p-4 bg-gradient-to-b from-cyan-900/40 to-cyan-950/60 text-white rounded-2xl border border-cyan-500/20 hover:border-cyan-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
+                    <div className="text-2xl group-hover:scale-110 transition-transform">🗺️</div>
+                    <div className="text-xs font-black">EDITOR</div>
                   </button>
                   <button onClick={() => startTutorial()}
-                    className="group p-5 bg-gradient-to-b from-emerald-900/40 to-emerald-950/60 text-white rounded-2xl border border-emerald-500/20 hover:border-emerald-400/50 transition-all hover:scale-105 active:scale-95 space-y-2">
-                    <div className="text-3xl group-hover:scale-110 transition-transform">📖</div>
-                    <div className="text-sm font-black">TUTORIAL</div>
+                    className="group p-4 bg-gradient-to-b from-emerald-900/40 to-emerald-950/60 text-white rounded-2xl border border-emerald-500/20 hover:border-emerald-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
+                    <div className="text-2xl group-hover:scale-110 transition-transform">📖</div>
+                    <div className="text-xs font-black">TUTORIAL</div>
                   </button>
                 </div>
               </div>
