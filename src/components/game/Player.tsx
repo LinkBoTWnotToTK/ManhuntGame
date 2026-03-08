@@ -183,7 +183,13 @@ export default function Player() {
         shootRef.current();
       }
     };
-    const onKeyDown = (e: KeyboardEvent) => { keys.current[e.code] = true; };
+    const onKeyDown = (e: KeyboardEvent) => {
+      keys.current[e.code] = true;
+      // Weapon switching with 1/2/3 keys (runner only)
+      if (e.code === "Digit1") switchWeapon("slingshot");
+      if (e.code === "Digit2") switchWeapon("shotgun");
+      if (e.code === "Digit3") switchWeapon("sniper");
+    };
     const onKeyUp = (e: KeyboardEvent) => { keys.current[e.code] = false; };
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mousedown", onMouseDown);
