@@ -119,16 +119,10 @@ function Lamppost({ position }: { position: [number, number, number] }) {
 
 function Barrel({ position }: { position: [number, number, number] }) {
   return (
-    <group position={position}>
-      <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.35, 0.35, 1, 12]} />
-        <meshStandardMaterial color="#8B4513" roughness={0.8} />
-      </mesh>
-      <mesh position={[0, 0.5, 0]}>
-        <torusGeometry args={[0.36, 0.03, 8, 16]} />
-        <meshStandardMaterial color="#666" metalness={0.9} roughness={0.3} />
-      </mesh>
-    </group>
+    <mesh position={[position[0], 0.5, position[2]]}>
+      <cylinderGeometry args={[0.35, 0.35, 1, 8]} />
+      <meshStandardMaterial color="#8B4513" roughness={0.8} />
+    </mesh>
   );
 }
 
