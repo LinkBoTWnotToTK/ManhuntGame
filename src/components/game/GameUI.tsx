@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useGame, Role, GameMap, Difficulty, GameMode, DIFFICULTY_SETTINGS, GAME_MODES } from "./GameState";
 import Shop from "./Shop";
 import { xpForLevel, prestigeMultiplier } from "./SaveSystem";
+import { TUTORIAL_STEPS } from "./Tutorial";
 
 function formatTime(secs: number) {
   const mins = Math.floor(secs / 60);
@@ -34,6 +35,7 @@ export default function GameUI() {
     level, xp, prestige, totalWins, totalGames, leaderboard,
     kothScore, checkpointIndex, survivalWave, flagCarried, isDisguised,
     selectRole, selectMap, setDifficulty, setGameMode, startGame, resetGame,
+    startTutorial,
   } = useGame();
 
   const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready">("main");
@@ -356,10 +358,10 @@ export default function GameUI() {
                     <div className="text-3xl group-hover:scale-110 transition-transform">🏅</div>
                     <div className="text-sm font-black">SCORES</div>
                   </button>
-                  <button onClick={() => transition("shop")}
+                  <button onClick={() => startTutorial()}
                     className="group p-5 bg-gradient-to-b from-emerald-900/40 to-emerald-950/60 text-white rounded-2xl border border-emerald-500/20 hover:border-emerald-400/50 transition-all hover:scale-105 active:scale-95 space-y-2">
-                    <div className="text-3xl group-hover:scale-110 transition-transform">⚙️</div>
-                    <div className="text-sm font-black">SAVE</div>
+                    <div className="text-3xl group-hover:scale-110 transition-transform">📖</div>
+                    <div className="text-sm font-black">TUTORIAL</div>
                   </button>
                 </div>
               </div>

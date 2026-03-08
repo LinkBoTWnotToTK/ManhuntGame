@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame, GameMap, MAP_BOUNDS } from "./GameState";
-import { playerPosition } from "./SharedState";
+import { playerPosition, setPlayerY, setPlayerVelocityY } from "./SharedState";
 
 interface LooseObject {
   id: string;
@@ -304,16 +304,29 @@ export default function GrabbableObjects() {
 
     // Check proximity to hatches for prompt
     let foundNearHatch = false;
+    let promptText = "";
     for (const hatch of hatches) {
       if (!hatch.isRevealed) continue;
-      const dx = playerPosition.x - hatch.position.x;
-      const dz = playerPosition.z - hatch.position.z;
-      if (Math.sqrt(dx * dx + dz * dz) < 2.5) {
-        foundNearHatch = true;
-        break;
+      if (isUnderground) {
+        // When underground, check proximity to exit marker (targetPosition at y=-8)
+        const dx = playerPosition.x - hatch.targetPosition.x;
+        const dz = playerPosition.z - hatch.targetPosition.z;
+        if (Math.sqrt(dx * dx + dz * dz) < 2.5) {
+          foundNearHatch = true;
+          promptText = "Press E to return to surface";
+          break;
+        }
+      } else {
+        const dx = playerPosition.x - hatch.position.x;
+        const dz = playerPosition.z - hatch.position.z;
+        if (Math.sqrt(dx * dx + dz * dz) < 2.5) {
+          foundNearHatch = true;
+          promptText = "Press E to go underground";
+          break;
+        }
       }
     }
-    setNearHatch(foundNearHatch, foundNearHatch ? "Press E to go underground" : "");
+    setNearHatch(foundNearHatch, promptText);
 
     if (ePressed.current && eCooldown.current <= 0) {
       ePressed.current = false;
@@ -331,16 +344,16 @@ export default function GrabbableObjects() {
 
           if (isNearHatch && hatch.isRevealed) {
             if (!isUnderground) {
-              // Go underground
-              playerPosition.copy(hatch.targetPosition);
-              playerPosition.y = 0; // Player stays at y=0 relative, but teleported
+              // Go underground - teleport player to underground base
               playerPosition.set(hatch.targetPosition.x, 0, hatch.targetPosition.z);
-              // Actually move to underground base
-              playerPosition.y = -8;
+              setPlayerY(-8);
+              setPlayerVelocityY(0);
               setIsUnderground(true);
             } else {
-              // Come back up
+              // Come back up - teleport to surface
               playerPosition.set(hatch.position.x, 0, hatch.position.z);
+              setPlayerY(0);
+              setPlayerVelocityY(0);
               setIsUnderground(false);
             }
             return;
