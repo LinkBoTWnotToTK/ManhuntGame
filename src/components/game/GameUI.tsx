@@ -77,7 +77,8 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   const handleBack = () => {
     setTransitioning(true);
     const flow: Record<string, string> = {
-      shop: "main", leaderboard: "main", play: "main",
+      shop: "main", leaderboard: "main", play: "main", campaign: "main",
+      campaign_chapter: "campaign",
       mode: "play", difficulty: "mode", map: "difficulty", ready: "map",
     };
     const prev = flow[menuStep] || "main";
