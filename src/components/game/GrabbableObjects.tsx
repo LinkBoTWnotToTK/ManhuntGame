@@ -206,17 +206,14 @@ function UndergroundBase({ map }: { map: GameMap }) {
         const by = -8;
         return (
           <group key={h.id}>
-            {/* Floor */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, by - 0.01, cz]} receiveShadow>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, by - 0.01, cz]}>
               <planeGeometry args={[12, 12]} />
               <meshStandardMaterial color="#3a3a3a" roughness={0.9} />
             </mesh>
-            {/* Ceiling */}
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[cx, by + 3, cz]} receiveShadow>
+            <mesh rotation={[Math.PI / 2, 0, 0]} position={[cx, by + 3, cz]}>
               <planeGeometry args={[12, 12]} />
               <meshStandardMaterial color="#2a2a2a" roughness={0.95} />
             </mesh>
-            {/* Walls */}
             <mesh position={[cx, by + 1.5, cz - 6]}>
               <boxGeometry args={[12, 3, 0.3]} />
               <meshStandardMaterial color="#444" roughness={0.8} />
@@ -233,27 +230,11 @@ function UndergroundBase({ map }: { map: GameMap }) {
               <boxGeometry args={[0.3, 3, 12]} />
               <meshStandardMaterial color="#444" roughness={0.8} />
             </mesh>
-            {/* Exit hatch marker (glowing green) */}
             <mesh position={[cx, by + 0.02, cz]} rotation={[-Math.PI / 2, 0, 0]}>
-              <circleGeometry args={[0.8, 16]} />
+              <circleGeometry args={[0.8, 8]} />
               <meshStandardMaterial color="#00ff44" emissive="#00ff44" emissiveIntensity={1.5} />
             </mesh>
-            {/* Supplies decoration */}
-            <mesh position={[cx - 3, by + 0.4, cz - 4]} castShadow>
-              <boxGeometry args={[1.5, 0.8, 1]} />
-              <meshStandardMaterial color="#5a5040" roughness={0.85} />
-            </mesh>
-            <mesh position={[cx + 3, by + 0.3, cz - 4]} castShadow>
-              <cylinderGeometry args={[0.3, 0.3, 0.6, 12]} />
-              <meshStandardMaterial color="#6a4020" roughness={0.8} />
-            </mesh>
-            <mesh position={[cx + 2, by + 0.3, cz + 4]} castShadow>
-              <boxGeometry args={[2, 0.6, 0.8]} />
-              <meshStandardMaterial color="#4a4a5a" roughness={0.7} metalness={0.3} />
-            </mesh>
-            {/* Light */}
-            <pointLight position={[cx, by + 2.5, cz]} color="#ffeeaa" intensity={4} distance={10} decay={2} />
-            <pointLight position={[cx, by + 2.5, cz - 3]} color="#aaccff" intensity={2} distance={8} decay={2} />
+            <ambientLight intensity={0.4} />
           </group>
         );
       })}
