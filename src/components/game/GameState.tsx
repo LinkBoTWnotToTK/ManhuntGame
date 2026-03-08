@@ -283,14 +283,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setPrestige(saved.prestige);
       setTotalWins(saved.totalWins);
       setTotalGames(saved.totalGames);
+      setEquippedSkin(saved.equippedSkin);
+      setEquippedTrail(saved.equippedTrail);
+      setEquippedHat(saved.equippedHat);
     }
     setLeaderboard(loadLeaderboard());
   }, []);
 
   useEffect(() => {
-    autoSave({ coins, powerups: ownedPowerups, level, xp, prestige, totalWins, totalGames });
+    autoSave({ coins, powerups: ownedPowerups, level, xp, prestige, totalWins, totalGames, equippedSkin, equippedTrail, equippedHat });
     ownedRef.current = ownedPowerups;
-  }, [coins, ownedPowerups, level, xp, prestige, totalWins, totalGames]);
+  }, [coins, ownedPowerups, level, xp, prestige, totalWins, totalGames, equippedSkin, equippedTrail, equippedHat]);
 
   const hasP = (id: string) => ownedPowerups.includes(id);
   const speedMultiplier = hasP("iron_boots") ? 1.2 : 1.0;
