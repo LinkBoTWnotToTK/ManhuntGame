@@ -1,6 +1,15 @@
-// Campaign system with challenge levels
+// Campaign system with challenge levels, bosses, and star ratings
 
 import type { GameMap, GameMode, Difficulty } from "./GameState";
+
+export interface BossData {
+  name: string;
+  emoji: string;
+  healthMult: number; // multiplier on normal hunter HP
+  speedMult: number;
+  size: number; // scale
+  color: string;
+}
 
 export interface CampaignChallenge {
   id: string;
@@ -11,11 +20,13 @@ export interface CampaignChallenge {
   mode: GameMode;
   difficulty: Difficulty;
   role: "runner" | "hunter";
-  // Win conditions / modifiers
   objectives: string[];
-  timeLimit?: number; // override game duration
-  requiredCoins?: number; // collect X coins to win
+  timeLimit?: number;
+  requiredCoins?: number;
   reward: { coins: number; xp: number };
+  boss?: BossData;
+  // Star thresholds (time in seconds — lower is better)
+  starThresholds?: [number, number, number]; // [3-star, 2-star, 1-star] max times
 }
 
 export interface CampaignChapter {
@@ -39,6 +50,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         map: "suburban", mode: "classic", difficulty: "easy", role: "runner",
         objectives: ["Survive for 30 seconds"],
         timeLimit: 30, reward: { coins: 5, xp: 20 },
+        starThresholds: [15, 22, 30],
       },
       {
         id: "ch1_2", name: "Coin Collector", emoji: "🪙",
@@ -46,6 +58,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         map: "suburban", mode: "collector", difficulty: "easy", role: "runner",
         objectives: ["Collect 10 coins"], requiredCoins: 10,
         timeLimit: 45, reward: { coins: 8, xp: 30 },
+        starThresholds: [20, 30, 45],
       },
       {
         id: "ch1_3", name: "Tag Practice", emoji: "🏷️",
@@ -53,6 +66,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         map: "suburban", mode: "classic", difficulty: "easy", role: "hunter",
         objectives: ["Tag 3 runners"],
         reward: { coins: 10, xp: 40 },
+        starThresholds: [25, 40, 60],
       },
     ],
   },
@@ -68,6 +82,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         map: "forest", mode: "classic", difficulty: "medium", role: "runner",
         objectives: ["Escape through the portal"],
         reward: { coins: 12, xp: 50 },
+        starThresholds: [30, 45, 60],
       },
       {
         id: "ch2_2", name: "Arctic Survivor", emoji: "❄️",
@@ -75,13 +90,23 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         map: "arctic", mode: "survival", difficulty: "medium", role: "runner",
         objectives: ["Survive 3 waves"],
         reward: { coins: 15, xp: 60 },
+        starThresholds: [40, 55, 70],
       },
       {
-        id: "ch2_3", name: "Flag Raider", emoji: "🚩",
-        description: "Capture the flag on Industrial in the fog.",
-        map: "industrial", mode: "ctf", difficulty: "medium", role: "runner",
-        objectives: ["Capture the flag and return to base"],
-        reward: { coins: 15, xp: 60 },
+        id: "ch2_3", name: "The Brute", emoji: "👹",
+        description: "Defeat the Forest Guardian boss!",
+        map: "forest", mode: "classic", difficulty: "medium", role: "runner",
+        objectives: ["Defeat the Forest Guardian"],
+        reward: { coins: 20, xp: 80 },
+        starThresholds: [35, 50, 70],
+        boss: {
+          name: "Forest Guardian",
+          emoji: "👹",
+          healthMult: 5,
+          speedMult: 1.3,
+          size: 1.8,
+          color: "#2a6a1a",
+        },
       },
     ],
   },
@@ -89,7 +114,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
     id: "ch3",
     name: "Extreme Trials",
     emoji: "🔥",
-    description: "Master the hardest challenges across all environments.",
+    description: "Master the hardest challenges and defeat legendary bosses.",
     challenges: [
       {
         id: "ch3_1", name: "Parkour Master", emoji: "🧗",
@@ -97,6 +122,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         map: "volcano", mode: "parkour", difficulty: "hard", role: "runner",
         objectives: ["Reach all 5 checkpoints"],
         reward: { coins: 20, xp: 80 },
+        starThresholds: [40, 60, 90],
       },
       {
         id: "ch3_2", name: "Death Run", emoji: "☠️",
@@ -104,20 +130,39 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         map: "space_station", mode: "deathrun", difficulty: "hard", role: "runner",
         objectives: ["Reach all checkpoints without dying"],
         reward: { coins: 25, xp: 100 },
+        starThresholds: [35, 55, 75],
       },
       {
-        id: "ch3_3", name: "Underground Hunt", emoji: "🕳️",
-        description: "Tag all runners using the underground tunnels.",
-        map: "underground", mode: "classic", difficulty: "hard", role: "hunter",
-        objectives: ["Tag all 7 runners"],
+        id: "ch3_3", name: "Lava Titan", emoji: "🌋",
+        description: "Defeat the Lava Titan on Volcano!",
+        map: "volcano", mode: "classic", difficulty: "hard", role: "runner",
+        objectives: ["Defeat the Lava Titan"],
         reward: { coins: 30, xp: 120 },
+        starThresholds: [40, 55, 75],
+        boss: {
+          name: "Lava Titan",
+          emoji: "🌋",
+          healthMult: 8,
+          speedMult: 1.5,
+          size: 2.2,
+          color: "#cc3300",
+        },
       },
       {
-        id: "ch3_4", name: "Last Standing", emoji: "💀",
-        description: "Win a Last Man Standing match on Volcano on hard.",
-        map: "volcano", mode: "lms", difficulty: "hard", role: "runner",
-        objectives: ["Be the last one standing"],
-        reward: { coins: 35, xp: 150 },
+        id: "ch3_4", name: "Void King", emoji: "👑",
+        description: "Defeat the final boss — the Void King in Space!",
+        map: "space_station", mode: "classic", difficulty: "hard", role: "runner",
+        objectives: ["Defeat the Void King"],
+        reward: { coins: 50, xp: 200 },
+        starThresholds: [45, 65, 90],
+        boss: {
+          name: "Void King",
+          emoji: "👑",
+          healthMult: 12,
+          speedMult: 1.6,
+          size: 2.5,
+          color: "#4400aa",
+        },
       },
     ],
   },
@@ -126,19 +171,35 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
 const CAMPAIGN_STORAGE_KEY = "hide_seek_campaign";
 
 export interface CampaignProgress {
-  completed: string[]; // challenge IDs
+  completed: string[];
   bestTimes: Record<string, number>;
+  stars: Record<string, number>; // 1-3 stars per challenge
 }
 
 export function loadCampaignProgress(): CampaignProgress {
   try {
     const raw = localStorage.getItem(CAMPAIGN_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { completed: [], bestTimes: {} };
-  } catch { return { completed: [], bestTimes: {} }; }
+    const data = raw ? JSON.parse(raw) : { completed: [], bestTimes: {}, stars: {} };
+    if (!data.stars) data.stars = {};
+    return data;
+  } catch { return { completed: [], bestTimes: {}, stars: {} }; }
 }
 
 export function saveCampaignProgress(progress: CampaignProgress) {
   localStorage.setItem(CAMPAIGN_STORAGE_KEY, JSON.stringify(progress));
+}
+
+export function getStarRating(challengeId: string, time: number): number {
+  for (const chapter of CAMPAIGN_CHAPTERS) {
+    for (const c of chapter.challenges) {
+      if (c.id === challengeId && c.starThresholds) {
+        if (time <= c.starThresholds[0]) return 3;
+        if (time <= c.starThresholds[1]) return 2;
+        return 1;
+      }
+    }
+  }
+  return 1;
 }
 
 export function completeCampaignChallenge(id: string, time: number) {
@@ -149,24 +210,25 @@ export function completeCampaignChallenge(id: string, time: number) {
   if (!progress.bestTimes[id] || time < progress.bestTimes[id]) {
     progress.bestTimes[id] = time;
   }
+  const stars = getStarRating(id, time);
+  if (!progress.stars[id] || stars > progress.stars[id]) {
+    progress.stars[id] = stars;
+  }
   saveCampaignProgress(progress);
   return progress;
 }
 
 export function isChallengeUnlocked(challengeId: string): boolean {
   const progress = loadCampaignProgress();
-  // First challenge of each chapter is always unlocked if previous chapter is done
   for (const chapter of CAMPAIGN_CHAPTERS) {
     const chapterIdx = CAMPAIGN_CHAPTERS.indexOf(chapter);
     for (let i = 0; i < chapter.challenges.length; i++) {
       if (chapter.challenges[i].id === challengeId) {
         if (i === 0) {
-          // First challenge: unlocked if previous chapter complete or first chapter
           if (chapterIdx === 0) return true;
           const prevChapter = CAMPAIGN_CHAPTERS[chapterIdx - 1];
           return prevChapter.challenges.every(c => progress.completed.includes(c.id));
         }
-        // Otherwise: previous challenge in this chapter must be completed
         return progress.completed.includes(chapter.challenges[i - 1].id);
       }
     }
