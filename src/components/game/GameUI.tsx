@@ -39,6 +39,18 @@ const MAP_INFO: Record<GameMap, { name: string; emoji: string; desc: string; col
     color: "bg-purple-950/50 hover:bg-purple-900/60",
     borderColor: "border-purple-500/20 hover:border-purple-500/50",
   },
+  volcano: {
+    name: "VOLCANO", emoji: "🌋",
+    desc: "Molten caverns with lava rivers & obsidian walls",
+    color: "bg-red-950/50 hover:bg-red-900/60",
+    borderColor: "border-red-500/20 hover:border-red-500/50",
+  },
+  space_station: {
+    name: "SPACE STATION", emoji: "🚀",
+    desc: "Zero-G corridors with airlocks & control rooms",
+    color: "bg-indigo-950/50 hover:bg-indigo-900/60",
+    borderColor: "border-indigo-500/20 hover:border-indigo-500/50",
+  },
 };
 
 export default function GameUI() {
@@ -355,7 +367,7 @@ export default function GameUI() {
                   <p className="text-white/70 leading-relaxed text-sm">
                     {role === "hunter"
                       ? "Hunt all 7 runners! Tag them up close for instant elimination. Your ally hunter helps the chase. Medkits spawn every 30s."
-                      : "Evade 3 hunters for 60 seconds, then reach the portal! Shoot back with your slingshot (3 ammo, more spawns every 10s). Being tagged = instant KO!"}
+                      : "Evade 5 hunters for 60 seconds, then reach the portal! Shoot back with your slingshot (3 ammo, more spawns every 10s). Press E near objects to grab/move them. Find hidden hatches!"}
                   </p>
                 </div>
                 <div className="cursor-pointer group" onClick={() => document.body.requestPointerLock()}>
@@ -368,6 +380,7 @@ export default function GameUI() {
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">Shift</kbd> Sprint</span>
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">Mouse</kbd> Look</span>
                   {role === "runner" && <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">LMB</kbd> Shoot</span>}
+                  <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">E</kbd> Grab / Hatch</span>
                 </div>
                 <button onClick={handleBack}
                   className="text-white/20 text-xs hover:text-white/50 underline mt-3 transition-colors">← Change map</button>
