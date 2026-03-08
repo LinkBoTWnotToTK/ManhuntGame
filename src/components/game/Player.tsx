@@ -3,8 +3,10 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { wallColliders } from "./House";
 import { useGame, MAP_BOUNDS, ESCAPE_POSITIONS } from "./GameState";
-import { playerPosition, projectiles, addProjectile } from "./SharedState";
+import { playerPosition, projectiles, addProjectile, npcPositions } from "./SharedState";
 import { ESCAPE_ZONE_RADIUS } from "./House";
+import { WEAPONS, throwRock, throwableRocks } from "./WeaponSystem";
+import type { WeaponType } from "./WeaponSystem";
 
 const BASE_WALK_SPEED = 4.5;
 const BASE_SPRINT_SPEED = 7;
