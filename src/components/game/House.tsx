@@ -105,15 +105,14 @@ function SnowTree({ position, scale = 1 }: { position: [number, number, number];
 function Lamppost({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
-      <mesh position={[0, 2, 0]} castShadow>
-        <cylinderGeometry args={[0.06, 0.08, 4, 8]} />
+      <mesh position={[0, 2, 0]}>
+        <cylinderGeometry args={[0.06, 0.08, 4, 6]} />
         <meshStandardMaterial color="#555555" metalness={0.8} roughness={0.3} />
       </mesh>
       <mesh position={[0, 4.2, 0]}>
-        <sphereGeometry args={[0.2, 12, 12]} />
-        <meshStandardMaterial color="#ffffcc" emissive="#ffeeaa" emissiveIntensity={2} />
+        <sphereGeometry args={[0.2, 6, 6]} />
+        <meshStandardMaterial color="#ffffcc" emissive="#ffeeaa" emissiveIntensity={3} />
       </mesh>
-      <pointLight position={[0, 4.2, 0]} color="#ffeedd" intensity={3} distance={15} decay={2} castShadow />
     </group>
   );
 }
