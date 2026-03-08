@@ -4,7 +4,7 @@ import Shop from "./Shop";
 import { xpForLevel, prestigeMultiplier } from "./SaveSystem";
 import { TUTORIAL_STEPS } from "./Tutorial";
 import { loadCustomLevels } from "./LevelEditorData";
-import { CAMPAIGN_CHAPTERS, loadCampaignProgress, completeCampaignChallenge, isChallengeUnlocked } from "./CampaignData";
+import { CAMPAIGN_CHAPTERS, loadCampaignProgress, completeCampaignChallenge, isChallengeUnlocked, getStarRating } from "./CampaignData";
 import type { CampaignChallenge } from "./CampaignData";
 
 function formatTime(secs: number) {

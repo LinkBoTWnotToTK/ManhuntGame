@@ -317,12 +317,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
     <group ref={ref} position={startPosition}>
       <NPCFigure color={color} npcRole={npcRole} />
       <group ref={healthBarRef}><HealthBar health={health} maxHealth={3} /></group>
-      <pointLight
-        color={npcRole === "hunter" ? "#ff2200" : npcRole === "ally" ? "#00ff88" : "#00ccff"}
-        intensity={npcRole === "hunter" ? 1.5 : 0.8}
-        distance={npcRole === "hunter" ? 5 : 3}
-        position={[0, 2, 0]}
-      />
     </group>
   );
 }
