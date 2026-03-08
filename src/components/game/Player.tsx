@@ -109,6 +109,7 @@ export default function Player() {
     speedMultiplier, staminaDrainMultiplier, maxHealth,
     currentWeapon, meleeCooldown, setMeleeCooldown, switchWeapon,
     npcHealth, tagged,
+    gameMode, kothZone, addKothScore, checkpoints, checkpointIndex, advanceCheckpoint,
   } = useGame();
 
   const bounds = MAP_BOUNDS[selectedMap || "suburban"];
@@ -320,6 +321,25 @@ export default function Player() {
       if (Math.sqrt(dx * dx + dz * dz) < 1.5) {
         collectCoin(coin.id);
         break;
+      }
+    }
+
+    // KOTH zone scoring
+    if (gameMode === "koth" && kothZone) {
+      const dx = playerPosition.x - kothZone[0];
+      const dz = playerPosition.z - kothZone[2];
+      if (Math.sqrt(dx * dx + dz * dz) < 4) {
+        addKothScore(delta * 5);
+      }
+    }
+
+    // Checkpoint collection
+    if (gameMode === "speedrun" && checkpoints.length > 0 && checkpointIndex < checkpoints.length) {
+      const cp = checkpoints[checkpointIndex];
+      const dx = playerPosition.x - cp[0];
+      const dz = playerPosition.z - cp[2];
+      if (Math.sqrt(dx * dx + dz * dz) < 3) {
+        advanceCheckpoint();
       }
     }
 

@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { useGame, MAP_BOUNDS, GameMap } from "./GameState";
+import { useGame, MAP_BOUNDS, GameMap, DIFFICULTY_SETTINGS } from "./GameState";
 import { wallColliders } from "./House";
 import { playerPosition, npcPositions, projectiles, addProjectile } from "./SharedState";
 
@@ -12,12 +12,12 @@ interface NPCProps {
   npcRole: "runner" | "hunter" | "ally";
 }
 
-// NPC speeds — hunters slowed to reduce aggressive homing
+// Base NPC speeds
 const RUNNER_BASE_SPEED = 3.8;
 const RUNNER_SPRINT_SPEED = 5.2;
 const HUNTER_BASE_SPEED = 2.4;
 const HUNTER_SPRINT_SPEED = 3.5;
-const HUNTER_HESITATION_CHANCE = 0.3; // chance to pause briefly
+const HUNTER_HESITATION_CHANCE = 0.3;
 const NPC_RADIUS = 0.3;
 const TAG_DISTANCE = 1.2;
 const HIT_RADIUS = 0.8;
@@ -102,13 +102,9 @@ function HealthBar({ health, maxHealth }: { health: number; maxHealth: number })
   const color = pct > 0.6 ? "#33ff33" : pct > 0.3 ? "#ffaa00" : "#ff3333";
   return (
     <group position={[0, 2.1, 0]}>
-      <mesh>
-        <planeGeometry args={[0.6, 0.08]} />
-        <meshBasicMaterial color="#222222" transparent opacity={0.7} side={THREE.DoubleSide} />
-      </mesh>
+      <mesh><planeGeometry args={[0.6, 0.08]} /><meshBasicMaterial color="#222222" transparent opacity={0.7} side={THREE.DoubleSide} /></mesh>
       <mesh position={[-(1 - pct) * 0.3, 0, 0.001]}>
-        <planeGeometry args={[0.6 * pct, 0.08]} />
-        <meshBasicMaterial color={color} side={THREE.DoubleSide} />
+        <planeGeometry args={[0.6 * pct, 0.08]} /><meshBasicMaterial color={color} side={THREE.DoubleSide} />
       </mesh>
     </group>
   );
@@ -141,7 +137,7 @@ function tryMove(myPos: THREE.Vector3, moveDir: THREE.Vector3, speed: number, de
 export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   const ref = useRef<THREE.Group>(null);
   const posRef = useRef(new THREE.Vector3(...startPosition));
-  const { tagged, tagNPC, isPlaying, damagePlayer, damageNPC, npcHealth, selectedMap, role: playerRole } = useGame();
+  const { tagged, tagNPC, isPlaying, damagePlayer, damageNPC, npcHealth, selectedMap, role: playerRole, difficulty } = useGame();
   const wanderDir = useRef(new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize());
   const wanderTimer = useRef(Math.random() * 2);
   const jukeTimer = useRef(0);
@@ -157,6 +153,9 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   const bounds = MAP_BOUNDS[selectedMap || "suburban"];
   const isTagged = tagged.has(id);
   const health = npcHealth[id] ?? 3;
+  const diffSettings = DIFFICULTY_SETTINGS[difficulty];
+  const hunterSpeedMult = diffSettings.hunterSpeedMult;
+  const hunterChaseRange = diffSettings.hunterChaseRange;
 
   useFrame((state, delta) => {
     if (!ref.current || !isPlaying || isTagged) return;
@@ -176,9 +175,7 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
         wanderDir.current.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
         stuckTimer.current = 0;
       }
-    } else {
-      stuckTimer.current = 0;
-    }
+    } else { stuckTimer.current = 0; }
     lastPos.current.copy(myPos);
 
     if (npcRole === "ally") {
@@ -219,7 +216,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
 
         if (dist < fleeRange) {
           moveDir.copy(toPlayer).normalize().multiplyScalar(-1);
-          
           for (const [nid, npos] of npcPositions) {
             if (!nid.startsWith("ah")) continue;
             const allyDist = myPos.distanceTo(npos);
@@ -228,16 +224,11 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
               moveDir.add(fleeAlly.multiplyScalar(8 / Math.max(allyDist, 1)));
             }
           }
-          
           jukeTimer.current -= delta;
-          if (jukeTimer.current <= 0) {
-            jukeDir.current = Math.random() > 0.5 ? 1 : -1;
-            jukeTimer.current = 0.3 + Math.random() * 0.6;
-          }
+          if (jukeTimer.current <= 0) { jukeDir.current = Math.random() > 0.5 ? 1 : -1; jukeTimer.current = 0.3 + Math.random() * 0.6; }
           const jukeFactor = dist < panicRange ? 0.9 : 0.4;
           const perp = new THREE.Vector3(-moveDir.z, 0, moveDir.x).multiplyScalar(jukeDir.current * jukeFactor);
           moveDir.add(perp).normalize();
-          
           if (Math.abs(myPos.x) > bounds.maxX - 5) moveDir.x -= Math.sign(myPos.x) * 0.8;
           if (myPos.z > bounds.maxZ - 5 || myPos.z < bounds.minZ + 5) moveDir.z -= Math.sign(myPos.z) * 0.8;
           moveDir.normalize();
@@ -248,8 +239,7 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
             const tx = myPos.x + awayFromPlayer.x * 15 + (Math.random() - 0.5) * 20;
             const tz = myPos.z + awayFromPlayer.z * 15 + (Math.random() - 0.5) * 20;
             wanderDir.current.set(
-              THREE.MathUtils.clamp(tx, bounds.minX + 3, bounds.maxX - 3) - myPos.x,
-              0,
+              THREE.MathUtils.clamp(tx, bounds.minX + 3, bounds.maxX - 3) - myPos.x, 0,
               THREE.MathUtils.clamp(tz, bounds.minZ + 3, bounds.maxZ - 3) - myPos.z
             ).normalize();
             wanderTimer.current = 2 + Math.random() * 3;
@@ -262,42 +252,30 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
           shootTimer.current -= delta;
           if (shootTimer.current <= 0) {
             const sd = toPlayer.clone().normalize();
-            sd.x += (Math.random() - 0.5) * 0.2;
-            sd.z += (Math.random() - 0.5) * 0.2;
-            sd.normalize();
+            sd.x += (Math.random() - 0.5) * 0.2; sd.z += (Math.random() - 0.5) * 0.2; sd.normalize();
             addProjectile(myPos.clone().add(new THREE.Vector3(0, 1.2, 0)), sd, id);
             ammo.current--;
             shootTimer.current = 3 + Math.random() * 2;
           }
         }
       } else {
-      // HUNTER AI — patrol-based with slower, less aggressive homing
-        const chaseRange = 15;
-        const loseInterestRange = 22;
+        // HUNTER AI — difficulty-scaled
         const isSprinting = dist < 6;
-        speed = isSprinting ? HUNTER_SPRINT_SPEED : HUNTER_BASE_SPEED;
+        speed = (isSprinting ? HUNTER_SPRINT_SPEED : HUNTER_BASE_SPEED) * hunterSpeedMult;
 
-        if (dist < chaseRange) {
-          // Hesitation: hunters sometimes pause when chasing
-          if (Math.random() < HUNTER_HESITATION_CHANCE * delta) {
-            speed *= 0.3;
-          }
-
+        if (dist < hunterChaseRange) {
+          if (Math.random() < HUNTER_HESITATION_CHANCE * delta) speed *= 0.3;
           moveDir.copy(toPlayer).normalize();
-          // Wider flanking — less direct approach
           const flankPerp = new THREE.Vector3(-moveDir.z, 0, moveDir.x).normalize();
           moveDir.addScaledVector(flankPerp, Math.sin(t * 1.5 + flankAngle.current * 5) * 0.55);
           moveDir.normalize();
-          
-          // Less aggressive prediction — only when close
           if (dist > 5 && dist < 10) {
             const prediction = playerPosition.clone().addScaledVector(toPlayer.clone().normalize().multiplyScalar(-1), -0.5);
             const toPrediction = new THREE.Vector3().subVectors(prediction, myPos).normalize();
             moveDir.lerp(toPrediction, 0.08);
             moveDir.normalize();
           }
-        } else if (dist < loseInterestRange) {
-          // Patrol toward player's general area but slowly
+        } else if (dist < hunterChaseRange + 7) {
           wanderTimer.current -= delta;
           if (wanderTimer.current <= 0) {
             wanderDir.current.set(
@@ -307,9 +285,8 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
             wanderTimer.current = 3 + Math.random() * 4;
           }
           moveDir.copy(wanderDir.current);
-          speed = HUNTER_BASE_SPEED * 0.5;
+          speed = HUNTER_BASE_SPEED * 0.5 * hunterSpeedMult;
         } else {
-          // Random patrol when player is far away
           wanderTimer.current -= delta;
           if (wanderTimer.current <= 0) {
             const rx = bounds.minX + 5 + Math.random() * (bounds.maxX - bounds.minX - 10);
@@ -318,17 +295,13 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
             wanderTimer.current = 4 + Math.random() * 5;
           }
           moveDir.copy(wanderDir.current);
-          speed = HUNTER_BASE_SPEED * 0.4;
+          speed = HUNTER_BASE_SPEED * 0.4 * hunterSpeedMult;
         }
       }
 
       const distToPlayer = myPos.distanceTo(playerPosition);
-      if (npcRole === "runner" && distToPlayer < TAG_DISTANCE) {
-        tagNPC(id);
-      }
-      if (npcRole === "hunter" && distToPlayer < TAG_DISTANCE) {
-        damagePlayer(3);
-      }
+      if (npcRole === "runner" && distToPlayer < TAG_DISTANCE) tagNPC(id);
+      if (npcRole === "hunter" && distToPlayer < TAG_DISTANCE) damagePlayer(3);
     }
 
     if (moveDir.lengthSq() > 0) {
@@ -344,9 +317,7 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
     if (moveDir.lengthSq() > 0.01) {
       const runSpeed = speed > 3 ? 14 : 8;
       ref.current.position.y = Math.abs(Math.sin(t * runSpeed)) * 0.06;
-    } else {
-      ref.current.position.y = 0;
-    }
+    } else { ref.current.position.y = 0; }
 
     if (playerRole === "runner") {
       for (const p of projectiles) {
@@ -370,9 +341,7 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   return (
     <group ref={ref} position={startPosition}>
       <NPCFigure color={color} npcRole={npcRole} />
-      <group ref={healthBarRef}>
-        <HealthBar health={health} maxHealth={3} />
-      </group>
+      <group ref={healthBarRef}><HealthBar health={health} maxHealth={3} /></group>
       <pointLight
         color={npcRole === "hunter" ? "#ff2200" : npcRole === "ally" ? "#00ff88" : "#00ccff"}
         intensity={npcRole === "hunter" ? 1.5 : 0.8}
@@ -383,164 +352,98 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   );
 }
 
-// NPC spawn positions per map — now with 5 hunters for runner mode
+// NPC spawn positions per map — hunter count adjusted by difficulty at runtime
 function getSpawnPositions(map: GameMap) {
-  switch (map) {
-    case "industrial":
-      return {
-        runners: [
-          { id: "r1", startPosition: [-30, 0, -25] as [number,number,number], color: "#4ecdc4" },
-          { id: "r2", startPosition: [30, 0, -30] as [number,number,number], color: "#feca57" },
-          { id: "r3", startPosition: [-33, 0, -50] as [number,number,number], color: "#ff9ff3" },
-          { id: "r4", startPosition: [33, 0, -15] as [number,number,number], color: "#a8e6cf" },
-          { id: "r5", startPosition: [0, 0, 22] as [number,number,number], color: "#c792ea" },
-          { id: "r6", startPosition: [-25, 0, 15] as [number,number,number], color: "#48dbfb" },
-          { id: "r7", startPosition: [20, 0, -50] as [number,number,number], color: "#f8b500" },
-        ],
-        hunters: [
-          { id: "h1", startPosition: [-30, 0, -30] as [number,number,number], color: "#ff3333" },
-          { id: "h2", startPosition: [30, 0, -28] as [number,number,number], color: "#ff5533" },
-          { id: "h3", startPosition: [0, 0, -50] as [number,number,number], color: "#cc2222" },
-          { id: "h4", startPosition: [-20, 0, -10] as [number,number,number], color: "#ff4444" },
-          { id: "h5", startPosition: [20, 0, 15] as [number,number,number], color: "#dd3311" },
-        ],
-        allies: [
-          { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
-        ],
-      };
-    case "forest":
-      return {
-        runners: [
-          { id: "r1", startPosition: [-35, 0, -25] as [number,number,number], color: "#4ecdc4" },
-          { id: "r2", startPosition: [35, 0, -35] as [number,number,number], color: "#feca57" },
-          { id: "r3", startPosition: [-40, 0, -55] as [number,number,number], color: "#ff9ff3" },
-          { id: "r4", startPosition: [38, 0, -18] as [number,number,number], color: "#a8e6cf" },
-          { id: "r5", startPosition: [0, 0, 28] as [number,number,number], color: "#c792ea" },
-          { id: "r6", startPosition: [-30, 0, 20] as [number,number,number], color: "#48dbfb" },
-          { id: "r7", startPosition: [25, 0, -55] as [number,number,number], color: "#f8b500" },
-        ],
-        hunters: [
-          { id: "h1", startPosition: [-32, 0, -35] as [number,number,number], color: "#ff3333" },
-          { id: "h2", startPosition: [32, 0, -32] as [number,number,number], color: "#ff5533" },
-          { id: "h3", startPosition: [0, 0, -55] as [number,number,number], color: "#cc2222" },
-          { id: "h4", startPosition: [-25, 0, -10] as [number,number,number], color: "#ff4444" },
-          { id: "h5", startPosition: [25, 0, 10] as [number,number,number], color: "#dd3311" },
-        ],
-        allies: [
-          { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
-        ],
-      };
-    case "arctic":
-      return {
-        runners: [
-          { id: "r1", startPosition: [-30, 0, -25] as [number,number,number], color: "#4ecdc4" },
-          { id: "r2", startPosition: [30, 0, -30] as [number,number,number], color: "#feca57" },
-          { id: "r3", startPosition: [-33, 0, -50] as [number,number,number], color: "#ff9ff3" },
-          { id: "r4", startPosition: [33, 0, -15] as [number,number,number], color: "#a8e6cf" },
-          { id: "r5", startPosition: [5, 0, 22] as [number,number,number], color: "#c792ea" },
-          { id: "r6", startPosition: [-25, 0, 15] as [number,number,number], color: "#48dbfb" },
-          { id: "r7", startPosition: [20, 0, -50] as [number,number,number], color: "#f8b500" },
-        ],
-        hunters: [
-          { id: "h1", startPosition: [-28, 0, -28] as [number,number,number], color: "#ff3333" },
-          { id: "h2", startPosition: [28, 0, -25] as [number,number,number], color: "#ff5533" },
-          { id: "h3", startPosition: [0, 0, -50] as [number,number,number], color: "#cc2222" },
-          { id: "h4", startPosition: [-18, 0, -8] as [number,number,number], color: "#ff4444" },
-          { id: "h5", startPosition: [22, 0, 12] as [number,number,number], color: "#dd3311" },
-        ],
-        allies: [
-          { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
-        ],
-      };
-    case "underground":
-      return {
-        runners: [
-          { id: "r1", startPosition: [-25, 0, -20] as [number,number,number], color: "#4ecdc4" },
-          { id: "r2", startPosition: [25, 0, -25] as [number,number,number], color: "#feca57" },
-          { id: "r3", startPosition: [-28, 0, -45] as [number,number,number], color: "#ff9ff3" },
-          { id: "r4", startPosition: [28, 0, -10] as [number,number,number], color: "#a8e6cf" },
-          { id: "r5", startPosition: [0, 0, 18] as [number,number,number], color: "#c792ea" },
-          { id: "r6", startPosition: [-20, 0, 10] as [number,number,number], color: "#48dbfb" },
-          { id: "r7", startPosition: [15, 0, -45] as [number,number,number], color: "#f8b500" },
-        ],
-        hunters: [
-          { id: "h1", startPosition: [-25, 0, -25] as [number,number,number], color: "#ff3333" },
-          { id: "h2", startPosition: [25, 0, -22] as [number,number,number], color: "#ff5533" },
-          { id: "h3", startPosition: [0, 0, -45] as [number,number,number], color: "#cc2222" },
-          { id: "h4", startPosition: [-15, 0, -5] as [number,number,number], color: "#ff4444" },
-          { id: "h5", startPosition: [18, 0, 8] as [number,number,number], color: "#dd3311" },
-        ],
-        allies: [
-          { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
-        ],
-      };
-    case "volcano":
-      return {
-        runners: [
-          { id: "r1", startPosition: [-30, 0, -25] as [number,number,number], color: "#4ecdc4" },
-          { id: "r2", startPosition: [30, 0, -30] as [number,number,number], color: "#feca57" },
-          { id: "r3", startPosition: [-33, 0, -50] as [number,number,number], color: "#ff9ff3" },
-          { id: "r4", startPosition: [33, 0, -15] as [number,number,number], color: "#a8e6cf" },
-          { id: "r5", startPosition: [0, 0, 22] as [number,number,number], color: "#c792ea" },
-          { id: "r6", startPosition: [-25, 0, 15] as [number,number,number], color: "#48dbfb" },
-          { id: "r7", startPosition: [20, 0, -50] as [number,number,number], color: "#f8b500" },
-        ],
-        hunters: [
-          { id: "h1", startPosition: [-28, 0, -28] as [number,number,number], color: "#ff3333" },
-          { id: "h2", startPosition: [28, 0, -25] as [number,number,number], color: "#ff5533" },
-          { id: "h3", startPosition: [0, 0, -50] as [number,number,number], color: "#cc2222" },
-          { id: "h4", startPosition: [-20, 0, -8] as [number,number,number], color: "#ff4444" },
-          { id: "h5", startPosition: [22, 0, 15] as [number,number,number], color: "#dd3311" },
-        ],
-        allies: [
-          { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
-        ],
-      };
-    case "space_station":
-      return {
-        runners: [
-          { id: "r1", startPosition: [-25, 0, -20] as [number,number,number], color: "#4ecdc4" },
-          { id: "r2", startPosition: [25, 0, -25] as [number,number,number], color: "#feca57" },
-          { id: "r3", startPosition: [-28, 0, -45] as [number,number,number], color: "#ff9ff3" },
-          { id: "r4", startPosition: [28, 0, -10] as [number,number,number], color: "#a8e6cf" },
-          { id: "r5", startPosition: [0, 0, 18] as [number,number,number], color: "#c792ea" },
-          { id: "r6", startPosition: [-20, 0, 10] as [number,number,number], color: "#48dbfb" },
-          { id: "r7", startPosition: [15, 0, -45] as [number,number,number], color: "#f8b500" },
-        ],
-        hunters: [
-          { id: "h1", startPosition: [-22, 0, -22] as [number,number,number], color: "#ff3333" },
-          { id: "h2", startPosition: [22, 0, -20] as [number,number,number], color: "#ff5533" },
-          { id: "h3", startPosition: [0, 0, -42] as [number,number,number], color: "#cc2222" },
-          { id: "h4", startPosition: [-15, 0, -5] as [number,number,number], color: "#ff4444" },
-          { id: "h5", startPosition: [18, 0, 8] as [number,number,number], color: "#dd3311" },
-        ],
-        allies: [
-          { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
-        ],
-      };
-    default: // suburban
-      return {
-        runners: [
-          { id: "r1", startPosition: [-26, 0, -25] as [number,number,number], color: "#4ecdc4" },
-          { id: "r2", startPosition: [26, 0, -30] as [number,number,number], color: "#feca57" },
-          { id: "r3", startPosition: [-30, 0, -48] as [number,number,number], color: "#ff9ff3" },
-          { id: "r4", startPosition: [28, 0, -15] as [number,number,number], color: "#a8e6cf" },
-          { id: "r5", startPosition: [0, 0, 22] as [number,number,number], color: "#c792ea" },
-          { id: "r6", startPosition: [-22, 0, 15] as [number,number,number], color: "#48dbfb" },
-          { id: "r7", startPosition: [18, 0, -48] as [number,number,number], color: "#f8b500" },
-        ],
-        hunters: [
-          { id: "h1", startPosition: [-24, 0, -30] as [number,number,number], color: "#ff3333" },
-          { id: "h2", startPosition: [24, 0, -28] as [number,number,number], color: "#ff5533" },
-          { id: "h3", startPosition: [0, 0, -48] as [number,number,number], color: "#cc2222" },
-          { id: "h4", startPosition: [-15, 0, -8] as [number,number,number], color: "#ff4444" },
-          { id: "h5", startPosition: [20, 0, 12] as [number,number,number], color: "#dd3311" },
-        ],
-        allies: [
-          { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
-        ],
-      };
-  }
+  const allHunters = [
+    { id: "h1", color: "#ff3333" },
+    { id: "h2", color: "#ff5533" },
+    { id: "h3", color: "#cc2222" },
+    { id: "h4", color: "#ff4444" },
+    { id: "h5", color: "#dd3311" },
+    { id: "h6", color: "#ee2244" },
+    { id: "h7", color: "#ff1155" },
+  ];
+
+  const mapPositions: Record<GameMap, { hunterPos: [number,number,number][]; runnerPos: { pos: [number,number,number]; color: string }[] }> = {
+    suburban: {
+      hunterPos: [[-24,0,-30],[24,0,-28],[0,0,-48],[-15,0,-8],[20,0,12],[-10,0,20],[15,0,-40]],
+      runnerPos: [
+        { pos: [-26,0,-25], color: "#4ecdc4" }, { pos: [26,0,-30], color: "#feca57" },
+        { pos: [-30,0,-48], color: "#ff9ff3" }, { pos: [28,0,-15], color: "#a8e6cf" },
+        { pos: [0,0,22], color: "#c792ea" }, { pos: [-22,0,15], color: "#48dbfb" },
+        { pos: [18,0,-48], color: "#f8b500" },
+      ],
+    },
+    industrial: {
+      hunterPos: [[-30,0,-30],[30,0,-28],[0,0,-50],[-20,0,-10],[20,0,15],[-15,0,20],[25,0,-45]],
+      runnerPos: [
+        { pos: [-30,0,-25], color: "#4ecdc4" }, { pos: [30,0,-30], color: "#feca57" },
+        { pos: [-33,0,-50], color: "#ff9ff3" }, { pos: [33,0,-15], color: "#a8e6cf" },
+        { pos: [0,0,22], color: "#c792ea" }, { pos: [-25,0,15], color: "#48dbfb" },
+        { pos: [20,0,-50], color: "#f8b500" },
+      ],
+    },
+    forest: {
+      hunterPos: [[-32,0,-35],[32,0,-32],[0,0,-55],[-25,0,-10],[25,0,10],[-18,0,25],[30,0,-50]],
+      runnerPos: [
+        { pos: [-35,0,-25], color: "#4ecdc4" }, { pos: [35,0,-35], color: "#feca57" },
+        { pos: [-40,0,-55], color: "#ff9ff3" }, { pos: [38,0,-18], color: "#a8e6cf" },
+        { pos: [0,0,28], color: "#c792ea" }, { pos: [-30,0,20], color: "#48dbfb" },
+        { pos: [25,0,-55], color: "#f8b500" },
+      ],
+    },
+    arctic: {
+      hunterPos: [[-28,0,-28],[28,0,-25],[0,0,-50],[-18,0,-8],[22,0,12],[-12,0,18],[20,0,-42]],
+      runnerPos: [
+        { pos: [-30,0,-25], color: "#4ecdc4" }, { pos: [30,0,-30], color: "#feca57" },
+        { pos: [-33,0,-50], color: "#ff9ff3" }, { pos: [33,0,-15], color: "#a8e6cf" },
+        { pos: [5,0,22], color: "#c792ea" }, { pos: [-25,0,15], color: "#48dbfb" },
+        { pos: [20,0,-50], color: "#f8b500" },
+      ],
+    },
+    underground: {
+      hunterPos: [[-25,0,-25],[25,0,-22],[0,0,-45],[-15,0,-5],[18,0,8],[-10,0,15],[15,0,-38]],
+      runnerPos: [
+        { pos: [-25,0,-20], color: "#4ecdc4" }, { pos: [25,0,-25], color: "#feca57" },
+        { pos: [-28,0,-45], color: "#ff9ff3" }, { pos: [28,0,-10], color: "#a8e6cf" },
+        { pos: [0,0,18], color: "#c792ea" }, { pos: [-20,0,10], color: "#48dbfb" },
+        { pos: [15,0,-45], color: "#f8b500" },
+      ],
+    },
+    volcano: {
+      hunterPos: [[-28,0,-28],[28,0,-25],[0,0,-50],[-20,0,-8],[22,0,15],[-15,0,20],[25,0,-45]],
+      runnerPos: [
+        { pos: [-30,0,-25], color: "#4ecdc4" }, { pos: [30,0,-30], color: "#feca57" },
+        { pos: [-33,0,-50], color: "#ff9ff3" }, { pos: [33,0,-15], color: "#a8e6cf" },
+        { pos: [0,0,22], color: "#c792ea" }, { pos: [-25,0,15], color: "#48dbfb" },
+        { pos: [20,0,-50], color: "#f8b500" },
+      ],
+    },
+    space_station: {
+      hunterPos: [[-22,0,-22],[22,0,-20],[0,0,-42],[-15,0,-5],[18,0,8],[-10,0,15],[15,0,-35]],
+      runnerPos: [
+        { pos: [-25,0,-20], color: "#4ecdc4" }, { pos: [25,0,-25], color: "#feca57" },
+        { pos: [-28,0,-45], color: "#ff9ff3" }, { pos: [28,0,-10], color: "#a8e6cf" },
+        { pos: [0,0,18], color: "#c792ea" }, { pos: [-20,0,10], color: "#48dbfb" },
+        { pos: [15,0,-45], color: "#f8b500" },
+      ],
+    },
+  };
+
+  const mp = mapPositions[map] || mapPositions.suburban;
+
+  return {
+    runners: mp.runnerPos.map((r, i) => ({
+      id: `r${i + 1}`,
+      startPosition: r.pos,
+      color: r.color,
+    })),
+    hunters: allHunters.map((h, i) => ({
+      ...h,
+      startPosition: mp.hunterPos[i % mp.hunterPos.length],
+    })),
+    allies: [{ id: "ah1", startPosition: [3, 0, 2] as [number, number, number], color: "#ff8800" }],
+  };
 }
 
 export { getSpawnPositions };
