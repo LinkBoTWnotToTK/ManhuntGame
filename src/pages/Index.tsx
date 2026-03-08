@@ -137,7 +137,7 @@ function GameScene() {
   return (
     <>
       <House />
-      <DustParticles count={300} />
+      <DustParticles count={100} />
       <PortalParticles />
       {role === "hunter" && !isPlatformMode && (
         <>
