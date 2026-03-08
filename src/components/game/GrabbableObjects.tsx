@@ -262,7 +262,7 @@ function UndergroundBase({ map }: { map: GameMap }) {
 }
 
 export default function GrabbableObjects() {
-  const { selectedMap, isPlaying } = useGame();
+  const { selectedMap, isPlaying, setNearHatch } = useGame();
   const map = selectedMap || "suburban";
   const [objects, setObjects] = useState<LooseObject[]>([]);
   const [hatches, setHatches] = useState<HatchData[]>([]);
