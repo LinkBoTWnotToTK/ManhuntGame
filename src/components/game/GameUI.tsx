@@ -409,7 +409,8 @@ export default function GameUI() {
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">WASD</kbd> Move</span>
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">Shift</kbd> Sprint</span>
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">Mouse</kbd> Look</span>
-                  {role === "runner" && <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">LMB</kbd> Shoot</span>}
+                  <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">LMB</kbd> {role === "runner" ? "Shoot" : "Melee"}</span>
+                  {role === "runner" && <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">1/2/3</kbd> Weapons</span>}
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">E</kbd> Grab / Hatch</span>
                 </div>
                 <button onClick={handleBack}
