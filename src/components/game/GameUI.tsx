@@ -380,6 +380,7 @@ export default function GameUI() {
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">Shift</kbd> Sprint</span>
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">Mouse</kbd> Look</span>
                   {role === "runner" && <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">LMB</kbd> Shoot</span>}
+                  <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">E</kbd> Grab / Hatch</span>
                 </div>
                 <button onClick={handleBack}
                   className="text-white/20 text-xs hover:text-white/50 underline mt-3 transition-colors">← Change map</button>
