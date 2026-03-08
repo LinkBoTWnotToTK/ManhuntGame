@@ -57,7 +57,7 @@ export default function GameUI() {
   const {
     role, selectedMap, score, totalNPCs, elapsedTime, timeLeft, gameOver, gameResult,
     isPlaying, escapeOpen, stamina, maxStamina, playerHealth, playerAmmo, maxHealth,
-    coins, matchCoins,
+    coins, matchCoins, currentWeapon,
     selectRole, selectMap, startGame, resetGame,
   } = useGame();
 
