@@ -358,10 +358,10 @@ export default function GameUI() {
                     <div className="text-3xl group-hover:scale-110 transition-transform">🏅</div>
                     <div className="text-sm font-black">SCORES</div>
                   </button>
-                  <button onClick={() => transition("shop")}
+                  <button onClick={() => startTutorial()}
                     className="group p-5 bg-gradient-to-b from-emerald-900/40 to-emerald-950/60 text-white rounded-2xl border border-emerald-500/20 hover:border-emerald-400/50 transition-all hover:scale-105 active:scale-95 space-y-2">
-                    <div className="text-3xl group-hover:scale-110 transition-transform">⚙️</div>
-                    <div className="text-sm font-black">SAVE</div>
+                    <div className="text-3xl group-hover:scale-110 transition-transform">📖</div>
+                    <div className="text-sm font-black">TUTORIAL</div>
                   </button>
                 </div>
               </div>

@@ -331,16 +331,16 @@ export default function GrabbableObjects() {
 
           if (isNearHatch && hatch.isRevealed) {
             if (!isUnderground) {
-              // Go underground
-              playerPosition.copy(hatch.targetPosition);
-              playerPosition.y = 0; // Player stays at y=0 relative, but teleported
+              // Go underground - teleport player to underground base
               playerPosition.set(hatch.targetPosition.x, 0, hatch.targetPosition.z);
-              // Actually move to underground base
-              playerPosition.y = -8;
+              setPlayerY(-8);
+              setPlayerVelocityY(0);
               setIsUnderground(true);
             } else {
-              // Come back up
+              // Come back up - teleport to surface
               playerPosition.set(hatch.position.x, 0, hatch.position.z);
+              setPlayerY(0);
+              setPlayerVelocityY(0);
               setIsUnderground(false);
             }
             return;
