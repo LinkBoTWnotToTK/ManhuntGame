@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { isMobilePlatform } from "./SharedState";
 import {
   EditorCategory, EDITOR_CATALOG, EDITOR_THEMES, EditorTheme,
   PlacedItem, CustomLevel, saveCustomLevel, loadCustomLevels, deleteCustomLevel, generateUid,
