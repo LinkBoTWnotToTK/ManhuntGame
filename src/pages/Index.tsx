@@ -18,6 +18,8 @@ import WeaponSystem from "@/components/game/WeaponSystem";
 import Tutorial from "@/components/game/Tutorial";
 import WeatherSystem from "@/components/game/WeatherSystem";
 import LevelEditor from "@/components/game/LevelEditor";
+import MobileControls, { PlatformSelector } from "@/components/game/MobileControls";
+import { isMobilePlatform, setMobilePlatform } from "@/components/game/SharedState";
 
 // ... keep existing code (KothZone, Checkpoints, FlagObject, SurvivalWaveIndicator, GameScene, DynamicFOV, HatchPrompt components - lines 20-201)
 
@@ -196,8 +198,31 @@ function HatchPrompt() {
   );
 }
 
+function MobileGameHUD() {
+  const { role, currentWeapon, switchWeapon, gameMode, isPlaying } = useGame();
+  if (!isPlaying || !isMobilePlatform) return null;
+  return (
+    <MobileControls
+      role={role}
+      currentWeapon={currentWeapon}
+      onSwitchWeapon={switchWeapon as (w: string) => void}
+      gameMode={gameMode}
+    />
+  );
+}
+
 function GameContent() {
   const [showEditor, setShowEditor] = useState(false);
+  const [platformChosen, setPlatformChosen] = useState(false);
+
+  if (!platformChosen) {
+    return (
+      <PlatformSelector onSelect={(mobile) => {
+        setMobilePlatform(mobile);
+        setPlatformChosen(true);
+      }} />
+    );
+  }
 
   if (showEditor) {
     return <LevelEditor onExit={() => setShowEditor(false)} />;
@@ -210,6 +235,7 @@ function GameContent() {
       <ScreenEffects />
       <Tutorial />
       <HatchPrompt />
+      <MobileGameHUD />
       <Canvas
         shadows
         camera={{ fov: 55, near: 0.1, far: 100 }}

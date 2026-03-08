@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { isMobilePlatform } from "./SharedState";
 import {
   EditorCategory, EDITOR_CATALOG, EDITOR_THEMES, EditorTheme,
   PlacedItem, CustomLevel, saveCustomLevel, loadCustomLevels, deleteCustomLevel, generateUid,
@@ -67,6 +68,7 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
   const [savedLevels, setSavedLevels] = useState(loadCustomLevels());
   const [showLoadMenu, setShowLoadMenu] = useState(false);
   const [editingLevelId, setEditingLevelId] = useState<string | null>(null);
+  const [mobilePanel, setMobilePanel] = useState(true);
 
   // Canvas pan/zoom
   const [camX, setCamX] = useState(0);
@@ -278,28 +280,27 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
     return () => ro.disconnect();
   }, []);
 
-  // Mouse handlers
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+  // Mouse/touch handlers
+  const handlePointerMove = useCallback((clientX: number, clientY: number) => {
     if (isDragging.current) {
-      const dx = e.clientX - lastDrag.current[0];
-      const dy = e.clientY - lastDrag.current[1];
+      const dx = clientX - lastDrag.current[0];
+      const dy = clientY - lastDrag.current[1];
       setCamX(p => p - dx / (CANVAS_CELL * zoom));
       setCamZ(p => p - dy / (CANVAS_CELL * zoom));
-      lastDrag.current = [e.clientX, e.clientY];
+      lastDrag.current = [clientX, clientY];
     }
-    const [wx, wz] = screenToWorld(e.clientX, e.clientY);
+    const [wx, wz] = screenToWorld(clientX, clientY);
     setMousePos([wx, wz]);
   }, [screenToWorld, zoom]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 1 || e.button === 2) {
+  const handlePointerDown = useCallback((clientX: number, clientY: number, isSecondary: boolean) => {
+    if (isSecondary) {
       isDragging.current = true;
-      lastDrag.current = [e.clientX, e.clientY];
+      lastDrag.current = [clientX, clientY];
       return;
     }
-    if (e.button !== 0) return;
 
-    const [wx, wz] = screenToWorld(e.clientX, e.clientY);
+    const [wx, wz] = screenToWorld(clientX, clientY);
 
     if (selectedTool) {
       const newItem: PlacedItem = {
@@ -311,7 +312,6 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
       };
       setItems(prev => [...prev, newItem]);
     } else {
-      // Try to select an item
       let closest: string | null = null;
       let closestDist = 1.5;
       for (const item of items) {
@@ -327,9 +327,72 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
     }
   }, [selectedTool, ghostRotation, screenToWorld, items]);
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     isDragging.current = false;
   }, []);
+
+  // Mouse handlers
+  const handleMouseMove = useCallback((e: React.MouseEvent) => handlePointerMove(e.clientX, e.clientY), [handlePointerMove]);
+  const handleMouseDown = useCallback((e: React.MouseEvent) => handlePointerDown(e.clientX, e.clientY, e.button === 1 || e.button === 2), [handlePointerDown]);
+  const handleMouseUp = useCallback(() => handlePointerUp(), [handlePointerUp]);
+
+  // Touch handlers for mobile
+  const touchDragId = useRef<number | null>(null);
+  const pinchDist = useRef<number | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      // Pinch zoom start
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchDist.current = Math.sqrt(dx * dx + dy * dy);
+      isDragging.current = true;
+      lastDrag.current = [
+        (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        (e.touches[0].clientY + e.touches[1].clientY) / 2,
+      ];
+      return;
+    }
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      touchDragId.current = t.identifier;
+      // Long press = pan, short = place
+      handlePointerDown(t.clientX, t.clientY, false);
+    }
+  }, [handlePointerDown]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 2 && pinchDist.current !== null) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const newDist = Math.sqrt(dx * dx + dy * dy);
+      const scale = newDist / pinchDist.current;
+      setZoom(prev => Math.max(0.3, Math.min(4, prev * scale)));
+      pinchDist.current = newDist;
+      // Pan with two fingers
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const ddx = midX - lastDrag.current[0];
+      const ddy = midY - lastDrag.current[1];
+      setCamX(p => p - ddx / (CANVAS_CELL * zoom));
+      setCamZ(p => p - ddy / (CANVAS_CELL * zoom));
+      lastDrag.current = [midX, midY];
+      return;
+    }
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      handlePointerMove(t.clientX, t.clientY);
+    }
+  }, [handlePointerMove, zoom]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    pinchDist.current = null;
+    touchDragId.current = null;
+    handlePointerUp();
+  }, [handlePointerUp]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -376,10 +439,16 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
   const filteredItems = EDITOR_CATALOG.filter(d => d.category === selectedCategory);
   const selectedItem = selectedUid ? items.find(i => i.uid === selectedUid) : null;
 
+
   return (
-    <div className="fixed inset-0 z-50 flex bg-black">
-      {/* Left Panel */}
-      <div className="w-72 bg-gray-950/95 border-r border-white/10 flex flex-col overflow-hidden">
+    <div className={`fixed inset-0 z-50 flex ${isMobilePlatform ? "flex-col-reverse" : ""} bg-black`}>
+      {/* Left Panel / Bottom Panel on mobile */}
+      <div className={`${isMobilePlatform ? (mobilePanel ? "h-64" : "h-10") : "w-72"} bg-gray-950/95 ${isMobilePlatform ? "border-t" : "border-r"} border-white/10 flex flex-col overflow-hidden transition-all`}>
+        {isMobilePlatform && (
+          <button onClick={() => setMobilePanel(!mobilePanel)} className="w-full py-1 text-white/40 text-[10px] font-bold bg-white/5 shrink-0">
+            {mobilePanel ? "▼ Hide Panel" : "▲ Show Panel"}
+          </button>
+        )}
         {/* Header */}
         <div className="p-3 border-b border-white/10">
           <div className="flex items-center justify-between mb-2">
@@ -484,7 +553,7 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
             </button>
           </div>
           <div className="text-white/20 text-[8px] text-center">
-            WASD: Pan • R: Rotate • Del: Remove • Click: Place/Select • Scroll: Zoom • MMB: Pan
+            {isMobilePlatform ? "Tap: Place • 2-finger: Pan/Zoom" : "WASD: Pan • R: Rotate • Del: Remove • Click: Place/Select • Scroll: Zoom • MMB: Pan"}
           </div>
           <div className="text-white/15 text-[8px] text-center">
             {items.length} objects placed • Zoom: {(zoom * 100).toFixed(0)}%
@@ -493,13 +562,17 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
       </div>
 
       {/* 2D Canvas */}
-      <div ref={containerRef} className="flex-1 relative cursor-crosshair" onContextMenu={e => e.preventDefault()}>
+      <div ref={containerRef} className={`flex-1 relative cursor-crosshair ${isMobilePlatform ? "touch-none" : ""}`} onContextMenu={e => e.preventDefault()}>
         <canvas
           ref={canvasRef}
           onMouseMove={handleMouseMove}
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
           onWheel={handleWheel}
           className="w-full h-full"
         />

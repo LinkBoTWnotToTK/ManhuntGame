@@ -50,6 +50,23 @@ export function addPlatformCollider(pos: [number, number, number], size: [number
 export let disguisedAs: string | null = null;
 export function setDisguise(blockType: string | null) { disguisedAs = blockType; }
 
+// Mobile platform state
+export let isMobilePlatform = false;
+export function setMobilePlatform(v: boolean) { isMobilePlatform = v; }
+
+// Mobile input state (updated by touch controls)
+export const mobileInput = {
+  moveX: 0,
+  moveY: 0,
+  cameraX: 0,
+  cameraY: 0,
+  jump: false,
+  attack: false,
+  sprint: false,
+  interact: false,
+  disguise: false,
+};
+
 export function resetSharedState() {
   playerPosition.set(0, 0, 4);
   playerY = 0;

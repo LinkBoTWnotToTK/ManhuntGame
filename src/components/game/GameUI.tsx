@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useGame, Role, GameMap, Difficulty, GameMode, DIFFICULTY_SETTINGS, GAME_MODES } from "./GameState";
+import { isMobilePlatform } from "./SharedState";
 import Shop from "./Shop";
 import { xpForLevel, prestigeMultiplier } from "./SaveSystem";
 import { TUTORIAL_STEPS } from "./Tutorial";
@@ -48,12 +49,14 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
+    if (isMobilePlatform) return;
     const onChange = () => setIsLocked(!!document.pointerLockElement);
     document.addEventListener("pointerlockchange", onChange);
     return () => document.removeEventListener("pointerlockchange", onChange);
   }, []);
 
   useEffect(() => {
+    if (isMobilePlatform) return;
     if (isLocked && !isPlaying && !gameOver && role && selectedMap && menuStep === "ready") {
       startGame();
     }
@@ -96,7 +99,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   return (
     <>
       {/* === IN-GAME HUD === */}
-      {isLocked && isPlaying && (
+      {(isLocked || isMobilePlatform) && isPlaying && (
         <>
           {/* Crosshair */}
           <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
@@ -682,9 +685,19 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                     {gameMode === "deathrun" && "Navigate deadly narrow platforms to reach all 5 checkpoints! Don't fall!"}
                   </p>
                 </div>
-                <div className="cursor-pointer group" onClick={() => document.body.requestPointerLock()}>
-                  <p className="text-white/80 text-lg font-bold group-hover:text-white transition-colors">🎮 Click to Start</p>
-                </div>
+                {isMobilePlatform ? (
+                  <button
+                    onClick={() => { setIsLocked(true); startGame(); }}
+                    className="px-8 py-4 bg-gradient-to-b from-green-600 to-green-800 text-white rounded-2xl border border-green-400/30 font-black text-lg hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(0,255,100,0.2)]"
+                  >
+                    🎮 TAP TO START
+                  </button>
+                ) : (
+                  <div className="cursor-pointer group" onClick={() => document.body.requestPointerLock()}>
+                    <p className="text-white/80 text-lg font-bold group-hover:text-white transition-colors">🎮 Click to Start</p>
+                  </div>
+                )}
+                {!isMobilePlatform && (
                 <div className="flex gap-3 justify-center text-white/30 text-[10px] flex-wrap">
                   <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">WASD</kbd> Move</span>
                   <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">⇧</kbd> Sprint</span>
@@ -694,6 +707,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                   <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">E</kbd> Grab</span>
                   {gameMode === "blockhunt" && <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">Q</kbd> Disguise</span>}
                 </div>
+                )}
                 <button onClick={handleBack} className="text-white/15 text-xs hover:text-white/40 transition-colors">← Back</button>
               </div>
             )}
