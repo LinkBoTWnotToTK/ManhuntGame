@@ -49,12 +49,14 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
+    if (isMobilePlatform) return;
     const onChange = () => setIsLocked(!!document.pointerLockElement);
     document.addEventListener("pointerlockchange", onChange);
     return () => document.removeEventListener("pointerlockchange", onChange);
   }, []);
 
   useEffect(() => {
+    if (isMobilePlatform) return;
     if (isLocked && !isPlaying && !gameOver && role && selectedMap && menuStep === "ready") {
       startGame();
     }
