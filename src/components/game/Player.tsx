@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { wallColliders } from "./House";
 import { useGame, MAP_BOUNDS, ESCAPE_POSITIONS } from "./GameState";
 import { playerPosition, projectiles, addProjectile, npcPositions, playerY, playerVelocityY, setPlayerY, setPlayerVelocityY, platformColliders, disguisedAs, setDisguise } from "./SharedState";
+import { windForce } from "./WeatherSystem";
 import { ESCAPE_ZONE_RADIUS } from "./House";
 import { WEAPONS, throwRock, throwableRocks } from "./WeaponSystem";
 import type { WeaponType } from "./WeaponSystem";
@@ -377,7 +378,15 @@ export default function Player() {
       }
       if (!blocked) {
         playerPosition.copy(newPos);
-      } else {
+      }
+      // Apply wind push
+      if (windForce.lengthSq() > 0.01) {
+        playerPosition.x += windForce.x * delta * 0.4;
+        playerPosition.z += windForce.z * delta * 0.4;
+        playerPosition.x = THREE.MathUtils.clamp(playerPosition.x, bounds.minX, bounds.maxX);
+        playerPosition.z = THREE.MathUtils.clamp(playerPosition.z, bounds.minZ, bounds.maxZ);
+      }
+      if (blocked) {
         const sx = playerPosition.clone(); sx.x += dir.x;
         let bx = false;
         const sxMin = new THREE.Vector3(sx.x - PLAYER_RADIUS, yBase, sx.z - PLAYER_RADIUS);

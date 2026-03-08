@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useGame } from "./GameState";
+import { MAP_WEATHER } from "./WeatherSystem";
 
 export default function ScreenEffects() {
-  const { playerHealth, maxHealth, isPlaying, gameOver } = useGame();
+  const { playerHealth, maxHealth, isPlaying, gameOver, selectedMap } = useGame();
   const [shaking, setShaking] = useState(false);
   const [shakeIntensity, setShakeIntensity] = useState(0);
   const prevHealth = useRef(playerHealth);
@@ -34,6 +35,24 @@ export default function ScreenEffects() {
     return () => { window.removeEventListener("keydown", onDown); window.removeEventListener("keyup", onUp); };
   }, []);
 
+  // Lightning flash detection
+  const [lightningFlash, setLightningFlash] = useState(false);
+  const map = selectedMap || "suburban";
+  const weather = MAP_WEATHER[map];
+  const hasFog = weather === "fog" || weather === "storm";
+
+  useEffect(() => {
+    if (weather !== "storm" || !isPlaying) return;
+    const interval = setInterval(() => {
+      // Random lightning flash synced roughly with the 3D system
+      if (Math.random() < 0.15) {
+        setLightningFlash(true);
+        setTimeout(() => setLightningFlash(false), 100 + Math.random() * 100);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [weather, isPlaying]);
+
   if (!isPlaying || gameOver) return null;
 
   const lowHP = playerHealth <= 1;
@@ -41,6 +60,28 @@ export default function ScreenEffects() {
 
   return (
     <>
+      {/* Fog overlay for fog/storm maps */}
+      {hasFog && (
+        <div
+          className="fixed inset-0 z-30 pointer-events-none"
+          style={{
+            background: weather === "fog"
+              ? "radial-gradient(ellipse at center, rgba(80,80,90,0.3) 0%, rgba(60,60,70,0.6) 70%, rgba(40,40,50,0.8) 100%)"
+              : "radial-gradient(ellipse at center, rgba(40,40,55,0.15) 0%, rgba(30,30,45,0.35) 80%)",
+          }}
+        />
+      )}
+
+      {/* Lightning flash overlay */}
+      {lightningFlash && (
+        <div
+          className="fixed inset-0 z-[65] pointer-events-none"
+          style={{
+            backgroundColor: "rgba(220,230,255,0.35)",
+          }}
+        />
+      )}
+
       {/* Red vignette when low health */}
       {lowHP && (
         <div
