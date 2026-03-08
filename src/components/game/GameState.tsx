@@ -393,6 +393,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setOwnedPowerups(data.powerups);
   }, []);
 
+  const switchWeapon = useCallback((w: WeaponType) => setCurrentWeapon(w), []);
+  const setMeleeCooldown = useCallback((cd: number) => setMeleeCooldownState(cd), []);
+
   const resetGame = useCallback(() => {
     resetSharedState();
     setRole(null);
