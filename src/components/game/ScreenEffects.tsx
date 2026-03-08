@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useGame } from "./GameState";
+import { MAP_WEATHER } from "./WeatherSystem";
 
 export default function ScreenEffects() {
   const { playerHealth, maxHealth, isPlaying, gameOver } = useGame();
