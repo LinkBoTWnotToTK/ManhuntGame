@@ -279,28 +279,27 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
     return () => ro.disconnect();
   }, []);
 
-  // Mouse handlers
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+  // Mouse/touch handlers
+  const handlePointerMove = useCallback((clientX: number, clientY: number) => {
     if (isDragging.current) {
-      const dx = e.clientX - lastDrag.current[0];
-      const dy = e.clientY - lastDrag.current[1];
+      const dx = clientX - lastDrag.current[0];
+      const dy = clientY - lastDrag.current[1];
       setCamX(p => p - dx / (CANVAS_CELL * zoom));
       setCamZ(p => p - dy / (CANVAS_CELL * zoom));
-      lastDrag.current = [e.clientX, e.clientY];
+      lastDrag.current = [clientX, clientY];
     }
-    const [wx, wz] = screenToWorld(e.clientX, e.clientY);
+    const [wx, wz] = screenToWorld(clientX, clientY);
     setMousePos([wx, wz]);
   }, [screenToWorld, zoom]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 1 || e.button === 2) {
+  const handlePointerDown = useCallback((clientX: number, clientY: number, isSecondary: boolean) => {
+    if (isSecondary) {
       isDragging.current = true;
-      lastDrag.current = [e.clientX, e.clientY];
+      lastDrag.current = [clientX, clientY];
       return;
     }
-    if (e.button !== 0) return;
 
-    const [wx, wz] = screenToWorld(e.clientX, e.clientY);
+    const [wx, wz] = screenToWorld(clientX, clientY);
 
     if (selectedTool) {
       const newItem: PlacedItem = {
@@ -312,7 +311,6 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
       };
       setItems(prev => [...prev, newItem]);
     } else {
-      // Try to select an item
       let closest: string | null = null;
       let closestDist = 1.5;
       for (const item of items) {
@@ -328,9 +326,72 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
     }
   }, [selectedTool, ghostRotation, screenToWorld, items]);
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     isDragging.current = false;
   }, []);
+
+  // Mouse handlers
+  const handleMouseMove = useCallback((e: React.MouseEvent) => handlePointerMove(e.clientX, e.clientY), [handlePointerMove]);
+  const handleMouseDown = useCallback((e: React.MouseEvent) => handlePointerDown(e.clientX, e.clientY, e.button === 1 || e.button === 2), [handlePointerDown]);
+  const handleMouseUp = useCallback(() => handlePointerUp(), [handlePointerUp]);
+
+  // Touch handlers for mobile
+  const touchDragId = useRef<number | null>(null);
+  const pinchDist = useRef<number | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      // Pinch zoom start
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchDist.current = Math.sqrt(dx * dx + dy * dy);
+      isDragging.current = true;
+      lastDrag.current = [
+        (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        (e.touches[0].clientY + e.touches[1].clientY) / 2,
+      ];
+      return;
+    }
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      touchDragId.current = t.identifier;
+      // Long press = pan, short = place
+      handlePointerDown(t.clientX, t.clientY, false);
+    }
+  }, [handlePointerDown]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 2 && pinchDist.current !== null) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const newDist = Math.sqrt(dx * dx + dy * dy);
+      const scale = newDist / pinchDist.current;
+      setZoom(prev => Math.max(0.3, Math.min(4, prev * scale)));
+      pinchDist.current = newDist;
+      // Pan with two fingers
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const ddx = midX - lastDrag.current[0];
+      const ddy = midY - lastDrag.current[1];
+      setCamX(p => p - ddx / (CANVAS_CELL * zoom));
+      setCamZ(p => p - ddy / (CANVAS_CELL * zoom));
+      lastDrag.current = [midX, midY];
+      return;
+    }
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      handlePointerMove(t.clientX, t.clientY);
+    }
+  }, [handlePointerMove, zoom]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    pinchDist.current = null;
+    touchDragId.current = null;
+    handlePointerUp();
+  }, [handlePointerUp]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
