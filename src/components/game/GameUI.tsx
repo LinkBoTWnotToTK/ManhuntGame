@@ -367,7 +367,7 @@ export default function GameUI() {
                   <p className="text-white/70 leading-relaxed text-sm">
                     {role === "hunter"
                       ? "Hunt all 7 runners! Tag them up close for instant elimination. Your ally hunter helps the chase. Medkits spawn every 30s."
-                      : "Evade 3 hunters for 60 seconds, then reach the portal! Shoot back with your slingshot (3 ammo, more spawns every 10s). Being tagged = instant KO!"}
+                      : "Evade 5 hunters for 60 seconds, then reach the portal! Shoot back with your slingshot (3 ammo, more spawns every 10s). Press E near objects to grab/move them. Find hidden hatches!"}
                   </p>
                 </div>
                 <div className="cursor-pointer group" onClick={() => document.body.requestPointerLock()}>
