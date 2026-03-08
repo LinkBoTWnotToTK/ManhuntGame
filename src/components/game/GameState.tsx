@@ -611,7 +611,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setPrestige(data.prestige);
     setTotalWins(data.totalWins);
     setTotalGames(data.totalGames);
+    setEquippedSkin(data.equippedSkin);
+    setEquippedTrail(data.equippedTrail);
+    setEquippedHat(data.equippedHat);
   }, []);
+
+  const equipSkin = useCallback((id: string) => setEquippedSkin(id), []);
+  const equipTrail = useCallback((id: string) => setEquippedTrail(id), []);
+  const equipHat = useCallback((id: string) => setEquippedHat(id), []);
+  const setNearHatch = useCallback((near: boolean, text?: string) => {
+    setNearHatchState(near);
+    setHatchPromptText(text || "");
+  }, []);
+  const startTutorial = useCallback(() => { setTutorialActive(true); setTutorialStep(0); }, []);
+  const advanceTutorial = useCallback(() => setTutorialStep(prev => prev + 1), []);
+  const endTutorial = useCallback(() => { setTutorialActive(false); setTutorialStep(0); }, []);
 
   const switchWeapon = useCallback((w: WeaponType) => setCurrentWeapon(w), []);
   const setMeleeCooldown = useCallback((cd: number) => setMeleeCooldownVal(cd), []);
