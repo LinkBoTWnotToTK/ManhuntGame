@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame, GameMap, MAP_BOUNDS } from "./GameState";
-import { playerPosition } from "./SharedState";
+import { playerPosition, setPlayerY, setPlayerVelocityY } from "./SharedState";
 
 interface LooseObject {
   id: string;
