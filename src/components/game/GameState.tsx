@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect } f
 import { resetSharedState } from "./SharedState";
 import { POWERUPS } from "./ShopData";
 import { autoSave, autoLoad, SaveData } from "./SaveSystem";
+import type { WeaponType } from "./WeaponSystem";
+import { WEAPONS } from "./WeaponSystem";
 
 export type Role = "runner" | "hunter";
 export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station";
