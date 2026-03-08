@@ -739,6 +739,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         kothScore, kothZone, checkpoints, checkpointIndex,
         survivalWave, flagCarried, flagPosition, basePosition,
         parkourFinished, isDisguised,
+        equippedSkin, equippedTrail, equippedHat,
+        nearHatch, hatchPromptText, setNearHatch,
+        tutorialActive, tutorialStep, startTutorial, advanceTutorial, endTutorial,
         selectRole, selectMap, setDifficulty, setGameMode,
         tagNPC, startGame, resetGame, setEscaped,
         damagePlayer, damageNPC, healPlayer, useAmmo: useAmmoFn,
@@ -749,6 +752,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         doPrestige, advanceCheckpoint, addKothScore,
         grabFlag, returnFlag, finishParkour,
         toggleDisguise, advanceSurvivalWave,
+        equipSkin, equipTrail, equipHat,
       }}
     >
       {children}
