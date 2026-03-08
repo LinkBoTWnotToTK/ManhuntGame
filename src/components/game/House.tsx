@@ -1024,30 +1024,11 @@ function SpaceStationMap({ escapePos }: { escapePos: [number, number, number] })
       <EscapeZone escapePos={escapePos} />
 
       {/* Sci-fi blue-white lighting */}
-      <ambientLight intensity={0.2} color="#aabbdd" />
+      <ambientLight intensity={0.3} color="#aabbdd" />
       <directionalLight position={[0, 12, -15]} intensity={0.4} color="#ddeeff" castShadow
-        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
+        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
         shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={35} shadow-camera-bottom={-60} shadow-bias={-0.0003} />
-      
-      {/* Strip lights along corridors */}
-      <pointLight position={[0, 4, 10]} color="#4488ff" intensity={4} distance={15} decay={2} castShadow />
-      <pointLight position={[-20, 4, 5]} color="#4488ff" intensity={3} distance={12} decay={2} />
-      <pointLight position={[20, 4, 5]} color="#4488ff" intensity={3} distance={12} decay={2} />
-      <pointLight position={[0, 4, -5]} color="#4488ff" intensity={4} distance={15} decay={2} castShadow />
-      <pointLight position={[-20, 4, -15]} color="#4488ff" intensity={3} distance={12} decay={2} />
-      <pointLight position={[20, 4, -15]} color="#4488ff" intensity={3} distance={12} decay={2} />
-      <pointLight position={[0, 4, -25]} color="#4488ff" intensity={4} distance={15} decay={2} castShadow />
-      <pointLight position={[-15, 4, -38]} color="#4488ff" intensity={3} distance={10} decay={2} />
-      <pointLight position={[15, 4, -38]} color="#4488ff" intensity={3} distance={10} decay={2} />
-      <pointLight position={[0, 4, -50]} color="#4488ff" intensity={3} distance={12} decay={2} />
-      
-      {/* Warning lights */}
-      <pointLight position={[-30, 2, -5]} color="#ff2200" intensity={1} distance={6} decay={2} />
-      <pointLight position={[30, 2, -8]} color="#ff2200" intensity={1} distance={6} decay={2} />
-      <pointLight position={[-30, 2, -40]} color="#ff2200" intensity={1} distance={6} decay={2} />
-      <pointLight position={[30, 2, -42]} color="#ff2200" intensity={1} distance={6} decay={2} />
-
-      <hemisphereLight args={["#4466aa", "#111122", 0.3]} />
+      <hemisphereLight args={["#4466aa", "#111122", 0.4]} />
       <fog attach="fog" args={["#0a0a1a", 15, 60]} />
     </group>
   );
