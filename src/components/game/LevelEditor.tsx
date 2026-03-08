@@ -68,6 +68,7 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
   const [savedLevels, setSavedLevels] = useState(loadCustomLevels());
   const [showLoadMenu, setShowLoadMenu] = useState(false);
   const [editingLevelId, setEditingLevelId] = useState<string | null>(null);
+  const [mobilePanel, setMobilePanel] = useState(true);
 
   // Canvas pan/zoom
   const [camX, setCamX] = useState(0);
