@@ -58,17 +58,13 @@ function CrateStack({ position }: { position: [number, number, number] }) {
 function Tree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   return (
     <group position={position} scale={scale}>
-      <mesh position={[0, 1.5, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.15, 0.2, 3, 8]} />
+      <mesh position={[0, 1.5, 0]}>
+        <cylinderGeometry args={[0.15, 0.2, 3, 6]} />
         <meshStandardMaterial color="#5a3a1a" roughness={0.9} />
       </mesh>
-      <mesh position={[0, 3.5, 0]} castShadow receiveShadow>
-        <coneGeometry args={[1.5, 3, 8]} />
+      <mesh position={[0, 3.5, 0]}>
+        <coneGeometry args={[1.5, 3, 6]} />
         <meshStandardMaterial color="#1a5a1a" roughness={0.85} />
-      </mesh>
-      <mesh position={[0, 4.8, 0]} castShadow>
-        <coneGeometry args={[1.0, 2, 8]} />
-        <meshStandardMaterial color="#1e6e1e" roughness={0.85} />
       </mesh>
     </group>
   );
