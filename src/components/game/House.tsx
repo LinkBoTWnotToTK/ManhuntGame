@@ -738,9 +738,8 @@ function ArcticMap({ escapePos }: { escapePos: [number, number, number] }) {
       {/* Cold blue-white lighting */}
       <ambientLight intensity={0.6} color="#dde8ff" />
       <directionalLight position={[30, 30, -15]} intensity={1.4} color="#eef4ff" castShadow
-        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
+        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
         shadow-camera-left={-50} shadow-camera-right={50} shadow-camera-top={45} shadow-camera-bottom={-70} shadow-bias={-0.0003} />
-      <directionalLight position={[-20, 15, 15]} intensity={0.4} color="#ccddff" />
       <hemisphereLight args={["#aabbdd", "#667788", 0.5]} />
       <fog attach="fog" args={["#c0d0e0", 25, 90]} />
     </group>
