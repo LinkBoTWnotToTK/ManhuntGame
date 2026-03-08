@@ -439,7 +439,6 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
   const filteredItems = EDITOR_CATALOG.filter(d => d.category === selectedCategory);
   const selectedItem = selectedUid ? items.find(i => i.uid === selectedUid) : null;
 
-  const [mobilePanel, setMobilePanel] = useState(true);
 
   return (
     <div className={`fixed inset-0 z-50 flex ${isMobilePlatform ? "flex-col-reverse" : ""} bg-black`}>
