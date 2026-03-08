@@ -546,7 +546,7 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
             </button>
           </div>
           <div className="text-white/20 text-[8px] text-center">
-            WASD: Pan • R: Rotate • Del: Remove • Click: Place/Select • Scroll: Zoom • MMB: Pan
+            {isMobilePlatform ? "Tap: Place • 2-finger: Pan/Zoom" : "WASD: Pan • R: Rotate • Del: Remove • Click: Place/Select • Scroll: Zoom • MMB: Pan"}
           </div>
           <div className="text-white/15 text-[8px] text-center">
             {items.length} objects placed • Zoom: {(zoom * 100).toFixed(0)}%
@@ -555,13 +555,17 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
       </div>
 
       {/* 2D Canvas */}
-      <div ref={containerRef} className="flex-1 relative cursor-crosshair" onContextMenu={e => e.preventDefault()}>
+      <div ref={containerRef} className={`flex-1 relative cursor-crosshair ${isMobilePlatform ? "touch-none" : ""}`} onContextMenu={e => e.preventDefault()}>
         <canvas
           ref={canvasRef}
           onMouseMove={handleMouseMove}
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
           onWheel={handleWheel}
           className="w-full h-full"
         />
