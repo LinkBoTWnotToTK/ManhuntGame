@@ -57,7 +57,7 @@ export default function GameUI() {
   const {
     role, selectedMap, score, totalNPCs, elapsedTime, timeLeft, gameOver, gameResult,
     isPlaying, escapeOpen, stamina, maxStamina, playerHealth, playerAmmo, maxHealth,
-    coins, matchCoins,
+    coins, matchCoins, currentWeapon,
     selectRole, selectMap, startGame, resetGame,
   } = useGame();
 
@@ -155,15 +155,45 @@ export default function GameUI() {
             </div>
           </div>
 
-          {/* Ammo (runners only) */}
+          {/* Weapon HUD */}
           {role === "runner" && (
+            <div className="fixed top-4 right-4 z-50 pointer-events-none">
+              <div className="bg-black/70 backdrop-blur-md rounded-xl px-5 py-3 border border-white/10 shadow-2xl space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{currentWeapon === "slingshot" ? "🪃" : currentWeapon === "shotgun" ? "💥" : "🎯"}</span>
+                  <div>
+                    <div className="text-white font-bold text-xl tabular-nums">{playerAmmo}</div>
+                    <div className="text-white/40 text-[10px] uppercase tracking-[0.2em]">
+                      {currentWeapon === "slingshot" ? "Slingshot" : currentWeapon === "shotgun" ? "Scatter Shot" : "Sniper"}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  {[
+                    { key: "1", id: "slingshot" as const, emoji: "🪃" },
+                    { key: "2", id: "shotgun" as const, emoji: "💥" },
+                    { key: "3", id: "sniper" as const, emoji: "🎯" },
+                  ].map((w) => (
+                    <div key={w.id} className={`text-xs px-1.5 py-0.5 rounded border ${
+                      currentWeapon === w.id
+                        ? "border-white/40 bg-white/10 text-white"
+                        : "border-white/5 text-white/30"
+                    }`}>
+                      <kbd className="font-mono text-[9px] mr-0.5">{w.key}</kbd>{w.emoji}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          {role === "hunter" && (
             <div className="fixed top-4 right-4 z-50 pointer-events-none">
               <div className="bg-black/70 backdrop-blur-md rounded-xl px-5 py-3 border border-white/10 shadow-2xl">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">🪃</span>
+                  <span className="text-2xl">⚔️</span>
                   <div>
-                    <div className="text-white font-bold text-xl tabular-nums">{playerAmmo}</div>
-                    <div className="text-white/40 text-[10px] uppercase tracking-[0.2em]">Slingshot</div>
+                    <div className="text-white font-bold text-sm">Melee</div>
+                    <div className="text-white/40 text-[10px] uppercase tracking-[0.2em]">LMB to swing</div>
                   </div>
                 </div>
               </div>
@@ -379,7 +409,8 @@ export default function GameUI() {
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">WASD</kbd> Move</span>
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">Shift</kbd> Sprint</span>
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">Mouse</kbd> Look</span>
-                  {role === "runner" && <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">LMB</kbd> Shoot</span>}
+                  <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">LMB</kbd> {role === "runner" ? "Shoot" : "Melee"}</span>
+                  {role === "runner" && <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">1/2/3</kbd> Weapons</span>}
                   <span><kbd className="px-2 py-1 bg-white/10 rounded text-white/60 font-mono">E</kbd> Grab / Hatch</span>
                 </div>
                 <button onClick={handleBack}

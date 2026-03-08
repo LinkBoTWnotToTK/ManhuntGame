@@ -12,11 +12,12 @@ interface NPCProps {
   npcRole: "runner" | "hunter" | "ally";
 }
 
-// Faster NPC speeds
-const RUNNER_BASE_SPEED = 4.2;
-const RUNNER_SPRINT_SPEED = 5.8;
-const HUNTER_BASE_SPEED = 3.2;
-const HUNTER_SPRINT_SPEED = 4.5;
+// NPC speeds — hunters slowed to reduce aggressive homing
+const RUNNER_BASE_SPEED = 3.8;
+const RUNNER_SPRINT_SPEED = 5.2;
+const HUNTER_BASE_SPEED = 2.4;
+const HUNTER_SPRINT_SPEED = 3.5;
+const HUNTER_HESITATION_CHANCE = 0.3; // chance to pause briefly
 const NPC_RADIUS = 0.3;
 const TAG_DISTANCE = 1.2;
 const HIT_RADIUS = 0.8;
@@ -270,34 +271,54 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
           }
         }
       } else {
-        // HUNTER AI
-        const chaseRange = 20;
-        const isSprinting = dist < 8;
+      // HUNTER AI — patrol-based with slower, less aggressive homing
+        const chaseRange = 15;
+        const loseInterestRange = 22;
+        const isSprinting = dist < 6;
         speed = isSprinting ? HUNTER_SPRINT_SPEED : HUNTER_BASE_SPEED;
 
         if (dist < chaseRange) {
+          // Hesitation: hunters sometimes pause when chasing
+          if (Math.random() < HUNTER_HESITATION_CHANCE * delta) {
+            speed *= 0.3;
+          }
+
           moveDir.copy(toPlayer).normalize();
+          // Wider flanking — less direct approach
           const flankPerp = new THREE.Vector3(-moveDir.z, 0, moveDir.x).normalize();
-          moveDir.addScaledVector(flankPerp, Math.sin(t * 2 + flankAngle.current * 5) * 0.35);
+          moveDir.addScaledVector(flankPerp, Math.sin(t * 1.5 + flankAngle.current * 5) * 0.55);
           moveDir.normalize();
           
-          if (dist > 3) {
-            const prediction = playerPosition.clone().addScaledVector(toPlayer.clone().normalize().multiplyScalar(-1), -1);
+          // Less aggressive prediction — only when close
+          if (dist > 5 && dist < 10) {
+            const prediction = playerPosition.clone().addScaledVector(toPlayer.clone().normalize().multiplyScalar(-1), -0.5);
             const toPrediction = new THREE.Vector3().subVectors(prediction, myPos).normalize();
-            moveDir.lerp(toPrediction, 0.15);
+            moveDir.lerp(toPrediction, 0.08);
             moveDir.normalize();
           }
-        } else {
+        } else if (dist < loseInterestRange) {
+          // Patrol toward player's general area but slowly
           wanderTimer.current -= delta;
           if (wanderTimer.current <= 0) {
             wanderDir.current.set(
-              playerPosition.x + (Math.random() - 0.5) * 15 - myPos.x, 0,
-              playerPosition.z + (Math.random() - 0.5) * 15 - myPos.z
+              playerPosition.x + (Math.random() - 0.5) * 25 - myPos.x, 0,
+              playerPosition.z + (Math.random() - 0.5) * 25 - myPos.z
             ).normalize();
-            wanderTimer.current = 1.5 + Math.random() * 2;
+            wanderTimer.current = 3 + Math.random() * 4;
           }
           moveDir.copy(wanderDir.current);
-          speed = HUNTER_BASE_SPEED * 0.6;
+          speed = HUNTER_BASE_SPEED * 0.5;
+        } else {
+          // Random patrol when player is far away
+          wanderTimer.current -= delta;
+          if (wanderTimer.current <= 0) {
+            const rx = bounds.minX + 5 + Math.random() * (bounds.maxX - bounds.minX - 10);
+            const rz = bounds.minZ + 5 + Math.random() * (bounds.maxZ - bounds.minZ - 10);
+            wanderDir.current.set(rx - myPos.x, 0, rz - myPos.z).normalize();
+            wanderTimer.current = 4 + Math.random() * 5;
+          }
+          moveDir.copy(wanderDir.current);
+          speed = HUNTER_BASE_SPEED * 0.4;
         }
       }
 

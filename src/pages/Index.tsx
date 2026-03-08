@@ -11,6 +11,9 @@ import ProjectileSystem from "@/components/game/ProjectileSystem";
 import Medkits from "@/components/game/Medkits";
 import Coins from "@/components/game/Coins";
 import GrabbableObjects from "@/components/game/GrabbableObjects";
+import Minimap from "@/components/game/Minimap";
+import ScreenEffects from "@/components/game/ScreenEffects";
+import WeaponSystem from "@/components/game/WeaponSystem";
 
 function GameScene() {
   const { role, selectedMap, ownedPowerups } = useGame();
@@ -33,6 +36,7 @@ function GameScene() {
         spawns.hunters.map((npc) => <NPC key={npc.id} {...npc} npcRole="hunter" />)}
       <Player />
       <ProjectileSystem />
+      <WeaponSystem />
       <Medkits />
       <Coins />
       <GrabbableObjects />
@@ -54,6 +58,8 @@ const Index = () => (
   <GameProvider>
     <div className="w-screen h-screen bg-black overflow-hidden">
       <GameUI />
+      <Minimap />
+      <ScreenEffects />
       <Canvas
         shadows
         camera={{ fov: 55, near: 0.1, far: 150 }}

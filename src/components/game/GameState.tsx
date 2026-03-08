@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect } f
 import { resetSharedState } from "./SharedState";
 import { POWERUPS } from "./ShopData";
 import { autoSave, autoLoad, SaveData } from "./SaveSystem";
+import type { WeaponType } from "./WeaponSystem";
+import { WEAPONS } from "./WeaponSystem";
 
 export type Role = "runner" | "hunter";
 export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station";
@@ -73,6 +75,8 @@ interface GameState {
   speedMultiplier: number;
   staminaDrainMultiplier: number;
   maxHealth: number;
+  currentWeapon: WeaponType;
+  meleeCooldown: number;
   selectRole: (role: Role) => void;
   selectMap: (map: GameMap) => void;
   tagNPC: (id: string) => void;
@@ -90,6 +94,8 @@ interface GameState {
   regenStamina: (amount: number) => void;
   buyPowerup: (id: string) => boolean;
   loadSaveData: (data: SaveData) => void;
+  switchWeapon: (w: WeaponType) => void;
+  setMeleeCooldown: (cd: number) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -137,6 +143,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [coins, setCoins] = useState(0);
   const [matchCoins, setMatchCoins] = useState(0);
   const [ownedPowerups, setOwnedPowerups] = useState<string[]>([]);
+  const [currentWeapon, setCurrentWeapon] = useState<WeaponType>("slingshot");
+  const [meleeCooldown, setMeleeCooldownState] = useState(0);
 
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -385,6 +393,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setOwnedPowerups(data.powerups);
   }, []);
 
+  const switchWeapon = useCallback((w: WeaponType) => setCurrentWeapon(w), []);
+  const setMeleeCooldown = useCallback((cd: number) => setMeleeCooldownState(cd), []);
+
   const resetGame = useCallback(() => {
     resetSharedState();
     setRole(null);
@@ -430,6 +441,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         collectMedkit, collectAmmo, collectCoin,
         useStamina: useStaminaFn, regenStamina,
         buyPowerup, loadSaveData,
+        currentWeapon, meleeCooldown, switchWeapon, setMeleeCooldown,
       }}
     >
       {children}

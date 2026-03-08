@@ -3,8 +3,10 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { wallColliders } from "./House";
 import { useGame, MAP_BOUNDS, ESCAPE_POSITIONS } from "./GameState";
-import { playerPosition, projectiles, addProjectile } from "./SharedState";
+import { playerPosition, projectiles, addProjectile, npcPositions } from "./SharedState";
 import { ESCAPE_ZONE_RADIUS } from "./House";
+import { WEAPONS, throwRock, throwableRocks } from "./WeaponSystem";
+import type { WeaponType } from "./WeaponSystem";
 
 const BASE_WALK_SPEED = 4.5;
 const BASE_SPRINT_SPEED = 7;
@@ -100,24 +102,71 @@ export default function Player() {
   const {
     role, selectedMap, isPlaying, gameOver, escapeOpen, setEscaped,
     stamina, useStamina, regenStamina,
-    playerHealth, useAmmo, damagePlayer,
+    playerHealth, useAmmo, damagePlayer, damageNPC,
     medkits, collectMedkit, healPlayer,
     ammoPickups, collectAmmo,
     coinPickups, collectCoin,
     speedMultiplier, staminaDrainMultiplier, maxHealth,
+    currentWeapon, meleeCooldown, setMeleeCooldown, switchWeapon,
+    npcHealth, tagged,
   } = useGame();
 
   const bounds = MAP_BOUNDS[selectedMap || "suburban"];
   const escapePos = ESCAPE_POSITIONS[selectedMap || "suburban"];
+  const weaponCooldownRef = useRef(0);
+  const meleeCooldownRef = useRef(0);
 
   const shootRef = useRef<() => void>(() => {});
   shootRef.current = () => {
     if (!isPlaying || gameOver) return;
-    if (role !== "runner") return;
-    if (!useAmmo()) return;
-    const dir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
-    const spawnPos = playerPosition.clone().add(new THREE.Vector3(0, 1.2, 0)).addScaledVector(dir, 0.5);
-    addProjectile(spawnPos, dir, "player");
+    if (weaponCooldownRef.current > 0) return;
+
+    if (role === "hunter") {
+      // Melee attack
+      if (meleeCooldownRef.current > 0) return;
+      meleeCooldownRef.current = 0.6;
+      setMeleeCooldown(0.6);
+      // Check NPC hits in melee range
+      for (const [nid, npos] of npcPositions) {
+        if (tagged.has(nid)) continue;
+        const dist = playerPosition.distanceTo(npos);
+        if (dist < 2.0) {
+          const toNpc = new THREE.Vector3().subVectors(npos, playerPosition).normalize();
+          const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
+          const dot = toNpc.dot(forward);
+          if (dot > 0.3) { // within ~70deg arc
+            damageNPC(nid, 1);
+          }
+        }
+      }
+      return;
+    }
+
+    // Runner weapon fire
+    const weapon = WEAPONS[currentWeapon];
+    if (!weapon) return;
+    // Check ammo
+    let ammoNeeded = weapon.ammoPerShot;
+    // useAmmo returns true if 1 ammo used; we need ammoPerShot
+    let ammoOk = true;
+    for (let i = 0; i < ammoNeeded; i++) {
+      if (!useAmmo()) { ammoOk = false; break; }
+    }
+    if (!ammoOk) return;
+
+    weaponCooldownRef.current = weapon.cooldown;
+
+    const baseDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
+    const spawnPos = playerPosition.clone().add(new THREE.Vector3(0, 1.2, 0)).addScaledVector(baseDir, 0.5);
+
+    for (let i = 0; i < weapon.projectileCount; i++) {
+      const dir = baseDir.clone();
+      if (weapon.spread > 0) {
+        dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), (Math.random() - 0.5) * weapon.spread * 2);
+        dir.y += (Math.random() - 0.5) * weapon.spread;
+      }
+      addProjectile(spawnPos.clone(), dir, "player");
+    }
   };
 
   useEffect(() => {
@@ -134,7 +183,13 @@ export default function Player() {
         shootRef.current();
       }
     };
-    const onKeyDown = (e: KeyboardEvent) => { keys.current[e.code] = true; };
+    const onKeyDown = (e: KeyboardEvent) => {
+      keys.current[e.code] = true;
+      // Weapon switching with 1/2/3 keys (runner only)
+      if (e.code === "Digit1") switchWeapon("slingshot");
+      if (e.code === "Digit2") switchWeapon("shotgun");
+      if (e.code === "Digit3") switchWeapon("sniper");
+    };
     const onKeyUp = (e: KeyboardEvent) => { keys.current[e.code] = false; };
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mousedown", onMouseDown);
@@ -150,6 +205,10 @@ export default function Player() {
 
   useFrame((state, delta) => {
     if (!isPlaying || gameOver) return;
+
+    // Tick weapon cooldowns
+    if (weaponCooldownRef.current > 0) weaponCooldownRef.current -= delta;
+    if (meleeCooldownRef.current > 0) meleeCooldownRef.current -= delta;
 
     const walkSpeed = BASE_WALK_SPEED * speedMultiplier;
     const sprintSpeed = BASE_SPRINT_SPEED * speedMultiplier;
