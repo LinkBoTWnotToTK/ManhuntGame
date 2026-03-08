@@ -77,26 +77,21 @@ function Tree({ position, scale = 1 }: { position: [number, number, number]; sca
 function SnowTree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   return (
     <group position={position} scale={scale}>
-      <mesh position={[0, 1.5, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.15, 0.2, 3, 8]} />
+      <mesh position={[0, 1.5, 0]}>
+        <cylinderGeometry args={[0.15, 0.2, 3, 6]} />
         <meshStandardMaterial color="#4a3020" roughness={0.9} />
       </mesh>
-      <mesh position={[0, 3.5, 0]} castShadow receiveShadow>
-        <coneGeometry args={[1.5, 3, 8]} />
+      <mesh position={[0, 3.5, 0]}>
+        <coneGeometry args={[1.5, 3, 6]} />
         <meshStandardMaterial color="#1a4a2a" roughness={0.85} />
       </mesh>
-      <mesh position={[0, 5.0, 0]} castShadow>
-        <coneGeometry args={[1.0, 2, 8]} />
+      <mesh position={[0, 5.0, 0]}>
+        <coneGeometry args={[1.0, 2, 6]} />
         <meshStandardMaterial color="#2a5a3a" roughness={0.85} />
       </mesh>
-      {/* Snow caps */}
       <mesh position={[0, 5.9, 0]}>
-        <coneGeometry args={[0.6, 0.5, 8]} />
+        <coneGeometry args={[0.6, 0.5, 6]} />
         <meshStandardMaterial color="#eeeeff" roughness={0.4} />
-      </mesh>
-      <mesh position={[0, 4.5, 0]}>
-        <torusGeometry args={[1.2, 0.08, 4, 12]} />
-        <meshStandardMaterial color="#dde8f0" roughness={0.3} />
       </mesh>
     </group>
   );
