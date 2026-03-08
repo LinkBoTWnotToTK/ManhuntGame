@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useGame, Role, GameMap, Difficulty, GameMode, DIFFICULTY_SETTINGS, GAME_MODES } from "./GameState";
 import Shop from "./Shop";
 import { xpForLevel, prestigeMultiplier } from "./SaveSystem";
+import { TUTORIAL_STEPS } from "./Tutorial";
 
 function formatTime(secs: number) {
   const mins = Math.floor(secs / 60);
