@@ -828,33 +828,11 @@ function UndergroundMap({ escapePos }: { escapePos: [number, number, number] }) 
       <EscapeZone escapePos={escapePos} />
 
       {/* Dim underground lighting — lots of point lights */}
-      <ambientLight intensity={0.15} color="#aabbcc" />
+      <ambientLight intensity={0.25} color="#aabbcc" />
       <directionalLight position={[0, 10, -20]} intensity={0.3} color="#ddeeff" castShadow
-        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
+        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
         shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={35} shadow-camera-bottom={-65} shadow-bias={-0.0003} />
-      
-      {/* Fluorescent ceiling lights */}
-      <pointLight position={[0, 3.5, 10]} color="#ccddff" intensity={4} distance={15} decay={2} castShadow />
-      <pointLight position={[-20, 3.5, 5]} color="#ccddff" intensity={3} distance={12} decay={2} />
-      <pointLight position={[20, 3.5, 5]} color="#ccddff" intensity={3} distance={12} decay={2} />
-      <pointLight position={[0, 3.5, -5]} color="#ccddff" intensity={4} distance={15} decay={2} castShadow />
-      <pointLight position={[-15, 3.5, -15]} color="#ccddff" intensity={3} distance={12} decay={2} />
-      <pointLight position={[15, 3.5, -15]} color="#ccddff" intensity={3} distance={12} decay={2} />
-      <pointLight position={[0, 3.5, -25]} color="#ccddff" intensity={4} distance={15} decay={2} castShadow />
-      <pointLight position={[-20, 3.5, -30]} color="#aaccee" intensity={2.5} distance={10} decay={2} />
-      <pointLight position={[20, 3.5, -30]} color="#aaccee" intensity={2.5} distance={10} decay={2} />
-      <pointLight position={[0, 3.5, -40]} color="#ccddff" intensity={3} distance={12} decay={2} />
-      <pointLight position={[-15, 3.5, -48]} color="#aaccee" intensity={2.5} distance={10} decay={2} />
-      <pointLight position={[15, 3.5, -48]} color="#aaccee" intensity={2.5} distance={10} decay={2} />
-      <pointLight position={[0, 3.5, -55]} color="#ccddff" intensity={3} distance={12} decay={2} />
-      
-      {/* Emergency red lights */}
-      <pointLight position={[-30, 2, -5]} color="#ff2200" intensity={1.5} distance={8} decay={2} />
-      <pointLight position={[30, 2, -8]} color="#ff2200" intensity={1.5} distance={8} decay={2} />
-      <pointLight position={[-30, 2, -40]} color="#ff2200" intensity={1.5} distance={8} decay={2} />
-      <pointLight position={[30, 2, -42]} color="#ff2200" intensity={1.5} distance={8} decay={2} />
-
-      <hemisphereLight args={["#556677", "#222233", 0.2]} />
+      <hemisphereLight args={["#556677", "#222233", 0.3]} />
       <fog attach="fog" args={["#1a1a22", 10, 55]} />
     </group>
   );
