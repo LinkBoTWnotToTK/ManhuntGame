@@ -21,21 +21,30 @@ export default function ProjectileSystem() {
         p.alive = false;
       }
     }
+    // Remove dead projectiles
     for (let i = projectiles.length - 1; i >= 0; i--) {
       if (!projectiles[i].alive) projectiles.splice(i, 1);
     }
 
     const group = groupRef.current;
     if (!group) return;
-    if (!geo.current) geo.current = new THREE.SphereGeometry(0.1, 6, 6);
+    if (!geo.current) geo.current = new THREE.SphereGeometry(0.1, 4, 4);
     if (!mat.current) mat.current = new THREE.MeshStandardMaterial({ color: "#ffcc00", emissive: "#ffaa00", emissiveIntensity: 3 });
 
+    // Grow pool if needed
     while (meshPool.current.length < projectiles.length) {
       const mesh = new THREE.Mesh(geo.current, mat.current);
-      mesh.castShadow = true;
       group.add(mesh);
       meshPool.current.push(mesh);
     }
+
+    // Remove excess pool meshes to free memory
+    while (meshPool.current.length > projectiles.length + 5) {
+      const mesh = meshPool.current.pop()!;
+      group.remove(mesh);
+      mesh.geometry = undefined as any; // release ref
+    }
+
     for (let i = 0; i < meshPool.current.length; i++) {
       if (i < projectiles.length) {
         meshPool.current[i].visible = true;

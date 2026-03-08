@@ -31,67 +31,42 @@ function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
   
   return (
     <group>
+      {/* Head */}
       <mesh position={[0, 1.6, 0]} castShadow>
-        <sphereGeometry args={[isHunter ? 0.19 : 0.16, 16, 16]} />
+        <sphereGeometry args={[isHunter ? 0.19 : 0.16, 8, 6]} />
         <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
+      {/* Eyes */}
       <mesh position={[0.05, 1.63, 0.13]}>
-        <sphereGeometry args={[0.03, 8, 8]} />
+        <sphereGeometry args={[0.03, 4, 4]} />
         <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={isHunter ? 2 : 0.5} />
       </mesh>
       <mesh position={[-0.05, 1.63, 0.13]}>
-        <sphereGeometry args={[0.03, 8, 8]} />
+        <sphereGeometry args={[0.03, 4, 4]} />
         <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={isHunter ? 2 : 0.5} />
       </mesh>
-      <mesh position={[0, 1.72, -0.02]} castShadow>
-        <sphereGeometry args={[isHunter ? 0.2 : 0.17, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color={isHunter ? "#1a0a0a" : "#2a2a3a"} roughness={0.9} />
-      </mesh>
+      {/* Body */}
       <mesh position={[0, 1.15, 0]} castShadow>
-        <capsuleGeometry args={[isHunter ? 0.17 : 0.14, isHunter ? 0.48 : 0.4, 8, 16]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.7} metalness={0.05} />
-      </mesh>
-      <mesh position={[0, 0.88, 0]} castShadow>
-        <cylinderGeometry args={[isHunter ? 0.18 : 0.15, isHunter ? 0.18 : 0.15, 0.06, 12]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.2} roughness={0.5} />
-      </mesh>
-      <mesh position={[-0.24, 1.1, 0]} rotation={[0, 0, 0.25]} castShadow>
-        <capsuleGeometry args={[0.05, 0.35, 6, 10]} />
+        <capsuleGeometry args={[isHunter ? 0.17 : 0.14, isHunter ? 0.48 : 0.4, 4, 8]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0.24, 1.1, 0]} rotation={[0, 0, -0.25]} castShadow>
-        <capsuleGeometry args={[0.05, 0.35, 6, 10]} />
+      {/* Arms */}
+      <mesh position={[-0.24, 1.1, 0]} rotation={[0, 0, 0.25]}>
+        <capsuleGeometry args={[0.05, 0.35, 3, 6]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[-0.3, 0.88, 0]} castShadow>
-        <sphereGeometry args={[0.045, 8, 8]} />
-        <meshStandardMaterial color={skinColor} roughness={0.7} />
+      <mesh position={[0.24, 1.1, 0]} rotation={[0, 0, -0.25]}>
+        <capsuleGeometry args={[0.05, 0.35, 3, 6]} />
+        <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      <mesh position={[0.3, 0.88, 0]} castShadow>
-        <sphereGeometry args={[0.045, 8, 8]} />
-        <meshStandardMaterial color={skinColor} roughness={0.7} />
-      </mesh>
-      {!isHunter && (
-        <mesh position={[0.33, 0.9, 0.05]} rotation={[0.3, 0, -0.2]} castShadow>
-          <cylinderGeometry args={[0.012, 0.012, 0.25, 6]} />
-          <meshStandardMaterial color="#5a3a1a" roughness={0.8} />
-        </mesh>
-      )}
-      <mesh position={[-0.09, 0.5, 0]} castShadow>
-        <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
+      {/* Legs */}
+      <mesh position={[-0.09, 0.5, 0]}>
+        <capsuleGeometry args={[0.06, 0.45, 3, 6]} />
         <meshStandardMaterial color={pantsColor} roughness={0.8} />
       </mesh>
-      <mesh position={[0.09, 0.5, 0]} castShadow>
-        <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
+      <mesh position={[0.09, 0.5, 0]}>
+        <capsuleGeometry args={[0.06, 0.45, 3, 6]} />
         <meshStandardMaterial color={pantsColor} roughness={0.8} />
-      </mesh>
-      <mesh position={[-0.09, 0.2, 0.03]} castShadow>
-        <boxGeometry args={[0.1, 0.08, 0.15]} />
-        <meshStandardMaterial color="#222" roughness={0.6} />
-      </mesh>
-      <mesh position={[0.09, 0.2, 0.03]} castShadow>
-        <boxGeometry args={[0.1, 0.08, 0.15]} />
-        <meshStandardMaterial color="#222" roughness={0.6} />
       </mesh>
     </group>
   );

@@ -4,10 +4,12 @@ import { playerPosition, npcPositions } from "./SharedState";
 
 const MAP_SIZE = 140;
 const PADDING = 6;
+const DRAW_INTERVAL = 3; // Only draw every N frames
 
 export default function Minimap() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
+  const frameCount = useRef(0);
   const { selectedMap, isPlaying, role, tagged, escapeOpen, coinPickups } = useGame();
   const bounds = MAP_BOUNDS[selectedMap || "suburban"];
   const escapePos = ESCAPE_POSITIONS[selectedMap || "suburban"];
@@ -23,24 +25,29 @@ export default function Minimap() {
     const toY = (wz: number) => PADDING + (wz - bounds.minZ) * scale * ((MAP_SIZE - PADDING * 2) / MAP_SIZE);
 
     const draw = () => {
+      frameCount.current++;
+      // Throttle: only redraw every N frames
+      if (frameCount.current % DRAW_INTERVAL !== 0) {
+        animRef.current = requestAnimationFrame(draw);
+        return;
+      }
+
       ctx.clearRect(0, 0, MAP_SIZE, MAP_SIZE);
 
-      // Background
       ctx.fillStyle = "rgba(0,0,0,0.7)";
       ctx.beginPath();
       ctx.roundRect(0, 0, MAP_SIZE, MAP_SIZE, 8);
       ctx.fill();
 
-      // Border
       ctx.strokeStyle = "rgba(255,255,255,0.15)";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.roundRect(0, 0, MAP_SIZE, MAP_SIZE, 8);
       ctx.stroke();
 
-      // Coins (small yellow dots)
+      // Coins
+      ctx.fillStyle = "rgba(255,200,0,0.6)";
       for (const coin of coinPickups) {
-        ctx.fillStyle = "rgba(255,200,0,0.6)";
         ctx.beginPath();
         ctx.arc(toX(coin.position[0]), toY(coin.position[2]), 1.5, 0, Math.PI * 2);
         ctx.fill();
@@ -69,14 +76,11 @@ export default function Minimap() {
         ctx.fill();
       }
 
-      // Player (white, larger)
+      // Player
       ctx.fillStyle = "#ffffff";
       ctx.beginPath();
       ctx.arc(toX(playerPosition.x), toY(playerPosition.z), 3.5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.4)";
-      ctx.lineWidth = 1;
-      ctx.stroke();
 
       animRef.current = requestAnimationFrame(draw);
     };
@@ -99,7 +103,6 @@ export default function Minimap() {
         <span className="text-[8px] text-white/30">⬤ You</span>
         <span className="text-[8px] text-red-400/50">⬤ Hunter</span>
         <span className="text-[8px] text-blue-400/50">⬤ Runner</span>
-        <span className="text-[8px] text-yellow-400/50">⬤ Coin</span>
       </div>
     </div>
   );
