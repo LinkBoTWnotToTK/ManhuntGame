@@ -212,28 +212,16 @@ function VentDuct({ position, rotation = 0, length = 4 }: { position: [number, n
 }
 
 function Campfire({ position }: { position: [number, number, number] }) {
-  const lightRef = useRef<THREE.PointLight>(null);
-  useFrame(({ clock }) => {
-    if (lightRef.current) {
-      lightRef.current.intensity = 3 + Math.sin(clock.elapsedTime * 8) * 1.5 + Math.sin(clock.elapsedTime * 13) * 0.5;
-    }
-  });
   return (
     <group position={position}>
-      {[0, 1, 2, 3, 4].map(i => {
-        const a = (i / 5) * Math.PI * 2;
-        return (
-          <mesh key={i} position={[Math.cos(a) * 0.3, 0.15, Math.sin(a) * 0.3]} rotation={[Math.random(), Math.random(), Math.random()]} castShadow>
-            <cylinderGeometry args={[0.04, 0.06, 0.5, 6]} />
-            <meshStandardMaterial color="#4a2a0a" roughness={0.9} />
-          </mesh>
-        );
-      })}
-      <mesh position={[0, 0.2, 0]}>
-        <sphereGeometry args={[0.15, 8, 8]} />
+      <mesh position={[0, 0.15, 0]}>
+        <cylinderGeometry args={[0.3, 0.35, 0.3, 6]} />
+        <meshStandardMaterial color="#4a2a0a" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 0.3, 0]}>
+        <sphereGeometry args={[0.15, 6, 6]} />
         <meshStandardMaterial color="#ff6600" emissive="#ff4400" emissiveIntensity={4} />
       </mesh>
-      <pointLight ref={lightRef} position={[0, 0.5, 0]} color="#ff6622" intensity={4} distance={12} decay={2} castShadow />
     </group>
   );
 }
