@@ -32,7 +32,7 @@ export default function GameUI() {
     isPlaying, escapeOpen, stamina, maxStamina, playerHealth, playerAmmo, maxHealth,
     coins, matchCoins, currentWeapon,
     level, xp, prestige, totalWins, totalGames, leaderboard,
-    kothScore, checkpointIndex,
+    kothScore, checkpointIndex, survivalWave, flagCarried, isDisguised,
     selectRole, selectMap, setDifficulty, setGameMode, startGame, resetGame,
   } = useGame();
 
@@ -111,10 +111,16 @@ export default function GameUI() {
                     <div className="text-white font-bold text-lg tabular-nums">{score}/{totalNPCs}</div>
                   ) : gameMode === "koth" ? (
                     <div className="text-yellow-400 font-bold text-lg tabular-nums">👑 {kothScore}/100</div>
-                  ) : gameMode === "speedrun" ? (
+                  ) : gameMode === "speedrun" || gameMode === "parkour" || gameMode === "deathrun" ? (
                     <div className="text-cyan-400 font-bold text-lg tabular-nums">⚡ {checkpointIndex}/5</div>
                   ) : gameMode === "collector" ? (
                     <div className="text-yellow-400 font-bold text-lg tabular-nums">🪙 {matchCoins}</div>
+                  ) : gameMode === "survival" ? (
+                    <div className="text-red-400 font-bold text-lg tabular-nums">🛡️ Wave {survivalWave}</div>
+                  ) : gameMode === "ctf" ? (
+                    <div className="text-red-400 font-bold text-lg tabular-nums">{flagCarried ? "🚩 RETURN FLAG!" : "🚩 Find Flag"}</div>
+                  ) : gameMode === "blockhunt" ? (
+                    <div className="text-purple-400 font-bold text-lg tabular-nums">{isDisguised ? "📦 Hidden" : "🏃 Exposed"}</div>
                   ) : (
                     <div className="text-white font-bold text-lg">SURVIVE</div>
                   )}
@@ -215,7 +221,30 @@ export default function GameUI() {
               </div>
             </div>
           )}
-          {escapeOpen && role === "hunter" && (
+          {/* Block Hunt disguise alert */}
+          {gameMode === "blockhunt" && isDisguised && (
+            <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+              <div className="bg-purple-950/90 backdrop-blur-md rounded-full px-5 py-1.5 border border-purple-500/50 shadow-[0_0_20px_rgba(128,0,255,0.3)]">
+                <span className="text-purple-300 font-bold text-xs uppercase tracking-wider">📦 DISGUISED — Don&apos;t move!</span>
+              </div>
+            </div>
+          )}
+          {/* CTF flag carried */}
+          {gameMode === "ctf" && flagCarried && (
+            <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+              <div className="bg-red-950/90 backdrop-blur-md rounded-full px-5 py-1.5 border border-red-500/50 shadow-[0_0_20px_rgba(255,0,0,0.3)]">
+                <span className="text-red-400 font-bold text-xs uppercase tracking-wider animate-pulse">🚩 RETURN TO BASE!</span>
+              </div>
+            </div>
+          )}
+          {/* Survival wave */}
+          {gameMode === "survival" && (
+            <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+              <div className="bg-red-950/80 backdrop-blur-md rounded-full px-5 py-1.5 border border-red-500/30">
+                <span className="text-red-300 font-bold text-xs uppercase tracking-wider">🛡️ WAVE {survivalWave}</span>
+              </div>
+            </div>
+          )}
             <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
               <div className="bg-red-950/90 backdrop-blur-md rounded-full px-5 py-1.5 border border-red-500/50">
                 <span className="text-red-400 font-bold text-xs uppercase tracking-wider animate-pulse">⚠️ RUNNERS ESCAPING!</span>
@@ -472,6 +501,11 @@ export default function GameUI() {
                     {gameMode === "lms" && "Free-for-all. Eliminate all opponents to win!"}
                     {gameMode === "speedrun" && "Race through 5 checkpoints as fast as possible!"}
                     {gameMode === "collector" && "Grab as many coins as you can before time runs out!"}
+                    {gameMode === "parkour" && "Jump across platforms to reach all 5 checkpoints! Press SPACE to jump."}
+                    {gameMode === "blockhunt" && "Press Q to disguise as a crate. Stay hidden from seekers! Don't move while disguised."}
+                    {gameMode === "ctf" && "Find the enemy flag and bring it back to your base!"}
+                    {gameMode === "survival" && "Survive endless waves of hunters. Each wave adds more!"}
+                    {gameMode === "deathrun" && "Navigate deadly narrow platforms to reach all 5 checkpoints! Don't fall!"}
                   </p>
                 </div>
                 <div className="cursor-pointer group" onClick={() => document.body.requestPointerLock()}>
@@ -480,9 +514,11 @@ export default function GameUI() {
                 <div className="flex gap-3 justify-center text-white/30 text-[10px] flex-wrap">
                   <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">WASD</kbd> Move</span>
                   <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">⇧</kbd> Sprint</span>
+                  <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">SPACE</kbd> Jump</span>
                   <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">LMB</kbd> {role === "runner" ? "Shoot" : "Melee"}</span>
                   {role === "runner" && <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">1/2/3</kbd> Weapons</span>}
                   <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">E</kbd> Grab</span>
+                  {gameMode === "blockhunt" && <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">Q</kbd> Disguise</span>}
                 </div>
                 <button onClick={handleBack} className="text-white/15 text-xs hover:text-white/40 transition-colors">← Back</button>
               </div>

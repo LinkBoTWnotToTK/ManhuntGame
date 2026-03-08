@@ -1,8 +1,9 @@
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import * as THREE from "three";
 import { useGame, GameMap, ESCAPE_POSITIONS } from "./GameState";
 import { useFrame } from "@react-three/fiber";
 import { createTexturedMaterials } from "./Textures";
+import { platformColliders, addPlatformCollider } from "./SharedState";
 
 let _mats: ReturnType<typeof createTexturedMaterials> | null = null;
 function getMats() {
@@ -1154,15 +1155,131 @@ function SpaceStationMap({ escapePos }: { escapePos: [number, number, number] })
   );
 }
 
+// ===== PLATFORM COMPONENT (for parkour / vertical gameplay) =====
+function Platform({ position, size, color = "#556677", emissive }: {
+  position: [number, number, number];
+  size: [number, number, number];
+  color?: string;
+  emissive?: string;
+}) {
+  useMemo(() => {
+    const key = `plat-${position.join(",")}-${size.join(",")}`;
+    if (registeredColliders.has(key)) return;
+    registeredColliders.add(key);
+    addPlatformCollider(position, size);
+    // Also add as wall collider for side collision
+    const halfSize = size.map(s => s / 2);
+    wallColliders.push({
+      min: new THREE.Vector3(position[0] - halfSize[0], position[1] - halfSize[1], position[2] - halfSize[2]),
+      max: new THREE.Vector3(position[0] + halfSize[0], position[1] + halfSize[1], position[2] + halfSize[2]),
+    });
+  }, [position, size]);
+
+  return (
+    <mesh position={position} castShadow receiveShadow>
+      <boxGeometry args={size} />
+      <meshStandardMaterial
+        color={color}
+        roughness={0.5}
+        metalness={0.3}
+        emissive={emissive || color}
+        emissiveIntensity={emissive ? 0.5 : 0.05}
+      />
+    </mesh>
+  );
+}
+
+// ===== PARKOUR PLATFORMS (added to all maps when in parkour/deathrun mode) =====
+function ParkourPlatforms() {
+  const { gameMode } = useGame();
+  if (gameMode !== "parkour" && gameMode !== "deathrun") return null;
+
+  return (
+    <group>
+      {/* Starting area platforms */}
+      <Platform position={[3, 1.5, -5]} size={[4, 0.3, 4]} color="#44aa66" emissive="#22ff44" />
+      <Platform position={[-4, 3, -10]} size={[3, 0.3, 3]} color="#4488aa" emissive="#22aaff" />
+      <Platform position={[5, 3, -10]} size={[3, 0.3, 3]} color="#4488aa" emissive="#22aaff" />
+      
+      {/* Mid-section elevated bridges */}
+      <Platform position={[0, 5, -18]} size={[5, 0.3, 2]} color="#8844aa" emissive="#aa44ff" />
+      <Platform position={[-8, 5, -20]} size={[3, 0.3, 3]} color="#8844aa" emissive="#aa44ff" />
+      <Platform position={[8, 5, -22]} size={[3, 0.3, 3]} color="#8844aa" emissive="#aa44ff" />
+      
+      {/* Stepping stones */}
+      <Platform position={[-3, 6.5, -26]} size={[2, 0.3, 2]} color="#aa6644" emissive="#ff8844" />
+      <Platform position={[3, 7, -28]} size={[2, 0.3, 2]} color="#aa6644" emissive="#ff8844" />
+      <Platform position={[-2, 7.5, -32]} size={[2, 0.3, 2]} color="#aa6644" emissive="#ff8844" />
+      
+      {/* High section */}
+      <Platform position={[10, 7, -30]} size={[4, 0.3, 4]} color="#44aa88" emissive="#22ffaa" />
+      <Platform position={[0, 8, -36]} size={[6, 0.3, 3]} color="#aa4466" emissive="#ff4488" />
+      <Platform position={[-5, 9, -40]} size={[4, 0.3, 4]} color="#44aaaa" emissive="#22ffff" />
+      
+      {/* Final approach */}
+      <Platform position={[3, 10, -44]} size={[3, 0.3, 3]} color="#aaaa44" emissive="#ffff22" />
+      <Platform position={[0, 11, -50]} size={[5, 0.3, 5]} color="#ffcc00" emissive="#ffdd44" />
+      
+      {/* Ramps */}
+      <group position={[0, 0.75, -3]} rotation={[-0.3, 0, 0]}>
+        <mesh castShadow receiveShadow>
+          <boxGeometry args={[3, 0.2, 5]} />
+          <meshStandardMaterial color="#667788" roughness={0.4} metalness={0.5} />
+        </mesh>
+      </group>
+      
+      {/* Deathrun specific: narrow beams */}
+      {gameMode === "deathrun" && (
+        <>
+          <Platform position={[0, 4, -14]} size={[1, 0.2, 6]} color="#ff4444" emissive="#ff2222" />
+          <Platform position={[-5, 6, -24]} size={[1, 0.2, 4]} color="#ff4444" emissive="#ff2222" />
+          <Platform position={[5, 8, -38]} size={[1, 0.2, 4]} color="#ff4444" emissive="#ff2222" />
+        </>
+      )}
+
+      {/* Platform edge glow lights */}
+      <pointLight position={[0, 6, -18]} color="#aa44ff" intensity={2} distance={8} />
+      <pointLight position={[0, 9, -36]} color="#ff4488" intensity={2} distance={8} />
+      <pointLight position={[0, 12, -50]} color="#ffdd44" intensity={3} distance={10} />
+    </group>
+  );
+}
+
+// ===== BLOCK HUNT PROPS (extra hiding spots) =====
+function BlockHuntProps() {
+  const { gameMode } = useGame();
+  if (gameMode !== "blockhunt") return null;
+
+  // Add extra crates, barrels, and rocks as hiding spots
+  const positions: [number, number, number][] = [
+    [-10, 0, -8], [12, 0, -12], [-5, 0, -20], [8, 0, -25],
+    [-15, 0, -30], [15, 0, -35], [3, 0, -15], [-8, 0, -40],
+    [20, 0, -10], [-20, 0, -22], [0, 0, -32], [10, 0, -45],
+    [-12, 0, -48], [5, 0, 10], [-18, 0, 8],
+  ];
+
+  return (
+    <group>
+      {positions.map((pos, i) => {
+        const type = i % 3;
+        if (type === 0) return <Crate key={`bh-${i}`} position={pos} />;
+        if (type === 1) return <Barrel key={`bh-${i}`} position={pos} />;
+        return <Rock key={`bh-${i}`} position={pos} scale={0.8} />;
+      })}
+    </group>
+  );
+}
+
 export default function House() {
-  const { selectedMap } = useGame();
+  const { selectedMap, gameMode } = useGame();
   const map = selectedMap || "suburban";
   const escapePos = ESCAPE_POSITIONS[map];
 
   useMemo(() => {
     wallColliders.length = 0;
     registeredColliders.clear();
-  }, [map]);
+    platformColliders.length = 0;
+  }, [map, gameMode]);
 
   return (
     <>
@@ -1173,6 +1290,8 @@ export default function House() {
       {map === "underground" && <UndergroundMap escapePos={escapePos} />}
       {map === "volcano" && <VolcanoMap escapePos={escapePos} />}
       {map === "space_station" && <SpaceStationMap escapePos={escapePos} />}
+      <ParkourPlatforms />
+      <BlockHuntProps />
     </>
   );
 }

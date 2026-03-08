@@ -7,7 +7,7 @@ import type { WeaponType } from "./WeaponSystem";
 export type Role = "runner" | "hunter";
 export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station";
 export type Difficulty = "easy" | "medium" | "hard";
-export type GameMode = "classic" | "infection" | "koth" | "lms" | "speedrun" | "collector";
+export type GameMode = "classic" | "infection" | "koth" | "lms" | "speedrun" | "collector" | "parkour" | "blockhunt" | "ctf" | "survival" | "deathrun";
 
 export interface MapBounds {
   minX: number; maxX: number;
@@ -55,6 +55,11 @@ export const GAME_MODES: Record<GameMode, { name: string; emoji: string; desc: s
   lms:        { name: "Last Standing", emoji: "💀", desc: "Free-for-all — last alive wins" },
   speedrun:   { name: "Speed Run", emoji: "⚡", desc: "Reach all checkpoints fastest" },
   collector:  { name: "Collector", emoji: "🪙", desc: "Collect the most coins to win" },
+  parkour:    { name: "Parkour", emoji: "🧗", desc: "Jump across platforms to the finish" },
+  blockhunt:  { name: "Block Hunt", emoji: "📦", desc: "Hide as objects — seekers find you" },
+  ctf:        { name: "Capture Flag", emoji: "🚩", desc: "Grab the flag and return to base" },
+  survival:   { name: "Survival", emoji: "🛡️", desc: "Survive waves of hunters" },
+  deathrun:   { name: "Death Run", emoji: "☠️", desc: "Dodge traps to reach the end" },
 };
 
 interface MedkitData { id: string; position: [number, number, number]; }
@@ -102,6 +107,12 @@ interface GameState {
   kothZone: [number, number, number] | null;
   checkpoints: [number, number, number][];
   checkpointIndex: number;
+  survivalWave: number;
+  flagCarried: boolean;
+  flagPosition: [number, number, number] | null;
+  basePosition: [number, number, number] | null;
+  parkourFinished: boolean;
+  isDisguised: boolean;
   selectRole: (role: Role) => void;
   selectMap: (map: GameMap) => void;
   setDifficulty: (d: Difficulty) => void;
@@ -126,6 +137,11 @@ interface GameState {
   doPrestige: () => void;
   advanceCheckpoint: () => void;
   addKothScore: (pts: number) => void;
+  grabFlag: () => void;
+  returnFlag: () => void;
+  finishParkour: () => void;
+  toggleDisguise: () => void;
+  advanceSurvivalWave: () => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -159,6 +175,17 @@ function spawnCheckpoints(bounds: MapBounds): [number, number, number][] {
     pts.push([x, 0, z]);
   }
   return pts;
+}
+
+function spawnParkourCheckpoints(): [number, number, number][] {
+  // Parkour checkpoints on elevated platforms
+  return [
+    [5, 3, -10],
+    [-8, 5, -20],
+    [10, 7, -30],
+    [-5, 9, -40],
+    [0, 11, -50],
+  ];
 }
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
@@ -196,6 +223,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [kothZone, setKothZone] = useState<[number, number, number] | null>(null);
   const [checkpoints, setCheckpoints] = useState<[number, number, number][]>([]);
   const [checkpointIndex, setCheckpointIndex] = useState(0);
+  const [survivalWave, setSurvivalWave] = useState(1);
+  const [flagCarried, setFlagCarried] = useState(false);
+  const [flagPosition, setFlagPosition] = useState<[number, number, number] | null>(null);
+  const [basePosition, setBasePosition] = useState<[number, number, number] | null>(null);
+  const [parkourFinished, setParkourFinished] = useState(false);
+  const [isDisguised, setIsDisguised] = useState(false);
 
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -213,6 +246,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const ownedRef = useRef<string[]>([]);
   const kothRef = useRef(0);
   const cpRef = useRef(0);
+  const waveRef = useRef(1);
 
   useEffect(() => {
     const saved = autoLoad();
@@ -261,7 +295,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setTotalGames(prev => prev + 1);
     if (result === "win") setTotalWins(prev => prev + 1);
 
-    // XP & level up
     setXp(prev => {
       let newXp = prev + xpReward;
       let newLevel = level;
@@ -273,7 +306,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       return newXp;
     });
 
-    // Leaderboard
     const entry: LeaderboardEntry = {
       mode: modeRef.current,
       role: roleRef.current || "runner",
@@ -299,7 +331,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const startAmmo = roleRef.current === "runner" ? RUNNER_START_AMMO + extraAmmo : HUNTER_START_AMMO;
     const ammoInterval = owned.includes("quick_reload") ? 6 : 10;
     const diff = DIFFICULTY_SETTINGS[diffRef.current];
-    const duration = diff.gameDuration;
+    const mode = modeRef.current;
+    const duration = mode === "survival" ? 999 : mode === "parkour" ? 120 : mode === "deathrun" ? 90 : diff.gameDuration;
 
     setScore(0);
     setTagged(new Set());
@@ -319,6 +352,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     kothRef.current = 0;
     setCheckpointIndex(0);
     cpRef.current = 0;
+    setSurvivalWave(1);
+    waveRef.current = 1;
+    setFlagCarried(false);
+    setParkourFinished(false);
+    setIsDisguised(false);
     playerHealthRef.current = currentMaxHealth;
     playerAmmoRef.current = startAmmo;
     npcHealthRef.current = {};
@@ -330,23 +368,37 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setElapsedTime(0);
 
     const bounds = MAP_BOUNDS[mapRef.current || "suburban"];
-    const coinCount = modeRef.current === "collector" ? 40 : 18;
+    const coinCount = mode === "collector" ? 40 : 18;
     setCoinPickups(spawnCoins(bounds, coinCount));
 
     // KOTH zone
-    if (modeRef.current === "koth") {
+    if (mode === "koth") {
       const zx = bounds.minX + 10 + Math.random() * (bounds.maxX - bounds.minX - 20);
       const zz = bounds.minZ + 10 + Math.random() * (bounds.maxZ - bounds.minZ - 20);
       setKothZone([zx, 0, zz]);
-    } else {
-      setKothZone(null);
-    }
+    } else { setKothZone(null); }
 
-    // Speedrun checkpoints
-    if (modeRef.current === "speedrun") {
+    // Speedrun / Parkour checkpoints
+    if (mode === "speedrun") {
       setCheckpoints(spawnCheckpoints(bounds));
+    } else if (mode === "parkour") {
+      setCheckpoints(spawnParkourCheckpoints());
+    } else if (mode === "deathrun") {
+      // Deathrun uses linear checkpoints along the run
+      setCheckpoints([
+        [0, 0, -15], [0, 0, -25], [0, 0, -35], [0, 0, -45], [0, 0, -52],
+      ]);
+    } else { setCheckpoints([]); }
+
+    // CTF
+    if (mode === "ctf") {
+      const fx = bounds.minX + 10 + Math.random() * (bounds.maxX - bounds.minX - 20);
+      const fz = bounds.minZ + 10;
+      setFlagPosition([fx, 0.5, fz]);
+      setBasePosition([0, 0, 5]); // near player start
     } else {
-      setCheckpoints([]);
+      setFlagPosition(null);
+      setBasePosition(null);
     }
 
     if (timerRef.current) clearInterval(timerRef.current);
@@ -359,16 +411,28 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         if (elapsed >= duration) setEscapeOpen(true);
       }
 
-      // Collector mode: time up = count coins
       if (modeRef.current === "collector" && elapsed >= duration) {
-        const elapsed2 = (Date.now() - startTimeRef.current) / 1000;
-        finishGame("win", elapsed2);
+        finishGame("win", elapsed);
         return;
       }
 
-      // KOTH: score 100 to win
       if (modeRef.current === "koth" && kothRef.current >= 100) {
         finishGame("win", elapsed);
+        return;
+      }
+
+      // Survival: advance waves every 20s
+      if (modeRef.current === "survival") {
+        const newWave = Math.floor(elapsed / 20) + 1;
+        if (newWave > waveRef.current) {
+          waveRef.current = newWave;
+          setSurvivalWave(newWave);
+        }
+      }
+
+      // Parkour / Deathrun timeout
+      if ((modeRef.current === "parkour" || modeRef.current === "deathrun") && elapsed >= duration) {
+        finishGame("lose", elapsed);
         return;
       }
 
@@ -393,7 +457,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (modeRef.current === "lms" && elapsed >= duration + 30) {
-        finishGame("win", elapsed); // survived long enough
+        finishGame("win", elapsed);
+      }
+
+      // Block hunt: if time runs out as hider, you win
+      if (modeRef.current === "blockhunt" && elapsed >= duration + 30) {
+        finishGame(roleRef.current === "runner" ? "win" : "lose", elapsed);
       }
     }, 100);
   }, [finishGame]);
@@ -416,7 +485,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
       setScore(enemyCount);
 
-      if (enemyCount >= enemyTotal && (modeRef.current === "classic" || modeRef.current === "infection" || modeRef.current === "lms")) {
+      if (enemyCount >= enemyTotal && (modeRef.current === "classic" || modeRef.current === "infection" || modeRef.current === "lms" || modeRef.current === "blockhunt")) {
         const elapsed = (Date.now() - startTimeRef.current) / 1000;
         finishGame("win", elapsed);
       }
@@ -521,18 +590,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const setMeleeCooldown = useCallback((cd: number) => setMeleeCooldownVal(cd), []);
 
   const doPrestige = useCallback(() => {
-    if (level < 10) return; // Need level 10+ to prestige
+    if (level < 10) return;
     setPrestige(prev => prev + 1);
     setLevel(1);
     setXp(0);
     setOwnedPowerups([]);
-    // Keep coins
   }, [level]);
 
   const advanceCheckpoint = useCallback(() => {
     cpRef.current++;
     setCheckpointIndex(cpRef.current);
-    if (cpRef.current >= 5) {
+    const maxCp = modeRef.current === "parkour" || modeRef.current === "deathrun" ? 5 : 5;
+    if (cpRef.current >= maxCp) {
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       finishGame("win", elapsed);
     }
@@ -541,6 +610,32 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const addKothScore = useCallback((pts: number) => {
     kothRef.current += pts;
     setKothScore(kothRef.current);
+  }, []);
+
+  const grabFlag = useCallback(() => {
+    setFlagCarried(true);
+  }, []);
+
+  const returnFlag = useCallback(() => {
+    if (!flagCarried) return;
+    setFlagCarried(false);
+    const elapsed = (Date.now() - startTimeRef.current) / 1000;
+    finishGame("win", elapsed);
+  }, [flagCarried, finishGame]);
+
+  const finishParkour = useCallback(() => {
+    setParkourFinished(true);
+    const elapsed = (Date.now() - startTimeRef.current) / 1000;
+    finishGame("win", elapsed);
+  }, [finishGame]);
+
+  const toggleDisguise = useCallback(() => {
+    setIsDisguised(prev => !prev);
+  }, []);
+
+  const advanceSurvivalWave = useCallback(() => {
+    waveRef.current++;
+    setSurvivalWave(waveRef.current);
   }, []);
 
   const resetGame = useCallback(() => {
@@ -567,6 +662,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setKothZone(null);
     setCheckpoints([]);
     setCheckpointIndex(0);
+    setSurvivalWave(1);
+    setFlagCarried(false);
+    setFlagPosition(null);
+    setBasePosition(null);
+    setParkourFinished(false);
+    setIsDisguised(false);
     playerHealthRef.current = BASE_MAX_HEALTH;
     playerAmmoRef.current = 0;
     npcHealthRef.current = {};
@@ -575,10 +676,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     mapRef.current = null;
     kothRef.current = 0;
     cpRef.current = 0;
+    waveRef.current = 1;
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
-  const gameDuration = DIFFICULTY_SETTINGS[difficulty].gameDuration;
+  const gameDuration = gameMode === "survival" ? 999 : gameMode === "parkour" ? 120 : gameMode === "deathrun" ? 90 : DIFFICULTY_SETTINGS[difficulty].gameDuration;
   const timeLeft = Math.max(0, gameDuration - elapsedTime);
 
   return (
@@ -594,6 +696,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         currentWeapon, meleeCooldown,
         level, xp, prestige, totalWins, totalGames, leaderboard,
         kothScore, kothZone, checkpoints, checkpointIndex,
+        survivalWave, flagCarried, flagPosition, basePosition,
+        parkourFinished, isDisguised,
         selectRole, selectMap, setDifficulty, setGameMode,
         tagNPC, startGame, resetGame, setEscaped,
         damagePlayer, damageNPC, healPlayer, useAmmo: useAmmoFn,
@@ -602,6 +706,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         buyPowerup, loadSaveData,
         switchWeapon, setMeleeCooldown,
         doPrestige, advanceCheckpoint, addKothScore,
+        grabFlag, returnFlag, finishParkour,
+        toggleDisguise, advanceSurvivalWave,
       }}
     >
       {children}

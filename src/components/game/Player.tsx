@@ -3,7 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { wallColliders } from "./House";
 import { useGame, MAP_BOUNDS, ESCAPE_POSITIONS } from "./GameState";
-import { playerPosition, projectiles, addProjectile, npcPositions } from "./SharedState";
+import { playerPosition, projectiles, addProjectile, npcPositions, playerY, playerVelocityY, setPlayerY, setPlayerVelocityY, platformColliders, disguisedAs, setDisguise } from "./SharedState";
 import { ESCAPE_ZONE_RADIUS } from "./House";
 import { WEAPONS, throwRock, throwableRocks } from "./WeaponSystem";
 import type { WeaponType } from "./WeaponSystem";
@@ -16,8 +16,30 @@ const STAMINA_REGEN = 15;
 const CAMERA_DIST = 5;
 const CAMERA_HEIGHT = 3;
 const HIT_RADIUS = 0.8;
+const GRAVITY = -20;
+const JUMP_VELOCITY = 8;
 
-function PlayerFigure({ role }: { role: string | null }) {
+// Disguise block shapes for Block Hunt
+const DISGUISE_BLOCKS = ["crate", "barrel", "rock"];
+
+function PlayerFigure({ role, isDisguised }: { role: string | null; isDisguised: boolean }) {
+  if (isDisguised) {
+    // Show as a crate block
+    return (
+      <group>
+        <mesh position={[0, 0.4, 0]} castShadow>
+          <boxGeometry args={[0.8, 0.8, 0.8]} />
+          <meshStandardMaterial color="#8B6914" roughness={0.9} />
+        </mesh>
+        {/* Crate lines */}
+        <mesh position={[0, 0.4, 0.41]} castShadow>
+          <planeGeometry args={[0.7, 0.7]} />
+          <meshStandardMaterial color="#6B4914" roughness={0.9} />
+        </mesh>
+      </group>
+    );
+  }
+
   const isHunter = role === "hunter";
   const bodyColor = isHunter ? "#8B4513" : "#1a3a8a";
   const skinColor = "#e8b89a";
@@ -93,6 +115,20 @@ function PlayerFigure({ role }: { role: string | null }) {
   );
 }
 
+// Get ground height at a position (checks platforms)
+function getGroundHeight(x: number, z: number, currentY: number): number {
+  let groundY = 0; // base ground
+  for (const plat of platformColliders) {
+    if (x >= plat.min.x && x <= plat.max.x && z >= plat.min.z && z <= plat.max.z) {
+      // Only count if we're above or near the platform top
+      if (currentY >= plat.max.y - 0.3) {
+        groundY = Math.max(groundY, plat.max.y);
+      }
+    }
+  }
+  return groundY;
+}
+
 export default function Player() {
   const meshRef = useRef<THREE.Group>(null);
   const yaw = useRef(0);
@@ -110,12 +146,16 @@ export default function Player() {
     currentWeapon, meleeCooldown, setMeleeCooldown, switchWeapon,
     npcHealth, tagged,
     gameMode, kothZone, addKothScore, checkpoints, checkpointIndex, advanceCheckpoint,
+    flagPosition, flagCarried, grabFlag, returnFlag, basePosition,
+    isDisguised, toggleDisguise,
   } = useGame();
 
   const bounds = MAP_BOUNDS[selectedMap || "suburban"];
   const escapePos = ESCAPE_POSITIONS[selectedMap || "suburban"];
   const weaponCooldownRef = useRef(0);
   const meleeCooldownRef = useRef(0);
+  const isGrounded = useRef(true);
+  const jumpBuffered = useRef(false);
 
   const shootRef = useRef<() => void>(() => {});
   shootRef.current = () => {
@@ -123,11 +163,9 @@ export default function Player() {
     if (weaponCooldownRef.current > 0) return;
 
     if (role === "hunter") {
-      // Melee attack
       if (meleeCooldownRef.current > 0) return;
       meleeCooldownRef.current = 0.6;
       setMeleeCooldown(0.6);
-      // Check NPC hits in melee range
       for (const [nid, npos] of npcPositions) {
         if (tagged.has(nid)) continue;
         const dist = playerPosition.distanceTo(npos);
@@ -135,7 +173,7 @@ export default function Player() {
           const toNpc = new THREE.Vector3().subVectors(npos, playerPosition).normalize();
           const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
           const dot = toNpc.dot(forward);
-          if (dot > 0.3) { // within ~70deg arc
+          if (dot > 0.3) {
             damageNPC(nid, 1);
           }
         }
@@ -143,12 +181,9 @@ export default function Player() {
       return;
     }
 
-    // Runner weapon fire
     const weapon = WEAPONS[currentWeapon];
     if (!weapon) return;
-    // Check ammo
     let ammoNeeded = weapon.ammoPerShot;
-    // useAmmo returns true if 1 ammo used; we need ammoPerShot
     let ammoOk = true;
     for (let i = 0; i < ammoNeeded; i++) {
       if (!useAmmo()) { ammoOk = false; break; }
@@ -158,7 +193,7 @@ export default function Player() {
     weaponCooldownRef.current = weapon.cooldown;
 
     const baseDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
-    const spawnPos = playerPosition.clone().add(new THREE.Vector3(0, 1.2, 0)).addScaledVector(baseDir, 0.5);
+    const spawnPos = playerPosition.clone().add(new THREE.Vector3(0, playerY + 1.2, 0)).addScaledVector(baseDir, 0.5);
 
     for (let i = 0; i < weapon.projectileCount; i++) {
       const dir = baseDir.clone();
@@ -186,10 +221,20 @@ export default function Player() {
     };
     const onKeyDown = (e: KeyboardEvent) => {
       keys.current[e.code] = true;
-      // Weapon switching with 1/2/3 keys (runner only)
       if (e.code === "Digit1") switchWeapon("slingshot");
       if (e.code === "Digit2") switchWeapon("shotgun");
       if (e.code === "Digit3") switchWeapon("sniper");
+      // Jump
+      if (e.code === "Space") jumpBuffered.current = true;
+      // Block Hunt disguise toggle
+      if (e.code === "KeyQ" && gameMode === "blockhunt") {
+        toggleDisguise();
+        if (!isDisguised) {
+          setDisguise("crate");
+        } else {
+          setDisguise(null);
+        }
+      }
     };
     const onKeyUp = (e: KeyboardEvent) => { keys.current[e.code] = false; };
     window.addEventListener("mousemove", onMouseMove);
@@ -202,12 +247,11 @@ export default function Player() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [gl]);
+  }, [gl, gameMode, isDisguised, toggleDisguise]);
 
   useFrame((state, delta) => {
     if (!isPlaying || gameOver) return;
 
-    // Tick weapon cooldowns
     if (weaponCooldownRef.current > 0) weaponCooldownRef.current -= delta;
     if (meleeCooldownRef.current > 0) meleeCooldownRef.current -= delta;
 
@@ -220,8 +264,35 @@ export default function Player() {
     const isSprinting = wantsSprint && canSprint;
     if (isSprinting) useStamina(staminaDrain * delta);
     else regenStamina(STAMINA_REGEN * delta);
-    const speed = isSprinting ? sprintSpeed : walkSpeed;
+    const speed = isDisguised ? 0 : (isSprinting ? sprintSpeed : walkSpeed); // Can't move while disguised
 
+    // --- Jumping physics ---
+    const groundH = getGroundHeight(playerPosition.x, playerPosition.z, playerY);
+    const onGround = playerY <= groundH + 0.05;
+
+    if (jumpBuffered.current && onGround) {
+      setPlayerVelocityY(JUMP_VELOCITY);
+      jumpBuffered.current = false;
+      isGrounded.current = false;
+    }
+    jumpBuffered.current = false; // consume
+
+    // Apply gravity
+    let vy = playerVelocityY + GRAVITY * delta;
+    let newY = playerY + vy * delta;
+
+    // Check landing on platforms
+    const newGroundH = getGroundHeight(playerPosition.x, playerPosition.z, newY);
+    if (newY <= newGroundH) {
+      newY = newGroundH;
+      vy = 0;
+      isGrounded.current = true;
+    }
+
+    setPlayerY(newY);
+    setPlayerVelocityY(vy);
+
+    // --- Horizontal movement ---
     const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
     const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
@@ -231,13 +302,16 @@ export default function Player() {
     if (keys.current["KeyA"] || keys.current["ArrowLeft"]) dir.sub(right);
     if (keys.current["KeyD"] || keys.current["ArrowRight"]) dir.add(right);
 
-    if (dir.lengthSq() > 0) {
+    if (dir.lengthSq() > 0 && speed > 0) {
       dir.normalize().multiplyScalar(speed * delta);
       const newPos = playerPosition.clone().add(dir);
       newPos.x = THREE.MathUtils.clamp(newPos.x, bounds.minX, bounds.maxX);
       newPos.z = THREE.MathUtils.clamp(newPos.z, bounds.minZ, bounds.maxZ);
-      const pMin = new THREE.Vector3(newPos.x - PLAYER_RADIUS, 0, newPos.z - PLAYER_RADIUS);
-      const pMax = new THREE.Vector3(newPos.x + PLAYER_RADIUS, 1.8, newPos.z + PLAYER_RADIUS);
+
+      // Wall collision at player's Y level
+      const yBase = playerY;
+      const pMin = new THREE.Vector3(newPos.x - PLAYER_RADIUS, yBase, newPos.z - PLAYER_RADIUS);
+      const pMax = new THREE.Vector3(newPos.x + PLAYER_RADIUS, yBase + 1.8, newPos.z + PLAYER_RADIUS);
       let blocked = false;
       for (const c of wallColliders) {
         if (pMin.x < c.max.x && pMax.x > c.min.x && pMin.y < c.max.y && pMax.y > c.min.y && pMin.z < c.max.z && pMax.z > c.min.z) {
@@ -249,16 +323,16 @@ export default function Player() {
       } else {
         const sx = playerPosition.clone(); sx.x += dir.x;
         let bx = false;
-        const sxMin = new THREE.Vector3(sx.x - PLAYER_RADIUS, 0, sx.z - PLAYER_RADIUS);
-        const sxMax = new THREE.Vector3(sx.x + PLAYER_RADIUS, 1.8, sx.z + PLAYER_RADIUS);
+        const sxMin = new THREE.Vector3(sx.x - PLAYER_RADIUS, yBase, sx.z - PLAYER_RADIUS);
+        const sxMax = new THREE.Vector3(sx.x + PLAYER_RADIUS, yBase + 1.8, sx.z + PLAYER_RADIUS);
         for (const c of wallColliders) {
           if (sxMin.x < c.max.x && sxMax.x > c.min.x && sxMin.y < c.max.y && sxMax.y > c.min.y && sxMin.z < c.max.z && sxMax.z > c.min.z) { bx = true; break; }
         }
         if (!bx) playerPosition.x = sx.x;
         const sz = playerPosition.clone(); sz.z += dir.z;
         let bz = false;
-        const szMin = new THREE.Vector3(sz.x - PLAYER_RADIUS, 0, sz.z - PLAYER_RADIUS);
-        const szMax = new THREE.Vector3(sz.x + PLAYER_RADIUS, 1.8, sz.z + PLAYER_RADIUS);
+        const szMin = new THREE.Vector3(sz.x - PLAYER_RADIUS, yBase, sz.z - PLAYER_RADIUS);
+        const szMax = new THREE.Vector3(sz.x + PLAYER_RADIUS, yBase + 1.8, sz.z + PLAYER_RADIUS);
         for (const c of wallColliders) {
           if (szMin.x < c.max.x && szMax.x > c.min.x && szMin.y < c.max.y && szMax.y > c.min.y && szMin.z < c.max.z && szMax.z > c.min.z) { bz = true; break; }
         }
@@ -266,25 +340,31 @@ export default function Player() {
       }
       if (meshRef.current) {
         const t = state.clock.elapsedTime;
-        meshRef.current.position.y = Math.abs(Math.sin(t * (isSprinting ? 14 : 8))) * 0.06;
+        // Bob only when on ground
+        if (isGrounded.current) {
+          meshRef.current.position.y = playerY + Math.abs(Math.sin(t * (isSprinting ? 14 : 8))) * 0.06;
+        }
       }
     }
 
     if (meshRef.current) {
       meshRef.current.position.x = playerPosition.x;
+      meshRef.current.position.y = playerY;
       meshRef.current.position.z = playerPosition.z;
       meshRef.current.rotation.y = yaw.current + Math.PI;
     }
 
     const camOffset = new THREE.Vector3(
       Math.sin(yaw.current) * CAMERA_DIST,
-      CAMERA_HEIGHT * pitch.current + 1.8,
+      CAMERA_HEIGHT * pitch.current + 1.8 + playerY,
       Math.cos(yaw.current) * CAMERA_DIST
     );
     const targetCamPos = playerPosition.clone().add(camOffset);
+    targetCamPos.y = camOffset.y; // absolute Y for camera
     camera.position.lerp(targetCamPos, 0.1);
-    camera.lookAt(playerPosition.x, 1.3, playerPosition.z);
+    camera.lookAt(playerPosition.x, playerY + 1.3, playerPosition.z);
 
+    // Escape portal
     if (role === "runner" && escapeOpen) {
       const dx = playerPosition.x - escapePos[0];
       const dz = playerPosition.z - escapePos[2];
@@ -333,13 +413,46 @@ export default function Player() {
       }
     }
 
-    // Checkpoint collection
-    if (gameMode === "speedrun" && checkpoints.length > 0 && checkpointIndex < checkpoints.length) {
+    // Checkpoint collection (speedrun, parkour, deathrun)
+    if ((gameMode === "speedrun" || gameMode === "parkour" || gameMode === "deathrun") && checkpoints.length > 0 && checkpointIndex < checkpoints.length) {
       const cp = checkpoints[checkpointIndex];
       const dx = playerPosition.x - cp[0];
+      const dy = playerY - cp[1];
       const dz = playerPosition.z - cp[2];
-      if (Math.sqrt(dx * dx + dz * dz) < 3) {
+      const dist3d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (dist3d < 3) {
         advanceCheckpoint();
+      }
+    }
+
+    // CTF: grab flag
+    if (gameMode === "ctf" && flagPosition && !flagCarried) {
+      const dx = playerPosition.x - flagPosition[0];
+      const dz = playerPosition.z - flagPosition[2];
+      if (Math.sqrt(dx * dx + dz * dz) < 2) {
+        grabFlag();
+      }
+    }
+
+    // CTF: return flag to base
+    if (gameMode === "ctf" && flagCarried && basePosition) {
+      const dx = playerPosition.x - basePosition[0];
+      const dz = playerPosition.z - basePosition[2];
+      if (Math.sqrt(dx * dx + dz * dz) < 3) {
+        returnFlag();
+      }
+    }
+
+    // Deathrun: fall into lava/void = damage
+    if (gameMode === "deathrun" && playerY < -2) {
+      damagePlayer(1);
+      // Reset to last checkpoint or start
+      setPlayerY(0);
+      setPlayerVelocityY(0);
+      if (checkpointIndex > 0 && checkpoints[checkpointIndex - 1]) {
+        playerPosition.set(checkpoints[checkpointIndex - 1][0], 0, checkpoints[checkpointIndex - 1][2]);
+      } else {
+        playerPosition.set(0, 0, 4);
       }
     }
 
@@ -347,7 +460,7 @@ export default function Player() {
     for (const p of projectiles) {
       if (!p.alive || p.owner === "player") continue;
       const dx = p.position.x - playerPosition.x;
-      const dy = p.position.y - 1.0;
+      const dy = p.position.y - (playerY + 1.0);
       const dz = p.position.z - playerPosition.z;
       if (Math.sqrt(dx * dx + dy * dy + dz * dz) < HIT_RADIUS) {
         p.alive = false;
@@ -358,8 +471,8 @@ export default function Player() {
   });
 
   return (
-    <group ref={meshRef} position={[playerPosition.x, 0, playerPosition.z]}>
-      <PlayerFigure role={role} />
+    <group ref={meshRef} position={[playerPosition.x, playerY, playerPosition.z]}>
+      <PlayerFigure role={role} isDisguised={isDisguised} />
     </group>
   );
 }
