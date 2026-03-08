@@ -543,12 +543,18 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                     const done = campaignProgress.completed.includes(challenge.id);
                     const unlocked = isChallengeUnlocked(challenge.id);
                     const bestTime = campaignProgress.bestTimes[challenge.id];
+                    const stars = campaignProgress.stars?.[challenge.id] || 0;
+                    const isBoss = !!challenge.boss;
                     return (
                       <div
                         key={challenge.id}
                         className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
                           !unlocked
                             ? "bg-white/[0.02] border-white/5 opacity-40"
+                            : isBoss
+                            ? done
+                              ? "bg-red-950/30 border-red-500/15"
+                              : "bg-red-950/20 border-red-500/10 hover:border-red-400/30"
                             : done
                             ? "bg-green-950/30 border-green-500/15"
                             : "bg-white/[0.04] border-white/10 hover:border-white/25"
@@ -558,15 +564,29 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                         <div className="flex-1 text-left">
                           <div className="text-sm font-bold text-white flex items-center gap-2">
                             {challenge.name}
+                            {isBoss && <span className="text-[9px] px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded border border-red-500/20 font-black">BOSS</span>}
                             {done && <span className="text-green-400 text-[10px]">✅</span>}
                           </div>
                           <div className="text-[10px] text-white/40">{challenge.description}</div>
+                          {isBoss && challenge.boss && (
+                            <div className="text-[9px] text-red-400/60 mt-0.5">
+                              {challenge.boss.emoji} {challenge.boss.name} — HP ×{challenge.boss.healthMult} • Speed ×{challenge.boss.speedMult}
+                            </div>
+                          )}
                           <div className="flex gap-2 mt-1">
                             {challenge.objectives.map((obj, i) => (
                               <span key={i} className="text-[8px] bg-white/5 rounded px-1.5 py-0.5 text-white/30 border border-white/5">{obj}</span>
                             ))}
                           </div>
-                          {bestTime && <div className="text-[9px] text-white/20 mt-1">⏱ Best: {formatTime(bestTime)}</div>}
+                          {/* Star rating */}
+                          {done && (
+                            <div className="flex items-center gap-1 mt-1">
+                              {[1, 2, 3].map(s => (
+                                <span key={s} className={`text-sm ${s <= stars ? "text-yellow-400" : "text-white/10"}`}>★</span>
+                              ))}
+                              {bestTime != null && <span className="text-[9px] text-white/20 ml-1">⏱ {formatTime(bestTime)}</span>}
+                            </div>
+                          )}
                         </div>
                         <div className="text-right space-y-1">
                           <div className="text-[9px] text-yellow-400/60">🪙 {challenge.reward.coins}</div>
