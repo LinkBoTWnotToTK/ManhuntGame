@@ -14,6 +14,8 @@ import GrabbableObjects from "@/components/game/GrabbableObjects";
 import Minimap from "@/components/game/Minimap";
 import ScreenEffects from "@/components/game/ScreenEffects";
 import WeaponSystem from "@/components/game/WeaponSystem";
+import Tutorial from "@/components/game/Tutorial";
+import WeatherSystem from "@/components/game/WeatherSystem";
 
 function KothZone() {
   const { kothZone, isPlaying } = useGame();
