@@ -109,6 +109,7 @@ export default function Player() {
     speedMultiplier, staminaDrainMultiplier, maxHealth,
     currentWeapon, meleeCooldown, setMeleeCooldown, switchWeapon,
     npcHealth, tagged,
+    gameMode, kothZone, addKothScore, checkpoints, checkpointIndex, advanceCheckpoint,
   } = useGame();
 
   const bounds = MAP_BOUNDS[selectedMap || "suburban"];
