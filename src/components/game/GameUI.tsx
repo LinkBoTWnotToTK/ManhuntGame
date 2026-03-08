@@ -26,7 +26,7 @@ const DIFF_COLORS: Record<Difficulty, string> = {
   hard: "border-red-500/30 bg-red-950/40 hover:bg-red-900/50 text-red-300",
 };
 
-export default function GameUI() {
+export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   const {
     role, selectedMap, difficulty, gameMode,
     score, totalNPCs, elapsedTime, timeLeft, gameOver, gameResult,
