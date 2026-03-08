@@ -157,6 +157,10 @@ export default function Player() {
   const meleeCooldownRef = useRef(0);
   const isGrounded = useRef(true);
   const jumpBuffered = useRef(false);
+  const doubleJumpUsed = useRef(false);
+  const wallRunTimer = useRef(0);
+  const wallRunSide = useRef(0); // -1 left, 1 right, 0 none
+  const isWallRunning = useRef(false);
 
   const shootRef = useRef<() => void>(() => {});
   shootRef.current = () => {
