@@ -438,10 +438,17 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
   const filteredItems = EDITOR_CATALOG.filter(d => d.category === selectedCategory);
   const selectedItem = selectedUid ? items.find(i => i.uid === selectedUid) : null;
 
+  const [mobilePanel, setMobilePanel] = useState(true);
+
   return (
-    <div className="fixed inset-0 z-50 flex bg-black">
-      {/* Left Panel */}
-      <div className="w-72 bg-gray-950/95 border-r border-white/10 flex flex-col overflow-hidden">
+    <div className={`fixed inset-0 z-50 flex ${isMobilePlatform ? "flex-col-reverse" : ""} bg-black`}>
+      {/* Left Panel / Bottom Panel on mobile */}
+      <div className={`${isMobilePlatform ? (mobilePanel ? "h-64" : "h-10") : "w-72"} bg-gray-950/95 ${isMobilePlatform ? "border-t" : "border-r"} border-white/10 flex flex-col overflow-hidden transition-all`}>
+        {isMobilePlatform && (
+          <button onClick={() => setMobilePanel(!mobilePanel)} className="w-full py-1 text-white/40 text-[10px] font-bold bg-white/5 shrink-0">
+            {mobilePanel ? "▼ Hide Panel" : "▲ Show Panel"}
+          </button>
+        )}
         {/* Header */}
         <div className="p-3 border-b border-white/10">
           <div className="flex items-center justify-between mb-2">
