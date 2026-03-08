@@ -113,6 +113,20 @@ interface GameState {
   basePosition: [number, number, number] | null;
   parkourFinished: boolean;
   isDisguised: boolean;
+  // Cosmetics
+  equippedSkin: string;
+  equippedTrail: string;
+  equippedHat: string;
+  // Hatch prompt
+  nearHatch: boolean;
+  hatchPromptText: string;
+  setNearHatch: (near: boolean, text?: string) => void;
+  // Tutorial
+  tutorialActive: boolean;
+  tutorialStep: number;
+  startTutorial: () => void;
+  advanceTutorial: () => void;
+  endTutorial: () => void;
   selectRole: (role: Role) => void;
   selectMap: (map: GameMap) => void;
   setDifficulty: (d: Difficulty) => void;
@@ -142,6 +156,9 @@ interface GameState {
   finishParkour: () => void;
   toggleDisguise: () => void;
   advanceSurvivalWave: () => void;
+  equipSkin: (id: string) => void;
+  equipTrail: (id: string) => void;
+  equipHat: (id: string) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
