@@ -245,6 +245,7 @@ export default function GameUI() {
               </div>
             </div>
           )}
+          {escapeOpen && role === "hunter" && (
             <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
               <div className="bg-red-950/90 backdrop-blur-md rounded-full px-5 py-1.5 border border-red-500/50">
                 <span className="text-red-400 font-bold text-xs uppercase tracking-wider animate-pulse">⚠️ RUNNERS ESCAPING!</span>
