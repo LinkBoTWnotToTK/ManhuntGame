@@ -923,22 +923,11 @@ function VolcanoMap({ escapePos }: { escapePos: [number, number, number] }) {
       <EscapeZone escapePos={escapePos} />
 
       {/* Hot volcanic lighting */}
-      <ambientLight intensity={0.3} color="#ff8844" />
+      <ambientLight intensity={0.4} color="#ff8844" />
       <directionalLight position={[25, 30, -15]} intensity={0.8} color="#ffeedd" castShadow
-        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
+        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
         shadow-camera-left={-50} shadow-camera-right={50} shadow-camera-top={45} shadow-camera-bottom={-70} shadow-bias={-0.0003} />
-      
-      {/* Lava glow lights */}
-      <pointLight position={[-15, 1, -15]} color="#ff4400" intensity={5} distance={15} decay={2} />
-      <pointLight position={[-15, 1, -35]} color="#ff4400" intensity={5} distance={15} decay={2} />
-      <pointLight position={[18, 1, -10]} color="#ff3300" intensity={4} distance={12} decay={2} />
-      <pointLight position={[18, 1, -25]} color="#ff3300" intensity={4} distance={12} decay={2} />
-      <pointLight position={[0, 1, -50]} color="#ff2200" intensity={6} distance={18} decay={2} />
-      <pointLight position={[0, 3, 0]} color="#ffaa44" intensity={2} distance={20} decay={2} />
-      <pointLight position={[-30, 2, -40]} color="#ff6600" intensity={3} distance={10} decay={2} />
-      <pointLight position={[30, 2, -42]} color="#ff6600" intensity={3} distance={10} decay={2} />
-
-      <hemisphereLight args={["#ff8844", "#331100", 0.3]} />
+      <hemisphereLight args={["#ff8844", "#331100", 0.4]} />
       <fog attach="fog" args={["#1a0800", 20, 80]} />
     </group>
   );
