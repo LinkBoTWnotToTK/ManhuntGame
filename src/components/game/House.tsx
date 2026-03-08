@@ -187,7 +187,7 @@ function Pipe({ position, length = 6 }: { position: [number, number, number]; le
 function VentDuct({ position, rotation = 0, length = 4 }: { position: [number, number, number]; rotation?: number; length?: number }) {
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
+      <mesh position={[0, 0.5, 0]}>
         <boxGeometry args={[1.2, 1, length]} />
         <meshStandardMaterial color="#555" metalness={0.6} roughness={0.4} />
       </mesh>
