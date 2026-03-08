@@ -3,6 +3,9 @@ import { useGame, Role, GameMap, Difficulty, GameMode, DIFFICULTY_SETTINGS, GAME
 import Shop from "./Shop";
 import { xpForLevel, prestigeMultiplier } from "./SaveSystem";
 import { TUTORIAL_STEPS } from "./Tutorial";
+import { loadCustomLevels } from "./LevelEditorData";
+import { CAMPAIGN_CHAPTERS, loadCampaignProgress, completeCampaignChallenge, isChallengeUnlocked } from "./CampaignData";
+import type { CampaignChallenge } from "./CampaignData";
 
 function formatTime(secs: number) {
   const mins = Math.floor(secs / 60);
