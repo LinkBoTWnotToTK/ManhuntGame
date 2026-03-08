@@ -304,16 +304,29 @@ export default function GrabbableObjects() {
 
     // Check proximity to hatches for prompt
     let foundNearHatch = false;
+    let promptText = "";
     for (const hatch of hatches) {
       if (!hatch.isRevealed) continue;
-      const dx = playerPosition.x - hatch.position.x;
-      const dz = playerPosition.z - hatch.position.z;
-      if (Math.sqrt(dx * dx + dz * dz) < 2.5) {
-        foundNearHatch = true;
-        break;
+      if (isUnderground) {
+        // When underground, check proximity to exit marker (targetPosition at y=-8)
+        const dx = playerPosition.x - hatch.targetPosition.x;
+        const dz = playerPosition.z - hatch.targetPosition.z;
+        if (Math.sqrt(dx * dx + dz * dz) < 2.5) {
+          foundNearHatch = true;
+          promptText = "Press E to return to surface";
+          break;
+        }
+      } else {
+        const dx = playerPosition.x - hatch.position.x;
+        const dz = playerPosition.z - hatch.position.z;
+        if (Math.sqrt(dx * dx + dz * dz) < 2.5) {
+          foundNearHatch = true;
+          promptText = "Press E to go underground";
+          break;
+        }
       }
     }
-    setNearHatch(foundNearHatch, foundNearHatch ? "Press E to go underground" : "");
+    setNearHatch(foundNearHatch, promptText);
 
     if (ePressed.current && eCooldown.current <= 0) {
       ePressed.current = false;
