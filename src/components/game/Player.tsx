@@ -18,9 +18,10 @@ const CAMERA_HEIGHT = 3;
 const HIT_RADIUS = 0.8;
 const GRAVITY = -20;
 const JUMP_VELOCITY = 8;
-
-// Disguise block shapes for Block Hunt
-const DISGUISE_BLOCKS = ["crate", "barrel", "rock"];
+const DOUBLE_JUMP_VELOCITY = 7;
+const WALL_RUN_SPEED = 5;
+const WALL_RUN_DURATION = 0.8; // seconds
+const WALL_CHECK_DIST = 0.6;
 
 function PlayerFigure({ role, isDisguised }: { role: string | null; isDisguised: boolean }) {
   if (isDisguised) {
