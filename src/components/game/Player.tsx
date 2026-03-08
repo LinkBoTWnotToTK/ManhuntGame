@@ -226,6 +226,35 @@ export default function Player() {
   useFrame((state, delta) => {
     if (!isPlaying || gameOver) return;
 
+    // --- Mobile input processing ---
+    if (isMobilePlatform) {
+      // Camera from swipe
+      yaw.current -= mobileInput.cameraX;
+      pitch.current = THREE.MathUtils.clamp(pitch.current - mobileInput.cameraY, 0.1, 1.0);
+      mobileInput.cameraX = 0;
+      mobileInput.cameraY = 0;
+
+      // Attack
+      if (mobileInput.attack) {
+        shootRef.current();
+        mobileInput.attack = false;
+      }
+
+      // Jump
+      if (mobileInput.jump) {
+        jumpBuffered.current = true;
+        mobileInput.jump = false;
+      }
+
+      // Disguise
+      if (mobileInput.disguise && gameMode === "blockhunt") {
+        toggleDisguise();
+        if (!isDisguised) setDisguise("crate");
+        else setDisguise(null);
+        mobileInput.disguise = false;
+      }
+    }
+
     if (weaponCooldownRef.current > 0) weaponCooldownRef.current -= delta;
     if (meleeCooldownRef.current > 0) meleeCooldownRef.current -= delta;
 
@@ -233,12 +262,12 @@ export default function Player() {
     const sprintSpeed = BASE_SPRINT_SPEED * speedMultiplier;
     const staminaDrain = BASE_STAMINA_DRAIN * staminaDrainMultiplier;
 
-    const wantsSprint = keys.current["ShiftLeft"] || keys.current["ShiftRight"];
+    const wantsSprint = isMobilePlatform ? mobileInput.sprint : (keys.current["ShiftLeft"] || keys.current["ShiftRight"]);
     const canSprint = stamina > 5;
     const isSprinting = wantsSprint && canSprint;
     if (isSprinting) useStamina(staminaDrain * delta);
     else regenStamina(STAMINA_REGEN * delta);
-    const speed = isDisguised ? 0 : (isSprinting ? sprintSpeed : walkSpeed); // Can't move while disguised
+    const speed = isDisguised ? 0 : (isSprinting ? sprintSpeed : walkSpeed);
 
     // --- Jumping physics with double jump & wall run ---
     const groundH = getGroundHeight(playerPosition.x, playerPosition.z, playerY);
