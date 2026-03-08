@@ -111,10 +111,16 @@ export default function GameUI() {
                     <div className="text-white font-bold text-lg tabular-nums">{score}/{totalNPCs}</div>
                   ) : gameMode === "koth" ? (
                     <div className="text-yellow-400 font-bold text-lg tabular-nums">👑 {kothScore}/100</div>
-                  ) : gameMode === "speedrun" ? (
+                  ) : gameMode === "speedrun" || gameMode === "parkour" || gameMode === "deathrun" ? (
                     <div className="text-cyan-400 font-bold text-lg tabular-nums">⚡ {checkpointIndex}/5</div>
                   ) : gameMode === "collector" ? (
                     <div className="text-yellow-400 font-bold text-lg tabular-nums">🪙 {matchCoins}</div>
+                  ) : gameMode === "survival" ? (
+                    <div className="text-red-400 font-bold text-lg tabular-nums">🛡️ Wave {survivalWave}</div>
+                  ) : gameMode === "ctf" ? (
+                    <div className="text-red-400 font-bold text-lg tabular-nums">{flagCarried ? "🚩 RETURN FLAG!" : "🚩 Find Flag"}</div>
+                  ) : gameMode === "blockhunt" ? (
+                    <div className="text-purple-400 font-bold text-lg tabular-nums">{isDisguised ? "📦 Hidden" : "🏃 Exposed"}</div>
                   ) : (
                     <div className="text-white font-bold text-lg">SURVIVE</div>
                   )}
