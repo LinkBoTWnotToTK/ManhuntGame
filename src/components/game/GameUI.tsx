@@ -32,7 +32,7 @@ export default function GameUI() {
     isPlaying, escapeOpen, stamina, maxStamina, playerHealth, playerAmmo, maxHealth,
     coins, matchCoins, currentWeapon,
     level, xp, prestige, totalWins, totalGames, leaderboard,
-    kothScore, checkpointIndex,
+    kothScore, checkpointIndex, survivalWave, flagCarried, isDisguised,
     selectRole, selectMap, setDifficulty, setGameMode, startGame, resetGame,
   } = useGame();
 
