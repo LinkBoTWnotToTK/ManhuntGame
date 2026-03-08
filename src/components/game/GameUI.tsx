@@ -99,7 +99,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   return (
     <>
       {/* === IN-GAME HUD === */}
-      {isLocked && isPlaying && (
+      {(isLocked || isMobilePlatform) && isPlaying && (
         <>
           {/* Crosshair */}
           <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
