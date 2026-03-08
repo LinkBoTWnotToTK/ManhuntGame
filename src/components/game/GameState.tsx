@@ -441,6 +441,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         collectMedkit, collectAmmo, collectCoin,
         useStamina: useStaminaFn, regenStamina,
         buyPowerup, loadSaveData,
+        currentWeapon, meleeCooldown, switchWeapon, setMeleeCooldown,
       }}
     >
       {children}
