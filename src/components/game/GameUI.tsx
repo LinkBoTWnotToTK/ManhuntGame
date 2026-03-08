@@ -39,6 +39,18 @@ const MAP_INFO: Record<GameMap, { name: string; emoji: string; desc: string; col
     color: "bg-purple-950/50 hover:bg-purple-900/60",
     borderColor: "border-purple-500/20 hover:border-purple-500/50",
   },
+  volcano: {
+    name: "VOLCANO", emoji: "🌋",
+    desc: "Molten caverns with lava rivers & obsidian walls",
+    color: "bg-red-950/50 hover:bg-red-900/60",
+    borderColor: "border-red-500/20 hover:border-red-500/50",
+  },
+  space_station: {
+    name: "SPACE STATION", emoji: "🚀",
+    desc: "Zero-G corridors with airlocks & control rooms",
+    color: "bg-indigo-950/50 hover:bg-indigo-900/60",
+    borderColor: "border-indigo-500/20 hover:border-indigo-500/50",
+  },
 };
 
 export default function GameUI() {
