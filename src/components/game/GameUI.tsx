@@ -35,6 +35,7 @@ export default function GameUI() {
     level, xp, prestige, totalWins, totalGames, leaderboard,
     kothScore, checkpointIndex, survivalWave, flagCarried, isDisguised,
     selectRole, selectMap, setDifficulty, setGameMode, startGame, resetGame,
+    startTutorial,
   } = useGame();
 
   const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready">("main");
