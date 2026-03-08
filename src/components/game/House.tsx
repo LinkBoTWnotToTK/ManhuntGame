@@ -423,12 +423,8 @@ function SuburbanMap({ escapePos }: { escapePos: [number, number, number] }) {
 
       <ambientLight intensity={0.5} color="#c8d8ff" />
       <directionalLight position={[30, 35, -20]} intensity={1.5} color="#fff8e0" castShadow
-        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
+        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
         shadow-camera-left={-45} shadow-camera-right={45} shadow-camera-top={45} shadow-camera-bottom={-65} shadow-bias={-0.0003} />
-      <directionalLight position={[-15, 10, 10]} intensity={0.4} color="#aabbdd" />
-      <pointLight position={[-3, 2.5, 3]} intensity={1.5} color="#ffe0a0" distance={10} decay={2} castShadow />
-      <pointLight position={[3, 2.5, 3]} intensity={1.0} color="#fff0d0" distance={10} decay={2} />
-      <pointLight position={[4, 2.5, -3.5]} intensity={0.7} color="#ffd080" distance={8} decay={2} />
       <hemisphereLight args={["#87CEEB", "#4a7a3a", 0.4]} />
       <fog attach="fog" args={["#c8d8ff", 25, 90]} />
     </group>
