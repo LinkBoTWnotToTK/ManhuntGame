@@ -12,11 +12,12 @@ interface NPCProps {
   npcRole: "runner" | "hunter" | "ally";
 }
 
-// Faster NPC speeds
-const RUNNER_BASE_SPEED = 4.2;
-const RUNNER_SPRINT_SPEED = 5.8;
-const HUNTER_BASE_SPEED = 3.2;
-const HUNTER_SPRINT_SPEED = 4.5;
+// NPC speeds — hunters slowed to reduce aggressive homing
+const RUNNER_BASE_SPEED = 3.8;
+const RUNNER_SPRINT_SPEED = 5.2;
+const HUNTER_BASE_SPEED = 2.4;
+const HUNTER_SPRINT_SPEED = 3.5;
+const HUNTER_HESITATION_CHANCE = 0.3; // chance to pause briefly
 const NPC_RADIUS = 0.3;
 const TAG_DISTANCE = 1.2;
 const HIT_RADIUS = 0.8;
