@@ -188,6 +188,18 @@ function DynamicFOV({ fov }: { fov: number }) {
   return null;
 }
 
+function HatchPrompt() {
+  const { nearHatch, hatchPromptText, isPlaying } = useGame();
+  if (!isPlaying || !nearHatch) return null;
+  return (
+    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-fade-in">
+      <div className="bg-black/80 backdrop-blur-md rounded-xl px-5 py-2.5 border border-yellow-500/30 shadow-[0_0_20px_rgba(255,170,0,0.2)]">
+        <span className="text-yellow-300 font-bold text-sm">🕳️ {hatchPromptText}</span>
+      </div>
+    </div>
+  );
+}
+
 const Index = () => (
   <GameProvider>
     <div className="w-screen h-screen bg-black overflow-hidden">
