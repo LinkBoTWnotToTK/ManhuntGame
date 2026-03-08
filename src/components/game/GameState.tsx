@@ -4,7 +4,7 @@ import { POWERUPS } from "./ShopData";
 import { autoSave, autoLoad, SaveData } from "./SaveSystem";
 
 export type Role = "runner" | "hunter";
-export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground";
+export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station";
 
 export interface MapBounds {
   minX: number; maxX: number;
@@ -12,19 +12,23 @@ export interface MapBounds {
 }
 
 export const MAP_BOUNDS: Record<GameMap, MapBounds> = {
-  suburban:     { minX: -34.5, maxX: 34.5, minZ: -59.5, maxZ: 29.5 },
-  industrial:   { minX: -39.5, maxX: 39.5, minZ: -64.5, maxZ: 29.5 },
-  forest:       { minX: -44.5, maxX: 44.5, minZ: -69.5, maxZ: 34.5 },
-  arctic:       { minX: -39.5, maxX: 39.5, minZ: -64.5, maxZ: 29.5 },
-  underground:  { minX: -34.5, maxX: 34.5, minZ: -59.5, maxZ: 24.5 },
+  suburban:       { minX: -34.5, maxX: 34.5, minZ: -59.5, maxZ: 29.5 },
+  industrial:     { minX: -39.5, maxX: 39.5, minZ: -64.5, maxZ: 29.5 },
+  forest:         { minX: -44.5, maxX: 44.5, minZ: -69.5, maxZ: 34.5 },
+  arctic:         { minX: -39.5, maxX: 39.5, minZ: -64.5, maxZ: 29.5 },
+  underground:    { minX: -34.5, maxX: 34.5, minZ: -59.5, maxZ: 24.5 },
+  volcano:        { minX: -39.5, maxX: 39.5, minZ: -64.5, maxZ: 29.5 },
+  space_station:  { minX: -34.5, maxX: 34.5, minZ: -54.5, maxZ: 24.5 },
 };
 
 export const ESCAPE_POSITIONS: Record<GameMap, [number, number, number]> = {
-  suburban:     [0, 0, -54],
-  industrial:   [0, 0, -59],
-  forest:       [0, 0, -64],
-  arctic:       [0, 0, -59],
-  underground:  [0, 0, -54],
+  suburban:       [0, 0, -54],
+  industrial:     [0, 0, -59],
+  forest:         [0, 0, -64],
+  arctic:         [0, 0, -59],
+  underground:    [0, 0, -54],
+  volcano:        [0, 0, -59],
+  space_station:  [0, 0, -49],
 };
 
 interface MedkitData {
@@ -62,12 +66,10 @@ interface GameState {
   npcHealth: Record<string, number>;
   medkits: MedkitData[];
   ammoPickups: AmmoPickupData[];
-  // Coin & shop
   coins: number;
   matchCoins: number;
   coinPickups: CoinData[];
   ownedPowerups: string[];
-  // Powerup-derived values
   speedMultiplier: number;
   staminaDrainMultiplier: number;
   maxHealth: number;
@@ -149,7 +151,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const secondWindUsed = useRef(false);
   const ownedRef = useRef<string[]>([]);
 
-  // Load from localStorage on mount
   useEffect(() => {
     const saved = autoLoad();
     if (saved) {
@@ -159,13 +160,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Auto-save whenever coins or powerups change
   useEffect(() => {
     autoSave({ coins, powerups: ownedPowerups });
     ownedRef.current = ownedPowerups;
   }, [coins, ownedPowerups]);
 
-  // Derived powerup values
   const hasP = (id: string) => ownedPowerups.includes(id);
   const speedMultiplier = hasP("iron_boots") ? 1.2 : 1.0;
   const staminaDrainMultiplier = hasP("ghost_step") ? 0.5 : 1.0;
@@ -214,7 +213,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     startTimeRef.current = Date.now();
     setElapsedTime(0);
 
-    // Spawn coins
     const bounds = MAP_BOUNDS[mapRef.current || "suburban"];
     setCoinPickups(spawnCoins(bounds, 18));
 
@@ -247,15 +245,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         setGameOver(true);
         setGameResult("lose");
         setIsPlaying(false);
-        // Award loss bonus
         setCoins((prev) => prev + 2);
-        setMatchCoins((prev) => prev); // keep as is, bonus added to wallet
+        setMatchCoins((prev) => prev);
         if (timerRef.current) clearInterval(timerRef.current);
       }
     }, 100);
   }, []);
 
-  const totalNPCs = role === "hunter" ? 7 : 3;
+  const totalNPCs = role === "hunter" ? 7 : 5;
 
   const tagNPC = useCallback((id: string) => {
     setTagged((prev) => {
@@ -264,7 +261,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       next.add(id);
 
       const isHunter = roleRef.current === "hunter";
-      const enemyTotal = isHunter ? 7 : 3;
+      const enemyTotal = isHunter ? 7 : 5;
       let enemyCount = 0;
       for (const tid of next) {
         if (isHunter && tid.startsWith("r")) enemyCount++;
@@ -300,7 +297,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     playerHealthRef.current = Math.max(0, playerHealthRef.current - dmg);
     setPlayerHealth(playerHealthRef.current);
     if (playerHealthRef.current <= 0) {
-      // Second wind check
       if (ownedRef.current.includes("second_wind") && !secondWindUsed.current) {
         secondWindUsed.current = true;
         playerHealthRef.current = 1;
@@ -368,7 +364,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const buyPowerup = useCallback((id: string): boolean => {
     const def = POWERUPS.find((p) => p.id === id);
     if (!def) return false;
-    // Check via refs to avoid stale closures
     let success = false;
     setOwnedPowerups((prev) => {
       if (prev.includes(id)) return prev;

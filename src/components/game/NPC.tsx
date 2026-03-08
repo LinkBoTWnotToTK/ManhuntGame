@@ -30,12 +30,10 @@ function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
   
   return (
     <group>
-      {/* Head */}
       <mesh position={[0, 1.6, 0]} castShadow>
         <sphereGeometry args={[isHunter ? 0.19 : 0.16, 16, 16]} />
         <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      {/* Eyes */}
       <mesh position={[0.05, 1.63, 0.13]}>
         <sphereGeometry args={[0.03, 8, 8]} />
         <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={isHunter ? 2 : 0.5} />
@@ -44,22 +42,18 @@ function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
         <sphereGeometry args={[0.03, 8, 8]} />
         <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={isHunter ? 2 : 0.5} />
       </mesh>
-      {/* Hair/headgear */}
       <mesh position={[0, 1.72, -0.02]} castShadow>
         <sphereGeometry args={[isHunter ? 0.2 : 0.17, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <meshStandardMaterial color={isHunter ? "#1a0a0a" : "#2a2a3a"} roughness={0.9} />
       </mesh>
-      {/* Torso */}
       <mesh position={[0, 1.15, 0]} castShadow>
         <capsuleGeometry args={[isHunter ? 0.17 : 0.14, isHunter ? 0.48 : 0.4, 8, 16]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} metalness={0.05} />
       </mesh>
-      {/* Accent belt */}
       <mesh position={[0, 0.88, 0]} castShadow>
         <cylinderGeometry args={[isHunter ? 0.18 : 0.15, isHunter ? 0.18 : 0.15, 0.06, 12]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.2} roughness={0.5} />
       </mesh>
-      {/* Arms */}
       <mesh position={[-0.24, 1.1, 0]} rotation={[0, 0, 0.25]} castShadow>
         <capsuleGeometry args={[0.05, 0.35, 6, 10]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
@@ -68,7 +62,6 @@ function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
         <capsuleGeometry args={[0.05, 0.35, 6, 10]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      {/* Hands */}
       <mesh position={[-0.3, 0.88, 0]} castShadow>
         <sphereGeometry args={[0.045, 8, 8]} />
         <meshStandardMaterial color={skinColor} roughness={0.7} />
@@ -77,14 +70,12 @@ function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
         <sphereGeometry args={[0.045, 8, 8]} />
         <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      {/* Slingshot (runners only) */}
       {!isHunter && (
         <mesh position={[0.33, 0.9, 0.05]} rotation={[0.3, 0, -0.2]} castShadow>
           <cylinderGeometry args={[0.012, 0.012, 0.25, 6]} />
           <meshStandardMaterial color="#5a3a1a" roughness={0.8} />
         </mesh>
       )}
-      {/* Legs */}
       <mesh position={[-0.09, 0.5, 0]} castShadow>
         <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
         <meshStandardMaterial color={pantsColor} roughness={0.8} />
@@ -93,7 +84,6 @@ function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
         <capsuleGeometry args={[0.06, 0.45, 6, 10]} />
         <meshStandardMaterial color={pantsColor} roughness={0.8} />
       </mesh>
-      {/* Shoes */}
       <mesh position={[-0.09, 0.2, 0.03]} castShadow>
         <boxGeometry args={[0.1, 0.08, 0.15]} />
         <meshStandardMaterial color="#222" roughness={0.6} />
@@ -141,7 +131,6 @@ function tryMove(myPos: THREE.Vector3, moveDir: THREE.Vector3, speed: number, de
   if (!checkCollision(sx)) { myPos.x = sx.x; return true; }
   const sz = myPos.clone(); sz.z += moveDir.z * speed * delta;
   if (!checkCollision(sz)) { myPos.z = sz.z; return true; }
-  // Try perpendicular slide
   const perp = new THREE.Vector3(-moveDir.z, 0, moveDir.x).normalize();
   const altPos = myPos.clone().addScaledVector(perp, speed * delta);
   if (!checkCollision(altPos)) { myPos.copy(altPos); return true; }
@@ -158,9 +147,9 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   const jukeDir = useRef(1);
   const lastMoveDir = useRef(new THREE.Vector3());
   const shootTimer = useRef(2 + Math.random() * 3);
-  const ammo = useRef(npcRole === "runner" ? 3 : 0); // Only runners have ammo
+  const ammo = useRef(npcRole === "runner" ? 3 : 0);
   const healthBarRef = useRef<THREE.Group>(null);
-  const flankAngle = useRef((Math.random() - 0.5) * 1.2); // Unique flanking offset per NPC
+  const flankAngle = useRef((Math.random() - 0.5) * 1.2);
   const stuckTimer = useRef(0);
   const lastPos = useRef(new THREE.Vector3(...startPosition));
 
@@ -179,7 +168,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
     let moveDir = new THREE.Vector3();
     let speed: number;
 
-    // Stuck detection — if barely moved, change direction
     const distMoved = myPos.distanceTo(lastPos.current);
     if (distMoved < 0.05 * delta) {
       stuckTimer.current += delta;
@@ -193,7 +181,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
     lastPos.current.copy(myPos);
 
     if (npcRole === "ally") {
-      // Ally hunter AI — smarter target selection and flanking
       let nearestDist = Infinity;
       let nearestPos: THREE.Vector3 | null = null;
       let nearestId: string | null = null;
@@ -204,7 +191,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
       }
       if (nearestPos) {
         moveDir.subVectors(nearestPos, myPos); moveDir.y = 0;
-        // Flanking: approach from an angle
         const flankPerp = new THREE.Vector3(-moveDir.z, 0, moveDir.x).normalize();
         moveDir.normalize().addScaledVector(flankPerp, Math.sin(t * 2) * 0.4);
         moveDir.normalize();
@@ -225,17 +211,14 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
       const dist = toPlayer.length();
 
       if (npcRole === "runner") {
-        // === SMARTER RUNNER AI ===
         const fleeRange = 12;
         const panicRange = 5;
         const isSprinting = dist < panicRange;
         speed = isSprinting ? RUNNER_SPRINT_SPEED : RUNNER_BASE_SPEED;
 
         if (dist < fleeRange) {
-          // Flee from player
           moveDir.copy(toPlayer).normalize().multiplyScalar(-1);
           
-          // Also flee from ally hunters
           for (const [nid, npos] of npcPositions) {
             if (!nid.startsWith("ah")) continue;
             const allyDist = myPos.distanceTo(npos);
@@ -245,25 +228,21 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
             }
           }
           
-          // Juking — more aggressive and frequent
           jukeTimer.current -= delta;
           if (jukeTimer.current <= 0) {
             jukeDir.current = Math.random() > 0.5 ? 1 : -1;
-            jukeTimer.current = 0.3 + Math.random() * 0.6; // Faster direction changes
+            jukeTimer.current = 0.3 + Math.random() * 0.6;
           }
           const jukeFactor = dist < panicRange ? 0.9 : 0.4;
           const perp = new THREE.Vector3(-moveDir.z, 0, moveDir.x).multiplyScalar(jukeDir.current * jukeFactor);
           moveDir.add(perp).normalize();
           
-          // Boundary avoidance
           if (Math.abs(myPos.x) > bounds.maxX - 5) moveDir.x -= Math.sign(myPos.x) * 0.8;
           if (myPos.z > bounds.maxZ - 5 || myPos.z < bounds.minZ + 5) moveDir.z -= Math.sign(myPos.z) * 0.8;
           moveDir.normalize();
         } else {
-          // Wander strategically — move toward areas far from player
           wanderTimer.current -= delta;
           if (wanderTimer.current <= 0) {
-            // Pick a position far from the player
             const awayFromPlayer = new THREE.Vector3().subVectors(myPos, playerPosition).normalize();
             const tx = myPos.x + awayFromPlayer.x * 15 + (Math.random() - 0.5) * 20;
             const tz = myPos.z + awayFromPlayer.z * 15 + (Math.random() - 0.5) * 20;
@@ -278,7 +257,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
           speed = RUNNER_BASE_SPEED * 0.7;
         }
 
-        // Runner slingshot — shoot back when threatened
         if (ammo.current > 0 && dist < 10) {
           shootTimer.current -= delta;
           if (shootTimer.current <= 0) {
@@ -292,19 +270,17 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
           }
         }
       } else {
-        // === SMARTER HUNTER AI ===
-        const chaseRange = 20; // Extended detection
+        // HUNTER AI
+        const chaseRange = 20;
         const isSprinting = dist < 8;
         speed = isSprinting ? HUNTER_SPRINT_SPEED : HUNTER_BASE_SPEED;
 
         if (dist < chaseRange) {
           moveDir.copy(toPlayer).normalize();
-          // Flanking — each hunter approaches from a unique angle
           const flankPerp = new THREE.Vector3(-moveDir.z, 0, moveDir.x).normalize();
           moveDir.addScaledVector(flankPerp, Math.sin(t * 2 + flankAngle.current * 5) * 0.35);
           moveDir.normalize();
           
-          // Predictive movement — aim slightly ahead of where player is moving
           if (dist > 3) {
             const prediction = playerPosition.clone().addScaledVector(toPlayer.clone().normalize().multiplyScalar(-1), -1);
             const toPrediction = new THREE.Vector3().subVectors(prediction, myPos).normalize();
@@ -312,7 +288,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
             moveDir.normalize();
           }
         } else {
-          // Patrol toward player's general area
           wanderTimer.current -= delta;
           if (wanderTimer.current <= 0) {
             wanderDir.current.set(
@@ -324,17 +299,14 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
           moveDir.copy(wanderDir.current);
           speed = HUNTER_BASE_SPEED * 0.6;
         }
-
-        // Hunters do NOT have slingshots — they only tag
       }
 
-      // Tag/damage on contact
       const distToPlayer = myPos.distanceTo(playerPosition);
       if (npcRole === "runner" && distToPlayer < TAG_DISTANCE) {
         tagNPC(id);
       }
       if (npcRole === "hunter" && distToPlayer < TAG_DISTANCE) {
-        damagePlayer(3); // Instant KO for runners
+        damagePlayer(3);
       }
     }
 
@@ -355,7 +327,6 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
       ref.current.position.y = 0;
     }
 
-    // Check player projectiles hitting this NPC (only if player is runner)
     if (playerRole === "runner") {
       for (const p of projectiles) {
         if (!p.alive || p.owner !== "player") continue;
@@ -391,7 +362,7 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   );
 }
 
-// NPC spawn positions per map
+// NPC spawn positions per map — now with 5 hunters for runner mode
 function getSpawnPositions(map: GameMap) {
   switch (map) {
     case "industrial":
@@ -409,6 +380,8 @@ function getSpawnPositions(map: GameMap) {
           { id: "h1", startPosition: [-30, 0, -30] as [number,number,number], color: "#ff3333" },
           { id: "h2", startPosition: [30, 0, -28] as [number,number,number], color: "#ff5533" },
           { id: "h3", startPosition: [0, 0, -50] as [number,number,number], color: "#cc2222" },
+          { id: "h4", startPosition: [-20, 0, -10] as [number,number,number], color: "#ff4444" },
+          { id: "h5", startPosition: [20, 0, 15] as [number,number,number], color: "#dd3311" },
         ],
         allies: [
           { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
@@ -429,6 +402,8 @@ function getSpawnPositions(map: GameMap) {
           { id: "h1", startPosition: [-32, 0, -35] as [number,number,number], color: "#ff3333" },
           { id: "h2", startPosition: [32, 0, -32] as [number,number,number], color: "#ff5533" },
           { id: "h3", startPosition: [0, 0, -55] as [number,number,number], color: "#cc2222" },
+          { id: "h4", startPosition: [-25, 0, -10] as [number,number,number], color: "#ff4444" },
+          { id: "h5", startPosition: [25, 0, 10] as [number,number,number], color: "#dd3311" },
         ],
         allies: [
           { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
@@ -449,6 +424,8 @@ function getSpawnPositions(map: GameMap) {
           { id: "h1", startPosition: [-28, 0, -28] as [number,number,number], color: "#ff3333" },
           { id: "h2", startPosition: [28, 0, -25] as [number,number,number], color: "#ff5533" },
           { id: "h3", startPosition: [0, 0, -50] as [number,number,number], color: "#cc2222" },
+          { id: "h4", startPosition: [-18, 0, -8] as [number,number,number], color: "#ff4444" },
+          { id: "h5", startPosition: [22, 0, 12] as [number,number,number], color: "#dd3311" },
         ],
         allies: [
           { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
@@ -469,6 +446,52 @@ function getSpawnPositions(map: GameMap) {
           { id: "h1", startPosition: [-25, 0, -25] as [number,number,number], color: "#ff3333" },
           { id: "h2", startPosition: [25, 0, -22] as [number,number,number], color: "#ff5533" },
           { id: "h3", startPosition: [0, 0, -45] as [number,number,number], color: "#cc2222" },
+          { id: "h4", startPosition: [-15, 0, -5] as [number,number,number], color: "#ff4444" },
+          { id: "h5", startPosition: [18, 0, 8] as [number,number,number], color: "#dd3311" },
+        ],
+        allies: [
+          { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
+        ],
+      };
+    case "volcano":
+      return {
+        runners: [
+          { id: "r1", startPosition: [-30, 0, -25] as [number,number,number], color: "#4ecdc4" },
+          { id: "r2", startPosition: [30, 0, -30] as [number,number,number], color: "#feca57" },
+          { id: "r3", startPosition: [-33, 0, -50] as [number,number,number], color: "#ff9ff3" },
+          { id: "r4", startPosition: [33, 0, -15] as [number,number,number], color: "#a8e6cf" },
+          { id: "r5", startPosition: [0, 0, 22] as [number,number,number], color: "#c792ea" },
+          { id: "r6", startPosition: [-25, 0, 15] as [number,number,number], color: "#48dbfb" },
+          { id: "r7", startPosition: [20, 0, -50] as [number,number,number], color: "#f8b500" },
+        ],
+        hunters: [
+          { id: "h1", startPosition: [-28, 0, -28] as [number,number,number], color: "#ff3333" },
+          { id: "h2", startPosition: [28, 0, -25] as [number,number,number], color: "#ff5533" },
+          { id: "h3", startPosition: [0, 0, -50] as [number,number,number], color: "#cc2222" },
+          { id: "h4", startPosition: [-20, 0, -8] as [number,number,number], color: "#ff4444" },
+          { id: "h5", startPosition: [22, 0, 15] as [number,number,number], color: "#dd3311" },
+        ],
+        allies: [
+          { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
+        ],
+      };
+    case "space_station":
+      return {
+        runners: [
+          { id: "r1", startPosition: [-25, 0, -20] as [number,number,number], color: "#4ecdc4" },
+          { id: "r2", startPosition: [25, 0, -25] as [number,number,number], color: "#feca57" },
+          { id: "r3", startPosition: [-28, 0, -45] as [number,number,number], color: "#ff9ff3" },
+          { id: "r4", startPosition: [28, 0, -10] as [number,number,number], color: "#a8e6cf" },
+          { id: "r5", startPosition: [0, 0, 18] as [number,number,number], color: "#c792ea" },
+          { id: "r6", startPosition: [-20, 0, 10] as [number,number,number], color: "#48dbfb" },
+          { id: "r7", startPosition: [15, 0, -45] as [number,number,number], color: "#f8b500" },
+        ],
+        hunters: [
+          { id: "h1", startPosition: [-22, 0, -22] as [number,number,number], color: "#ff3333" },
+          { id: "h2", startPosition: [22, 0, -20] as [number,number,number], color: "#ff5533" },
+          { id: "h3", startPosition: [0, 0, -42] as [number,number,number], color: "#cc2222" },
+          { id: "h4", startPosition: [-15, 0, -5] as [number,number,number], color: "#ff4444" },
+          { id: "h5", startPosition: [18, 0, 8] as [number,number,number], color: "#dd3311" },
         ],
         allies: [
           { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
@@ -489,6 +512,8 @@ function getSpawnPositions(map: GameMap) {
           { id: "h1", startPosition: [-24, 0, -30] as [number,number,number], color: "#ff3333" },
           { id: "h2", startPosition: [24, 0, -28] as [number,number,number], color: "#ff5533" },
           { id: "h3", startPosition: [0, 0, -48] as [number,number,number], color: "#cc2222" },
+          { id: "h4", startPosition: [-15, 0, -8] as [number,number,number], color: "#ff4444" },
+          { id: "h5", startPosition: [20, 0, 12] as [number,number,number], color: "#dd3311" },
         ],
         allies: [
           { id: "ah1", startPosition: [3, 0, 2] as [number,number,number], color: "#ff8800" },
