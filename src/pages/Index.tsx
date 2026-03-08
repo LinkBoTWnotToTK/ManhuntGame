@@ -194,6 +194,8 @@ const Index = () => (
       <GameUI />
       <Minimap />
       <ScreenEffects />
+      <Tutorial />
+      <HatchPrompt />
       <Canvas
         shadows
         camera={{ fov: 55, near: 0.1, far: 150 }}
