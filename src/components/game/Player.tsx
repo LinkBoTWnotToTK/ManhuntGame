@@ -179,6 +179,7 @@ export default function Player() {
   };
 
   useEffect(() => {
+    if (isMobilePlatform) return; // Skip keyboard/mouse on mobile
     const onMouseMove = (e: MouseEvent) => {
       if (!document.pointerLockElement) return;
       yaw.current -= e.movementX * 0.003;
