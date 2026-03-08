@@ -174,6 +174,7 @@ function GameScene() {
       <Checkpoints />
       <FlagObject />
       <SurvivalWaveIndicator />
+      <WeatherSystem />
       <DynamicFOV fov={fov} />
     </>
   );
