@@ -75,6 +75,8 @@ interface GameState {
   speedMultiplier: number;
   staminaDrainMultiplier: number;
   maxHealth: number;
+  currentWeapon: WeaponType;
+  meleeCooldown: number;
   selectRole: (role: Role) => void;
   selectMap: (map: GameMap) => void;
   tagNPC: (id: string) => void;
@@ -92,6 +94,8 @@ interface GameState {
   regenStamina: (amount: number) => void;
   buyPowerup: (id: string) => boolean;
   loadSaveData: (data: SaveData) => void;
+  switchWeapon: (w: WeaponType) => void;
+  setMeleeCooldown: (cd: number) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
