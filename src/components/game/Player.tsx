@@ -324,6 +324,25 @@ export default function Player() {
       }
     }
 
+    // KOTH zone scoring
+    if (gameMode === "koth" && kothZone) {
+      const dx = playerPosition.x - kothZone[0];
+      const dz = playerPosition.z - kothZone[2];
+      if (Math.sqrt(dx * dx + dz * dz) < 4) {
+        addKothScore(delta * 5);
+      }
+    }
+
+    // Checkpoint collection
+    if (gameMode === "speedrun" && checkpoints.length > 0 && checkpointIndex < checkpoints.length) {
+      const cp = checkpoints[checkpointIndex];
+      const dx = playerPosition.x - cp[0];
+      const dz = playerPosition.z - cp[2];
+      if (Math.sqrt(dx * dx + dz * dz) < 3) {
+        advanceCheckpoint();
+      }
+    }
+
     // NPC projectile hits
     for (const p of projectiles) {
       if (!p.alive || p.owner === "player") continue;
