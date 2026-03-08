@@ -221,7 +221,30 @@ export default function GameUI() {
               </div>
             </div>
           )}
-          {escapeOpen && role === "hunter" && (
+          {/* Block Hunt disguise alert */}
+          {gameMode === "blockhunt" && isDisguised && (
+            <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+              <div className="bg-purple-950/90 backdrop-blur-md rounded-full px-5 py-1.5 border border-purple-500/50 shadow-[0_0_20px_rgba(128,0,255,0.3)]">
+                <span className="text-purple-300 font-bold text-xs uppercase tracking-wider">📦 DISGUISED — Don&apos;t move!</span>
+              </div>
+            </div>
+          )}
+          {/* CTF flag carried */}
+          {gameMode === "ctf" && flagCarried && (
+            <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+              <div className="bg-red-950/90 backdrop-blur-md rounded-full px-5 py-1.5 border border-red-500/50 shadow-[0_0_20px_rgba(255,0,0,0.3)]">
+                <span className="text-red-400 font-bold text-xs uppercase tracking-wider animate-pulse">🚩 RETURN TO BASE!</span>
+              </div>
+            </div>
+          )}
+          {/* Survival wave */}
+          {gameMode === "survival" && (
+            <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+              <div className="bg-red-950/80 backdrop-blur-md rounded-full px-5 py-1.5 border border-red-500/30">
+                <span className="text-red-300 font-bold text-xs uppercase tracking-wider">🛡️ WAVE {survivalWave}</span>
+              </div>
+            </div>
+          )}
             <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
               <div className="bg-red-950/90 backdrop-blur-md rounded-full px-5 py-1.5 border border-red-500/50">
                 <span className="text-red-400 font-bold text-xs uppercase tracking-wider animate-pulse">⚠️ RUNNERS ESCAPING!</span>
