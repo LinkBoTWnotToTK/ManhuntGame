@@ -265,32 +265,23 @@ function EscapeZone({ escapePos }: { escapePos: [number, number, number] }) {
   const { escapeOpen } = useGame();
   const mats = getMats();
   const ref = useRef<THREE.Mesh>(null);
-  const ringRef = useRef<THREE.Mesh>(null);
 
   useFrame((state) => {
-    if (!escapeOpen) return;
+    if (!escapeOpen || !ref.current) return;
     const t = state.clock.elapsedTime;
-    if (ref.current) { ref.current.rotation.y = t * 0.8; ref.current.scale.setScalar(1 + Math.sin(t * 3) * 0.08); }
-    if (ringRef.current) ringRef.current.rotation.z = t * 1.5;
+    ref.current.rotation.y = t * 0.8;
+    ref.current.scale.setScalar(1 + Math.sin(t * 3) * 0.08);
   });
 
   return (
     <group position={escapePos}>
-      <mesh position={[0, 1.5, 0]} castShadow receiveShadow>
+      <mesh position={[0, 1.5, 0]}>
         <boxGeometry args={[3.5, 3.5, 0.3]} />
         <meshStandardMaterial color={escapeOpen ? "#003300" : "#330000"} roughness={0.5} />
       </mesh>
       <mesh ref={ref} position={[0, 1.5, 0]} material={escapeOpen ? mats.escapeOpen : mats.escapeClosed}>
         <boxGeometry args={[2.8, 2.8, 0.15]} />
       </mesh>
-      {escapeOpen && (
-        <mesh ref={ringRef} position={[0, 1.5, 0.2]}>
-          <torusGeometry args={[1.6, 0.06, 8, 32]} />
-          <meshStandardMaterial color="#00ff88" emissive="#00ff88" emissiveIntensity={2} />
-        </mesh>
-      )}
-      {escapeOpen && <pointLight position={[0, 2, 2]} color="#00ff44" intensity={5} distance={15} />}
-      <pointLight position={[0, 1.5, 3]} color={escapeOpen ? "#00ff44" : "#ff0000"} intensity={escapeOpen ? 2 : 0.5} distance={8} />
     </group>
   );
 }
