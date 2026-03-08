@@ -18,6 +18,8 @@ import WeaponSystem from "@/components/game/WeaponSystem";
 import Tutorial from "@/components/game/Tutorial";
 import WeatherSystem from "@/components/game/WeatherSystem";
 import LevelEditor from "@/components/game/LevelEditor";
+import MobileControls, { PlatformSelector } from "@/components/game/MobileControls";
+import { isMobilePlatform, setMobilePlatform } from "@/components/game/SharedState";
 
 // ... keep existing code (KothZone, Checkpoints, FlagObject, SurvivalWaveIndicator, GameScene, DynamicFOV, HatchPrompt components - lines 20-201)
 
