@@ -206,6 +206,10 @@ export default function Player() {
   useFrame((state, delta) => {
     if (!isPlaying || gameOver) return;
 
+    // Tick weapon cooldowns
+    if (weaponCooldownRef.current > 0) weaponCooldownRef.current -= delta;
+    if (meleeCooldownRef.current > 0) meleeCooldownRef.current -= delta;
+
     const walkSpeed = BASE_WALK_SPEED * speedMultiplier;
     const sprintSpeed = BASE_SPRINT_SPEED * speedMultiplier;
     const staminaDrain = BASE_STAMINA_DRAIN * staminaDrainMultiplier;
