@@ -3,7 +3,7 @@ import { useGame } from "./GameState";
 import { MAP_WEATHER } from "./WeatherSystem";
 
 export default function ScreenEffects() {
-  const { playerHealth, maxHealth, isPlaying, gameOver } = useGame();
+  const { playerHealth, maxHealth, isPlaying, gameOver, selectedMap } = useGame();
   const [shaking, setShaking] = useState(false);
   const [shakeIntensity, setShakeIntensity] = useState(0);
   const prevHealth = useRef(playerHealth);
