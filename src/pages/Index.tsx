@@ -10,6 +10,7 @@ import { DustParticles, PortalParticles } from "@/components/game/Particles";
 import ProjectileSystem from "@/components/game/ProjectileSystem";
 import Medkits from "@/components/game/Medkits";
 import Coins from "@/components/game/Coins";
+import GrabbableObjects from "@/components/game/GrabbableObjects";
 
 function GameScene() {
   const { role, selectedMap, ownedPowerups } = useGame();
@@ -34,6 +35,7 @@ function GameScene() {
       <ProjectileSystem />
       <Medkits />
       <Coins />
+      <GrabbableObjects />
       <AudioSystem />
       <DynamicFOV fov={fov} />
     </>

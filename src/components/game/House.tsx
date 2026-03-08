@@ -928,6 +928,232 @@ function UndergroundMap({ escapePos }: { escapePos: [number, number, number] }) 
   );
 }
 
+// ===== VOLCANO MAP =====
+function VolcanoMap({ escapePos }: { escapePos: [number, number, number] }) {
+  const mats = getMats();
+  const lavaRef = useRef<THREE.Mesh>(null);
+  
+  useFrame(({ clock }) => {
+    if (lavaRef.current) {
+      const mat = lavaRef.current.material as THREE.MeshStandardMaterial;
+      mat.emissiveIntensity = 2 + Math.sin(clock.elapsedTime * 2) * 0.8;
+    }
+  });
+
+  return (
+    <group>
+      {/* Dark volcanic ground */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, -18]} receiveShadow>
+        <planeGeometry args={[82, 94]} />
+        <meshStandardMaterial color="#2a1a0a" roughness={0.95} />
+      </mesh>
+
+      {/* Lava rivers */}
+      <mesh ref={lavaRef} rotation={[-Math.PI / 2, 0, 0]} position={[-15, 0.05, -25]} receiveShadow>
+        <planeGeometry args={[3, 40]} />
+        <meshStandardMaterial color="#ff4400" emissive="#ff2200" emissiveIntensity={2} roughness={0.3} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[18, 0.05, -15]} receiveShadow>
+        <planeGeometry args={[2.5, 30]} />
+        <meshStandardMaterial color="#ff4400" emissive="#ff2200" emissiveIntensity={2} roughness={0.3} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, -50]}>
+        <planeGeometry args={[20, 3]} />
+        <meshStandardMaterial color="#ff3300" emissive="#ff2200" emissiveIntensity={2.5} roughness={0.2} />
+      </mesh>
+
+      {/* Perimeter - obsidian walls */}
+      <Wall position={[0, 2, -65]} size={[82, 4, 0.5]} material={mats.concrete} />
+      <Wall position={[-40, 2, -18]} size={[0.5, 4, 94]} material={mats.concrete} />
+      <Wall position={[40, 2, -18]} size={[0.5, 4, 94]} material={mats.concrete} />
+      <Wall position={[0, 2, 30]} size={[80, 4, 0.5]} material={mats.concrete} />
+
+      {/* Obsidian rock formations */}
+      <Wall position={[-8, 1.2, -10]} size={[4, 2.4, 2]} material={mats.brick} />
+      <Wall position={[10, 1.2, -15]} size={[2, 2.4, 4]} material={mats.brick} />
+      <Wall position={[-22, 1.2, -20]} size={[5, 2.4, 1.5]} material={mats.brick} />
+      <Wall position={[25, 1.2, -25]} size={[3, 2.4, 2]} material={mats.brick} />
+      <Wall position={[-5, 1.2, -35]} size={[3, 2.4, 3]} material={mats.brick} />
+      <Wall position={[12, 1.2, -40]} size={[2, 2.4, 4]} material={mats.brick} />
+      <Wall position={[-28, 1.2, -42]} size={[4, 2.4, 2]} material={mats.brick} />
+      <Wall position={[30, 1.2, -35]} size={[3, 2.4, 2]} material={mats.brick} />
+      <Wall position={[-12, 1.2, -50]} size={[5, 2.4, 1.5]} material={mats.brick} />
+      <Wall position={[20, 1.2, -50]} size={[2, 2.4, 3]} material={mats.brick} />
+      <Wall position={[0, 1.2, -20]} size={[3, 2.4, 2]} material={mats.brick} />
+      <Wall position={[-30, 1.2, -10]} size={[4, 2.4, 2]} material={mats.brick} />
+      <Wall position={[30, 1.2, -8]} size={[3, 2.4, 3]} material={mats.brick} />
+
+      {/* Volcanic rocks */}
+      <Rock position={[-6, 0, -5]} scale={2.0} />
+      <Rock position={[8, 0, -8]} scale={1.5} />
+      <Rock position={[-20, 0, -30]} scale={2.2} />
+      <Rock position={[15, 0, -22]} scale={1.8} />
+      <Rock position={[-10, 0, -45]} scale={1.6} />
+      <Rock position={[25, 0, -48]} scale={2.0} />
+      <Rock position={[0, 0, 10]} scale={1.4} />
+      <Rock position={[-35, 0, -20]} scale={1.9} />
+      <Rock position={[35, 0, -30]} scale={1.7} />
+
+      {/* Crates (heat-resistant) */}
+      <CrateStack position={[-8, 0, 5]} />
+      <CrateStack position={[12, 0, -18]} />
+      <CrateStack position={[-22, 0, -38]} />
+      <CrateStack position={[22, 0, -42]} />
+      <CrateStack position={[0, 0, -28]} />
+      <CrateStack position={[-30, 0, -50]} />
+      <CrateStack position={[28, 0, -55]} />
+
+      <Barrel position={[-3, 0, 8]} />
+      <Barrel position={[7, 0, -3]} />
+      <Barrel position={[-18, 0, -28]} />
+      <Barrel position={[24, 0, -18]} />
+      <Barrel position={[-8, 0, -42]} />
+      <Barrel position={[5, 0, -55]} />
+
+      <EscapeZone escapePos={escapePos} />
+
+      {/* Hot volcanic lighting */}
+      <ambientLight intensity={0.3} color="#ff8844" />
+      <directionalLight position={[25, 30, -15]} intensity={0.8} color="#ffeedd" castShadow
+        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
+        shadow-camera-left={-50} shadow-camera-right={50} shadow-camera-top={45} shadow-camera-bottom={-70} shadow-bias={-0.0003} />
+      
+      {/* Lava glow lights */}
+      <pointLight position={[-15, 1, -15]} color="#ff4400" intensity={5} distance={15} decay={2} />
+      <pointLight position={[-15, 1, -35]} color="#ff4400" intensity={5} distance={15} decay={2} />
+      <pointLight position={[18, 1, -10]} color="#ff3300" intensity={4} distance={12} decay={2} />
+      <pointLight position={[18, 1, -25]} color="#ff3300" intensity={4} distance={12} decay={2} />
+      <pointLight position={[0, 1, -50]} color="#ff2200" intensity={6} distance={18} decay={2} />
+      <pointLight position={[0, 3, 0]} color="#ffaa44" intensity={2} distance={20} decay={2} />
+      <pointLight position={[-30, 2, -40]} color="#ff6600" intensity={3} distance={10} decay={2} />
+      <pointLight position={[30, 2, -42]} color="#ff6600" intensity={3} distance={10} decay={2} />
+
+      <hemisphereLight args={["#ff8844", "#331100", 0.3]} />
+      <fog attach="fog" args={["#1a0800", 20, 80]} />
+    </group>
+  );
+}
+
+// ===== SPACE STATION MAP =====
+function SpaceStationMap({ escapePos }: { escapePos: [number, number, number] }) {
+  const mats = getMats();
+  return (
+    <group>
+      {/* Metal floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, -15]} receiveShadow>
+        <planeGeometry args={[72, 80]} />
+        <meshStandardMaterial color="#2a2a3a" roughness={0.4} metalness={0.6} />
+      </mesh>
+      {/* Ceiling */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 4.5, -15]} receiveShadow>
+        <planeGeometry args={[72, 80]} />
+        <meshStandardMaterial color="#1a1a2a" roughness={0.5} metalness={0.5} />
+      </mesh>
+
+      {/* Hull walls */}
+      <Wall position={[0, 2.25, -55]} size={[72, 4.5, 0.5]} material={mats.concrete} />
+      <Wall position={[-35, 2.25, -15]} size={[0.5, 4.5, 80]} material={mats.concrete} />
+      <Wall position={[35, 2.25, -15]} size={[0.5, 4.5, 80]} material={mats.concrete} />
+      <Wall position={[0, 2.25, 25]} size={[70, 4.5, 0.5]} material={mats.concrete} />
+
+      {/* Corridor walls creating rooms */}
+      <Wall position={[-12, 2.25, 10]} size={[0.3, 4.5, 14]} material={mats.concrete} />
+      <Wall position={[12, 2.25, 8]} size={[0.3, 4.5, 10]} material={mats.concrete} />
+      <Wall position={[-12, 2.25, -12]} size={[0.3, 4.5, 14]} material={mats.concrete} />
+      <Wall position={[12, 2.25, -14]} size={[0.3, 4.5, 16]} material={mats.concrete} />
+      
+      {/* Cross corridors */}
+      <Wall position={[0, 2.25, -5]} size={[24, 4.5, 0.3]} material={mats.concrete} />
+      <Wall position={[-6, 2.25, -22]} size={[12, 4.5, 0.3]} material={mats.concrete} />
+      <Wall position={[6, 2.25, -22]} size={[12, 4.5, 0.3]} material={mats.concrete} />
+      <Wall position={[0, 2.25, -35]} size={[30, 4.5, 0.3]} material={mats.concrete} />
+      <Wall position={[-20, 2.25, -40]} size={[0.3, 4.5, 10]} material={mats.concrete} />
+      <Wall position={[20, 2.25, -42]} size={[0.3, 4.5, 12]} material={mats.concrete} />
+      <Wall position={[0, 2.25, -48]} size={[40, 4.5, 0.3]} material={mats.concrete} />
+
+      {/* Control panels (decorative boxes) */}
+      {[[-8, 0, 15], [8, 0, 15], [-25, 0, 5], [25, 0, 3], [-8, 0, -30], [8, 0, -32]].map((pos, i) => (
+        <group key={`panel-${i}`} position={pos as [number, number, number]}>
+          <mesh position={[0, 0.6, 0]} castShadow>
+            <boxGeometry args={[2, 1.2, 0.5]} />
+            <meshStandardMaterial color="#2a3a4a" roughness={0.4} metalness={0.7} />
+          </mesh>
+          <mesh position={[0, 0.9, 0.26]}>
+            <planeGeometry args={[1.5, 0.5]} />
+            <meshStandardMaterial color="#003366" emissive="#0066cc" emissiveIntensity={1.5} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Airlock doors (decorative) */}
+      {[[-12, 0, 3], [12, 0, 3], [-12, 0, -19], [12, 0, -19]].map((pos, i) => (
+        <group key={`airlock-${i}`} position={pos as [number, number, number]}>
+          <mesh position={[0, 1.5, 0]} castShadow>
+            <boxGeometry args={[0.1, 3, 2]} />
+            <meshStandardMaterial color="#445566" metalness={0.8} roughness={0.3} />
+          </mesh>
+          <mesh position={[0, 2.8, 0]}>
+            <boxGeometry args={[0.15, 0.2, 2.2]} />
+            <meshStandardMaterial color="#ff4400" emissive="#ff2200" emissiveIntensity={1} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Crates & supplies */}
+      <CrateStack position={[-20, 0, 15]} />
+      <CrateStack position={[20, 0, 12]} />
+      <CrateStack position={[-25, 0, -18]} />
+      <CrateStack position={[25, 0, -20]} />
+      <CrateStack position={[-15, 0, -40]} />
+      <CrateStack position={[15, 0, -42]} />
+      <CrateStack position={[0, 0, -15]} />
+
+      <Barrel position={[-5, 0, 8]} />
+      <Barrel position={[5, 0, -10]} />
+      <Barrel position={[-22, 0, -8]} />
+      <Barrel position={[22, 0, -10]} />
+      <Barrel position={[-8, 0, -38]} />
+      <Barrel position={[8, 0, -45]} />
+
+      {/* Pipes along ceiling */}
+      <Pipe position={[-8, 3.5, -10]} length={12} />
+      <Pipe position={[8, 3.5, -20]} length={10} />
+      <Pipe position={[0, 3.5, 5]} length={15} />
+      <Pipe position={[-20, 3.5, -35]} length={8} />
+      <Pipe position={[20, 3.5, -38]} length={6} />
+
+      <EscapeZone escapePos={escapePos} />
+
+      {/* Sci-fi blue-white lighting */}
+      <ambientLight intensity={0.2} color="#aabbdd" />
+      <directionalLight position={[0, 12, -15]} intensity={0.4} color="#ddeeff" castShadow
+        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
+        shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={35} shadow-camera-bottom={-60} shadow-bias={-0.0003} />
+      
+      {/* Strip lights along corridors */}
+      <pointLight position={[0, 4, 10]} color="#4488ff" intensity={4} distance={15} decay={2} castShadow />
+      <pointLight position={[-20, 4, 5]} color="#4488ff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[20, 4, 5]} color="#4488ff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[0, 4, -5]} color="#4488ff" intensity={4} distance={15} decay={2} castShadow />
+      <pointLight position={[-20, 4, -15]} color="#4488ff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[20, 4, -15]} color="#4488ff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[0, 4, -25]} color="#4488ff" intensity={4} distance={15} decay={2} castShadow />
+      <pointLight position={[-15, 4, -38]} color="#4488ff" intensity={3} distance={10} decay={2} />
+      <pointLight position={[15, 4, -38]} color="#4488ff" intensity={3} distance={10} decay={2} />
+      <pointLight position={[0, 4, -50]} color="#4488ff" intensity={3} distance={12} decay={2} />
+      
+      {/* Warning lights */}
+      <pointLight position={[-30, 2, -5]} color="#ff2200" intensity={1} distance={6} decay={2} />
+      <pointLight position={[30, 2, -8]} color="#ff2200" intensity={1} distance={6} decay={2} />
+      <pointLight position={[-30, 2, -40]} color="#ff2200" intensity={1} distance={6} decay={2} />
+      <pointLight position={[30, 2, -42]} color="#ff2200" intensity={1} distance={6} decay={2} />
+
+      <hemisphereLight args={["#4466aa", "#111122", 0.3]} />
+      <fog attach="fog" args={["#0a0a1a", 15, 60]} />
+    </group>
+  );
+}
+
 export default function House() {
   const { selectedMap } = useGame();
   const map = selectedMap || "suburban";
@@ -945,6 +1171,8 @@ export default function House() {
       {map === "forest" && <ForestMap escapePos={escapePos} />}
       {map === "arctic" && <ArcticMap escapePos={escapePos} />}
       {map === "underground" && <UndergroundMap escapePos={escapePos} />}
+      {map === "volcano" && <VolcanoMap escapePos={escapePos} />}
+      {map === "space_station" && <SpaceStationMap escapePos={escapePos} />}
     </>
   );
 }
