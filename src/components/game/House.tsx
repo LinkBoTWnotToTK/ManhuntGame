@@ -512,7 +512,7 @@ function IndustrialMap({ escapePos }: { escapePos: [number, number, number] }) {
 
       <ambientLight intensity={0.35} color="#ffddaa" />
       <directionalLight position={[25, 30, -10]} intensity={1.2} color="#ffeedd" castShadow
-        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
+        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
         shadow-camera-left={-50} shadow-camera-right={50} shadow-camera-top={45} shadow-camera-bottom={-70} shadow-bias={-0.0003} />
       
       <Lamppost position={[-22, 0, 2]} />
