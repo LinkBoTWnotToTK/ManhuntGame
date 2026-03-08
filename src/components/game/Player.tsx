@@ -352,10 +352,18 @@ export default function Player() {
     // --- Horizontal movement ---
 
     const dir = new THREE.Vector3();
-    if (keys.current["KeyW"] || keys.current["ArrowUp"]) dir.add(forward);
-    if (keys.current["KeyS"] || keys.current["ArrowDown"]) dir.sub(forward);
-    if (keys.current["KeyA"] || keys.current["ArrowLeft"]) dir.sub(right);
-    if (keys.current["KeyD"] || keys.current["ArrowRight"]) dir.add(right);
+    if (isMobilePlatform) {
+      // Mobile joystick: moveX = left/right, moveY = forward/back (inverted)
+      if (Math.abs(mobileInput.moveX) > 0.1 || Math.abs(mobileInput.moveY) > 0.1) {
+        dir.addScaledVector(forward, -mobileInput.moveY);
+        dir.addScaledVector(right, mobileInput.moveX);
+      }
+    } else {
+      if (keys.current["KeyW"] || keys.current["ArrowUp"]) dir.add(forward);
+      if (keys.current["KeyS"] || keys.current["ArrowDown"]) dir.sub(forward);
+      if (keys.current["KeyA"] || keys.current["ArrowLeft"]) dir.sub(right);
+      if (keys.current["KeyD"] || keys.current["ArrowRight"]) dir.add(right);
+    }
 
     if (dir.lengthSq() > 0 && speed > 0) {
       dir.normalize().multiplyScalar(speed * delta);
