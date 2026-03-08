@@ -636,9 +636,8 @@ function ForestMap({ escapePos }: { escapePos: [number, number, number] }) {
 
       <ambientLight intensity={0.4} color="#eeddcc" />
       <directionalLight position={[35, 25, 10]} intensity={1.3} color="#ffe8c0" castShadow
-        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
+        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
         shadow-camera-left={-55} shadow-camera-right={55} shadow-camera-top={50} shadow-camera-bottom={-75} shadow-bias={-0.0003} />
-      <directionalLight position={[-20, 15, -10]} intensity={0.3} color="#aaddff" />
       <hemisphereLight args={["#87CEEB", "#2a5420", 0.5]} />
       <fog attach="fog" args={["#aabbaa", 18, 80]} />
     </group>
