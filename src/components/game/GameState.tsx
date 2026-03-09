@@ -3,6 +3,9 @@ import { resetSharedState } from "./SharedState";
 import { POWERUPS } from "./ShopData";
 import { autoSave, autoLoad, SaveData, LeaderboardEntry, saveLeaderboard, loadLeaderboard, xpForLevel, prestigeMultiplier } from "./SaveSystem";
 import type { WeaponType } from "./WeaponSystem";
+import { completeCampaignChallenge, type CampaignChallenge } from "./CampaignData";
+import { cloudSave, cloudSaveLeaderboard, getCloudSaveCode } from "./CloudSave";
+import { loadCampaignProgress } from "./CampaignData";
 
 export type Role = "runner" | "hunter";
 export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station";
