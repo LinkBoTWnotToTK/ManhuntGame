@@ -299,8 +299,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    autoSave({ coins, powerups: ownedPowerups, level, xp, prestige, totalWins, totalGames, equippedSkin, equippedTrail, equippedHat });
+    const saveData: SaveData = { coins, powerups: ownedPowerups, level, xp, prestige, totalWins, totalGames, equippedSkin, equippedTrail, equippedHat };
+    autoSave(saveData);
     ownedRef.current = ownedPowerups;
+    // Cloud save (debounced, fire-and-forget)
+    if (getCloudSaveCode()) {
+      const campaignData = loadCampaignProgress();
+      cloudSave(saveData, campaignData).catch(() => {});
+    }
   }, [coins, ownedPowerups, level, xp, prestige, totalWins, totalGames, equippedSkin, equippedTrail, equippedHat]);
 
   const hasP = (id: string) => ownedPowerups.includes(id);
