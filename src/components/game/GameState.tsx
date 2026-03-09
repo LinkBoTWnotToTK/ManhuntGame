@@ -8,7 +8,7 @@ import { cloudSave, cloudSaveLeaderboard, getCloudSaveCode } from "./CloudSave";
 import { loadCampaignProgress } from "./CampaignData";
 
 export type Role = "runner" | "hunter";
-export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station";
+export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station" | "ruins" | "swamp" | "rooftop";
 export type Difficulty = "easy" | "medium" | "hard";
 export type GameMode = "classic" | "infection" | "koth" | "lms" | "speedrun" | "collector" | "parkour" | "blockhunt" | "ctf" | "survival" | "deathrun";
 
