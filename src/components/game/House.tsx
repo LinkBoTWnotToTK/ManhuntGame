@@ -636,9 +636,42 @@ function SuburbanMap({ escapePos }: { escapePos: [number, number, number] }) {
       <CrateStack position={[10, 0, -50]} />
       <CrateStack position={[-10, 0, -52]} />
 
-      {/* Furniture */}
+      {/* Indoor Furniture */}
       <Sofa position={[-3, 0, 3.5]} rotation={Math.PI} />
       <KitchenCounter position={[4.5, 0, 4.5]} />
+      <Table position={[2, 0, -1.5]} />
+      <Chair position={[1.2, 0, -1.5]} rotation={Math.PI / 2} />
+      <Chair position={[2.8, 0, -1.5]} rotation={-Math.PI / 2} />
+      <Bookshelf position={[-5.5, 0, 2]} rotation={Math.PI / 2} />
+      <Bookshelf position={[-5.5, 0, -1]} rotation={Math.PI / 2} />
+      <FlowerPot position={[-2, 0.75, 4.5]} />
+      <FlowerPot position={[0.5, 0, 4.5]} />
+      <Rug position={[-2.5, 0, 2]} rotation={0.1} color="#5a2828" />
+      <Rug position={[3, 0, -3]} color="#283a5a" />
+      <Painting position={[-2, 1.8, 4.9]} rotation={0} color="#3a5a3a" />
+      <Painting position={[3, 1.8, -4.9]} rotation={Math.PI} color="#5a3a5a" />
+
+      {/* Outdoor Furniture */}
+      <Bench position={[-10, 0, 12]} rotation={0.2} />
+      <Bench position={[12, 0, 15]} rotation={-0.3} />
+      <Bench position={[0, 0, -35]} />
+
+      {/* Bushes */}
+      <Bush position={[-7, 0, 5.5]} scale={0.8} />
+      <Bush position={[7, 0, 5.5]} scale={0.9} />
+      <Bush position={[-13, 0, 12]} scale={1.1} />
+      <Bush position={[15, 0, 14]} scale={0.7} />
+      <Bush position={[-18, 0, -8]} />
+      <Bush position={[20, 0, -12]} scale={1.2} />
+
+      {/* Garden Fences */}
+      <GardenFence position={[-10, 0, 6.5]} length={4} rotation={0} />
+      <GardenFence position={[10, 0, 6.5]} length={4} rotation={0} />
+
+      {/* Street Lights */}
+      <StreetLight position={[-15, 0, 0]} />
+      <StreetLight position={[15, 0, 0]} />
+      <StreetLight position={[0, 0, -30]} />
 
       {/* Trees — more spread */}
       <Tree position={[-12, 0, 8]} scale={1.2} />
