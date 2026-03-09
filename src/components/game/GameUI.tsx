@@ -53,11 +53,37 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     return () => document.removeEventListener("pointerlockchange", onChange);
   }, []);
 
+  // Auto-fullscreen when game starts
   useEffect(() => {
     if (isLocked && !isPlaying && !gameOver && role && selectedMap && menuStep === "ready") {
       startGame();
+      // Request fullscreen when entering game
+      try {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.().catch(() => {});
+        }
+      } catch {}
     }
   }, [isLocked, isPlaying, gameOver, role, selectedMap, menuStep, startGame]);
+
+  // Exit fullscreen when game ends
+  useEffect(() => {
+    if (gameOver && document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, [gameOver]);
+
+  // Mobile: auto-start game on "ready" tap (no pointer lock needed)
+  const handleMobileStart = useCallback(() => {
+    if (isMobile && menuStep === "ready" && !isPlaying && !gameOver && role && selectedMap) {
+      startGame();
+      try {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.().catch(() => {});
+        }
+      } catch {}
+    }
+  }, [isMobile, menuStep, isPlaying, gameOver, role, selectedMap, startGame]);
 
   useEffect(() => {
     if (!role && !selectedMap) { setMenuStep("main"); setActiveCampaignChallenge(null); }
