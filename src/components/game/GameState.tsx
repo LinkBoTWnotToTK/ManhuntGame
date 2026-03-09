@@ -130,6 +130,9 @@ interface GameState {
   startTutorial: () => void;
   advanceTutorial: () => void;
   endTutorial: () => void;
+  // Campaign
+  activeCampaignChallenge: CampaignChallenge | null;
+  setActiveCampaignChallenge: (c: CampaignChallenge | null) => void;
   selectRole: (role: Role) => void;
   selectMap: (map: GameMap) => void;
   setDifficulty: (d: Difficulty) => void;
