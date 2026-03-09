@@ -211,6 +211,7 @@ function GameContent() {
       <ScreenEffects />
       <Tutorial />
       <HatchPrompt />
+      <MobileControls />
       <Canvas
         shadows
         camera={{ fov: 55, near: 0.1, far: 150 }}
