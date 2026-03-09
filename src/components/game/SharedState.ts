@@ -50,6 +50,16 @@ export function addPlatformCollider(pos: [number, number, number], size: [number
 export let disguisedAs: string | null = null;
 export function setDisguise(blockType: string | null) { disguisedAs = blockType; }
 
+// Mobile input state (shared globally for Player.tsx to read)
+export const mobileJoystick = { x: 0, y: 0 };
+export const mobileCameraDelta = { x: 0, y: 0 };
+export const mobileButtons: Record<string, boolean> = {
+  jump: false,
+  shoot: false,
+  sprint: false,
+  disguise: false,
+};
+
 export function resetSharedState() {
   playerPosition.set(0, 0, 4);
   playerY = 0;
