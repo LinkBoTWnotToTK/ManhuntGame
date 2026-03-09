@@ -214,9 +214,9 @@ function GameContent() {
       <MobileControls />
       <Canvas
         shadows
-        camera={{ fov: 55, near: 0.1, far: 150 }}
-        gl={{ antialias: true, toneMapping: 3, toneMappingExposure: 1.4 }}
-        dpr={[1, 1.5]}
+        camera={{ fov: 55, near: 0.1, far: 120 }}
+        gl={{ antialias: false, toneMapping: 3, toneMappingExposure: 1.4, powerPreference: "high-performance" }}
+        dpr={[1, 1.2]}
       >
         <GameScene />
       </Canvas>

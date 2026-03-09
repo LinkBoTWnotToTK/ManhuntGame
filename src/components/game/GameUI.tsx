@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useGame, Role, GameMap, Difficulty, GameMode, DIFFICULTY_SETTINGS, GAME_MODES } from "./GameState";
 import Shop from "./Shop";
 import { xpForLevel, prestigeMultiplier } from "./SaveSystem";
@@ -46,6 +47,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   const [campaignProgress, setCampaignProgress] = useState(loadCampaignProgress());
   const [transitioning, setTransitioning] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const onChange = () => setIsLocked(!!document.pointerLockElement);
@@ -53,11 +55,37 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     return () => document.removeEventListener("pointerlockchange", onChange);
   }, []);
 
+  // Auto-fullscreen when game starts
   useEffect(() => {
     if (isLocked && !isPlaying && !gameOver && role && selectedMap && menuStep === "ready") {
       startGame();
+      // Request fullscreen when entering game
+      try {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.().catch(() => {});
+        }
+      } catch {}
     }
   }, [isLocked, isPlaying, gameOver, role, selectedMap, menuStep, startGame]);
+
+  // Exit fullscreen when game ends
+  useEffect(() => {
+    if (gameOver && document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, [gameOver]);
+
+  // Mobile: auto-start game on "ready" tap (no pointer lock needed)
+  const handleMobileStart = useCallback(() => {
+    if (isMobile && menuStep === "ready" && !isPlaying && !gameOver && role && selectedMap) {
+      startGame();
+      try {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.().catch(() => {});
+        }
+      } catch {}
+    }
+  }, [isMobile, menuStep, isPlaying, gameOver, role, selectedMap, startGame]);
 
   useEffect(() => {
     if (!role && !selectedMap) { setMenuStep("main"); setActiveCampaignChallenge(null); }
@@ -691,8 +719,14 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                     {gameMode === "deathrun" && "Navigate deadly narrow platforms to reach all 5 checkpoints! Don't fall!"}
                   </p>
                 </div>
-                <div className="cursor-pointer group" onClick={() => document.body.requestPointerLock()}>
-                  <p className="text-white/80 text-lg font-bold group-hover:text-white transition-colors">🎮 Click to Start</p>
+                <div className="cursor-pointer group" onClick={() => {
+                  if (isMobile) {
+                    handleMobileStart();
+                  } else {
+                    document.body.requestPointerLock();
+                  }
+                }}>
+                  <p className="text-white/80 text-lg font-bold group-hover:text-white transition-colors">🎮 {isMobile ? "Tap to Start" : "Click to Start"}</p>
                 </div>
                 <div className="flex gap-3 justify-center text-white/30 text-[10px] flex-wrap">
                   <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">WASD</kbd> Move</span>
