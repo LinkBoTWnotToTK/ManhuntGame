@@ -6,9 +6,23 @@ import { createTexturedMaterials } from "./Textures";
 import { platformColliders, addPlatformCollider } from "./SharedState";
 
 let _mats: ReturnType<typeof createTexturedMaterials> | null = null;
+let _matsMap: string | null = null;
+
 function getMats() {
   if (!_mats) _mats = createTexturedMaterials();
   return _mats;
+}
+
+// Dispose cached materials when switching maps to free GPU memory
+export function disposeMats() {
+  if (_mats) {
+    Object.values(_mats).forEach(mat => {
+      if (mat.map) mat.map.dispose();
+      mat.dispose();
+    });
+    _mats = null;
+    _matsMap = null;
+  }
 }
 
 export const wallColliders: { min: THREE.Vector3; max: THREE.Vector3 }[] = [];
