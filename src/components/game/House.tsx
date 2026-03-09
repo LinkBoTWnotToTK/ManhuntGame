@@ -314,6 +314,200 @@ function KitchenCounter({ position, rotation = 0 }: { position: [number, number,
   );
 }
 
+// ===== NEW DECORATIVE PROPS =====
+
+function Table({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
+  const mats = getMats();
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      {/* Tabletop */}
+      <mesh position={[0, 0.75, 0]} material={mats.darkWood} castShadow receiveShadow>
+        <boxGeometry args={[1.4, 0.06, 0.8]} />
+      </mesh>
+      {/* Legs */}
+      {[[-0.6, 0, -0.3], [0.6, 0, -0.3], [-0.6, 0, 0.3], [0.6, 0, 0.3]].map((p, i) => (
+        <mesh key={i} position={[p[0], 0.36, p[2]]} material={mats.darkWood} castShadow>
+          <boxGeometry args={[0.06, 0.72, 0.06]} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function Chair({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
+  const mats = getMats();
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      <mesh position={[0, 0.45, 0]} material={mats.darkWood} castShadow receiveShadow>
+        <boxGeometry args={[0.45, 0.04, 0.45]} />
+      </mesh>
+      <mesh position={[0, 0.7, -0.2]} material={mats.darkWood} castShadow>
+        <boxGeometry args={[0.45, 0.55, 0.04]} />
+      </mesh>
+      {[[-0.18, 0, -0.18], [0.18, 0, -0.18], [-0.18, 0, 0.18], [0.18, 0, 0.18]].map((p, i) => (
+        <mesh key={i} position={[p[0], 0.22, p[2]]} material={mats.darkWood} castShadow>
+          <boxGeometry args={[0.04, 0.44, 0.04]} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function Bookshelf({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
+  const mats = getMats();
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      {/* Frame */}
+      <mesh position={[0, 1, 0]} material={mats.darkWood} castShadow receiveShadow>
+        <boxGeometry args={[1.2, 2, 0.35]} />
+      </mesh>
+      {/* Shelves */}
+      {[0.4, 0.9, 1.4].map((y, i) => (
+        <mesh key={i} position={[0, y, 0.02]} castShadow>
+          <boxGeometry args={[1.1, 0.04, 0.3]} />
+          <meshStandardMaterial color="#3a2510" roughness={0.7} />
+        </mesh>
+      ))}
+      {/* Books */}
+      {[
+        { x: -0.3, y: 0.55, color: "#8b2020" },
+        { x: -0.1, y: 0.55, color: "#2a4a8b" },
+        { x: 0.1, y: 0.55, color: "#2a7a2a" },
+        { x: -0.2, y: 1.05, color: "#6a3a8b" },
+        { x: 0.15, y: 1.05, color: "#8b6a20" },
+        { x: -0.25, y: 1.55, color: "#3a6a6a" },
+        { x: 0.0, y: 1.55, color: "#8b4a20" },
+      ].map((b, i) => (
+        <mesh key={i} position={[b.x, b.y, 0.02]} castShadow>
+          <boxGeometry args={[0.12, 0.25, 0.2]} />
+          <meshStandardMaterial color={b.color} roughness={0.85} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function FlowerPot({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh position={[0, 0.2, 0]} castShadow>
+        <cylinderGeometry args={[0.18, 0.14, 0.4, 10]} />
+        <meshStandardMaterial color="#b86b3a" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 0.45, 0]} castShadow>
+        <sphereGeometry args={[0.25, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#2a6a1a" roughness={0.85} />
+      </mesh>
+      <mesh position={[0, 0.55, 0]}>
+        <sphereGeometry args={[0.08, 6, 6]} />
+        <meshStandardMaterial color="#ff4488" roughness={0.7} emissive="#ff2266" emissiveIntensity={0.3} />
+      </mesh>
+    </group>
+  );
+}
+
+function Bench({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      <mesh position={[0, 0.4, 0]} castShadow receiveShadow>
+        <boxGeometry args={[1.8, 0.08, 0.5]} />
+        <meshStandardMaterial color="#6a4a20" roughness={0.8} />
+      </mesh>
+      <mesh position={[0, 0.65, -0.22]} castShadow>
+        <boxGeometry args={[1.8, 0.5, 0.06]} />
+        <meshStandardMaterial color="#6a4a20" roughness={0.8} />
+      </mesh>
+      {[[-0.75, 0], [0.75, 0]].map(([x], i) => (
+        <mesh key={i} position={[x, 0.2, 0]} castShadow>
+          <boxGeometry args={[0.06, 0.4, 0.4]} />
+          <meshStandardMaterial color="#444" metalness={0.7} roughness={0.3} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function Rug({ position, rotation = 0, color = "#6a2020" }: { position: [number, number, number]; rotation?: number; color?: string }) {
+  return (
+    <mesh position={[position[0], 0.01, position[2]]} rotation={[-Math.PI / 2, 0, rotation]} receiveShadow>
+      <planeGeometry args={[2.5, 1.8]} />
+      <meshStandardMaterial color={color} roughness={0.95} />
+    </mesh>
+  );
+}
+
+function Painting({ position, rotation = 0, color = "#2a4a8b" }: { position: [number, number, number]; rotation?: number; color?: string }) {
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      <mesh castShadow>
+        <boxGeometry args={[0.8, 0.6, 0.04]} />
+        <meshStandardMaterial color="#3a2510" roughness={0.7} />
+      </mesh>
+      <mesh position={[0, 0, 0.025]}>
+        <planeGeometry args={[0.65, 0.45]} />
+        <meshStandardMaterial color={color} roughness={0.6} />
+      </mesh>
+    </group>
+  );
+}
+
+function StreetLight({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh position={[0, 2.5, 0]} castShadow>
+        <cylinderGeometry args={[0.04, 0.06, 5, 6]} />
+        <meshStandardMaterial color="#333" metalness={0.9} roughness={0.2} />
+      </mesh>
+      <mesh position={[0.6, 4.8, 0]} castShadow>
+        <boxGeometry args={[1.2, 0.04, 0.04]} />
+        <meshStandardMaterial color="#333" metalness={0.9} roughness={0.2} />
+      </mesh>
+      <mesh position={[1.1, 4.6, 0]}>
+        <boxGeometry args={[0.3, 0.15, 0.2]} />
+        <meshStandardMaterial color="#ffffcc" emissive="#ffeeaa" emissiveIntensity={3} />
+      </mesh>
+      <pointLight position={[1.1, 4.5, 0]} color="#ffeedd" intensity={4} distance={18} decay={2} castShadow />
+    </group>
+  );
+}
+
+function Bush({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  return (
+    <group position={position} scale={scale}>
+      <mesh position={[0, 0.35, 0]} castShadow receiveShadow>
+        <sphereGeometry args={[0.5, 8, 6]} />
+        <meshStandardMaterial color="#1a4a15" roughness={0.95} />
+      </mesh>
+      <mesh position={[0.3, 0.25, 0.2]} castShadow>
+        <sphereGeometry args={[0.35, 8, 6]} />
+        <meshStandardMaterial color="#1e5518" roughness={0.95} />
+      </mesh>
+      <mesh position={[-0.25, 0.2, -0.15]} castShadow>
+        <sphereGeometry args={[0.3, 8, 6]} />
+        <meshStandardMaterial color="#225a1a" roughness={0.95} />
+      </mesh>
+    </group>
+  );
+}
+
+function GardenFence({ position, length = 6, rotation = 0 }: { position: [number, number, number]; length?: number; rotation?: number }) {
+  const mats = getMats();
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      <mesh position={[0, 0.4, 0]} material={mats.fence} castShadow receiveShadow>
+        <boxGeometry args={[length, 0.8, 0.08]} />
+      </mesh>
+      {/* Posts */}
+      {Array.from({ length: Math.ceil(length / 1.5) + 1 }).map((_, i) => (
+        <mesh key={i} position={[-length / 2 + i * 1.5, 0.35, 0]} castShadow>
+          <boxGeometry args={[0.08, 0.9, 0.08]} />
+          <meshStandardMaterial color="#5a4a20" roughness={0.8} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 // ===== ESCAPE ZONE =====
 function EscapeZone({ escapePos }: { escapePos: [number, number, number] }) {
   const { escapeOpen } = useGame();
@@ -442,9 +636,42 @@ function SuburbanMap({ escapePos }: { escapePos: [number, number, number] }) {
       <CrateStack position={[10, 0, -50]} />
       <CrateStack position={[-10, 0, -52]} />
 
-      {/* Furniture */}
+      {/* Indoor Furniture */}
       <Sofa position={[-3, 0, 3.5]} rotation={Math.PI} />
       <KitchenCounter position={[4.5, 0, 4.5]} />
+      <Table position={[2, 0, -1.5]} />
+      <Chair position={[1.2, 0, -1.5]} rotation={Math.PI / 2} />
+      <Chair position={[2.8, 0, -1.5]} rotation={-Math.PI / 2} />
+      <Bookshelf position={[-5.5, 0, 2]} rotation={Math.PI / 2} />
+      <Bookshelf position={[-5.5, 0, -1]} rotation={Math.PI / 2} />
+      <FlowerPot position={[-2, 0.75, 4.5]} />
+      <FlowerPot position={[0.5, 0, 4.5]} />
+      <Rug position={[-2.5, 0, 2]} rotation={0.1} color="#5a2828" />
+      <Rug position={[3, 0, -3]} color="#283a5a" />
+      <Painting position={[-2, 1.8, 4.9]} rotation={0} color="#3a5a3a" />
+      <Painting position={[3, 1.8, -4.9]} rotation={Math.PI} color="#5a3a5a" />
+
+      {/* Outdoor Furniture */}
+      <Bench position={[-10, 0, 12]} rotation={0.2} />
+      <Bench position={[12, 0, 15]} rotation={-0.3} />
+      <Bench position={[0, 0, -35]} />
+
+      {/* Bushes */}
+      <Bush position={[-7, 0, 5.5]} scale={0.8} />
+      <Bush position={[7, 0, 5.5]} scale={0.9} />
+      <Bush position={[-13, 0, 12]} scale={1.1} />
+      <Bush position={[15, 0, 14]} scale={0.7} />
+      <Bush position={[-18, 0, -8]} />
+      <Bush position={[20, 0, -12]} scale={1.2} />
+
+      {/* Garden Fences */}
+      <GardenFence position={[-10, 0, 6.5]} length={4} rotation={0} />
+      <GardenFence position={[10, 0, 6.5]} length={4} rotation={0} />
+
+      {/* Street Lights */}
+      <StreetLight position={[-15, 0, 0]} />
+      <StreetLight position={[15, 0, 0]} />
+      <StreetLight position={[0, 0, -30]} />
 
       {/* Trees — more spread */}
       <Tree position={[-12, 0, 8]} scale={1.2} />

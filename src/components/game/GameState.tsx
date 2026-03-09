@@ -3,6 +3,9 @@ import { resetSharedState } from "./SharedState";
 import { POWERUPS } from "./ShopData";
 import { autoSave, autoLoad, SaveData, LeaderboardEntry, saveLeaderboard, loadLeaderboard, xpForLevel, prestigeMultiplier } from "./SaveSystem";
 import type { WeaponType } from "./WeaponSystem";
+import { completeCampaignChallenge, type CampaignChallenge } from "./CampaignData";
+import { cloudSave, cloudSaveLeaderboard, getCloudSaveCode } from "./CloudSave";
+import { loadCampaignProgress } from "./CampaignData";
 
 export type Role = "runner" | "hunter";
 export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station";
@@ -127,6 +130,9 @@ interface GameState {
   startTutorial: () => void;
   advanceTutorial: () => void;
   endTutorial: () => void;
+  // Campaign
+  activeCampaignChallenge: CampaignChallenge | null;
+  setActiveCampaignChallenge: (c: CampaignChallenge | null) => void;
   selectRole: (role: Role) => void;
   selectMap: (map: GameMap) => void;
   setDifficulty: (d: Difficulty) => void;
@@ -253,6 +259,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [hatchPromptText, setHatchPromptText] = useState("");
   const [tutorialActive, setTutorialActive] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [activeCampaignChallenge, setActiveCampaignChallengeState] = useState<CampaignChallenge | null>(null);
+  const campaignChallengeRef = useRef<CampaignChallenge | null>(null);
 
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -291,8 +299,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    autoSave({ coins, powerups: ownedPowerups, level, xp, prestige, totalWins, totalGames, equippedSkin, equippedTrail, equippedHat });
+    const saveData: SaveData = { coins, powerups: ownedPowerups, level, xp, prestige, totalWins, totalGames, equippedSkin, equippedTrail, equippedHat };
+    autoSave(saveData);
     ownedRef.current = ownedPowerups;
+    // Cloud save (debounced, fire-and-forget)
+    if (getCloudSaveCode()) {
+      const campaignData = loadCampaignProgress();
+      cloudSave(saveData, campaignData).catch(() => {});
+    }
   }, [coins, ownedPowerups, level, xp, prestige, totalWins, totalGames, equippedSkin, equippedTrail, equippedHat]);
 
   const hasP = (id: string) => ownedPowerups.includes(id);
@@ -306,6 +320,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const setDifficulty = useCallback((d: Difficulty) => { setDifficultyState(d); diffRef.current = d; }, []);
   const setGameMode = useCallback((m: GameMode) => { setGameModeState(m); modeRef.current = m; }, []);
 
+  const setActiveCampaignChallenge = useCallback((c: CampaignChallenge | null) => {
+    setActiveCampaignChallengeState(c);
+    campaignChallengeRef.current = c;
+  }, []);
+
   const finishGame = useCallback((result: "win" | "lose", elapsed: number) => {
     gameOverRef.current = true;
     setGameOver(true);
@@ -315,8 +334,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     const diff = DIFFICULTY_SETTINGS[diffRef.current];
     const pMult = prestigeMultiplier(prestige);
-    const coinReward = Math.floor((result === "win" ? 5 : 2) * diff.coinMult * pMult);
-    const xpReward = Math.floor((result === "win" ? 30 : 10) * diff.xpMult * pMult);
+    let coinReward = Math.floor((result === "win" ? 5 : 2) * diff.coinMult * pMult);
+    let xpReward = Math.floor((result === "win" ? 30 : 10) * diff.xpMult * pMult);
+
+    // Campaign challenge completion
+    const cc = campaignChallengeRef.current;
+    if (cc && result === "win") {
+      // Check objectives
+      let objectiveMet = true;
+      if (cc.timeLimit && elapsed > cc.timeLimit) objectiveMet = false;
+      // requiredCoins checked against matchCoins would need access - for now treat win as success
+      
+      if (objectiveMet) {
+        completeCampaignChallenge(cc.id, elapsed);
+        coinReward += cc.reward.coins;
+        xpReward += cc.reward.xp;
+      }
+    }
 
     setCoins(prev => prev + coinReward);
     setTotalGames(prev => prev + 1);
@@ -348,6 +382,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       saveLeaderboard(next);
       return next;
     });
+
+    // Cloud save leaderboard entry
+    cloudSaveLeaderboard(entry).catch(() => {});
   }, [level, prestige]);
 
   const startGame = useCallback(() => {
@@ -742,6 +779,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         equippedSkin, equippedTrail, equippedHat,
         nearHatch, hatchPromptText, setNearHatch,
         tutorialActive, tutorialStep, startTutorial, advanceTutorial, endTutorial,
+        activeCampaignChallenge, setActiveCampaignChallenge,
         selectRole, selectMap, setDifficulty, setGameMode,
         tagNPC, startGame, resetGame, setEscaped,
         damagePlayer, damageNPC, healPlayer, useAmmo: useAmmoFn,

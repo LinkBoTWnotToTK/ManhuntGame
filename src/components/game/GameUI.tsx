@@ -38,7 +38,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     level, xp, prestige, totalWins, totalGames, leaderboard,
     kothScore, checkpointIndex, survivalWave, flagCarried, isDisguised,
     selectRole, selectMap, setDifficulty, setGameMode, startGame, resetGame,
-    startTutorial,
+    startTutorial, setActiveCampaignChallenge,
   } = useGame();
 
   const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter">("main");
@@ -60,8 +60,15 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   }, [isLocked, isPlaying, gameOver, role, selectedMap, menuStep, startGame]);
 
   useEffect(() => {
-    if (!role && !selectedMap) setMenuStep("main");
-  }, [role, selectedMap]);
+    if (!role && !selectedMap) { setMenuStep("main"); setActiveCampaignChallenge(null); }
+  }, [role, selectedMap, setActiveCampaignChallenge]);
+
+  // Refresh campaign progress when game ends
+  useEffect(() => {
+    if (gameOver) {
+      setCampaignProgress(loadCampaignProgress());
+    }
+  }, [gameOver]);
 
   const transition = (next: typeof menuStep, cb?: () => void) => {
     setTransitioning(true);
@@ -594,6 +601,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                           {unlocked && !done && (
                             <button
                               onClick={() => {
+                                setActiveCampaignChallenge(challenge);
                                 selectRole(challenge.role as Role);
                                 setGameMode(challenge.mode);
                                 setDifficulty(challenge.difficulty);
@@ -608,6 +616,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                           {unlocked && done && (
                             <button
                               onClick={() => {
+                                setActiveCampaignChallenge(challenge);
                                 selectRole(challenge.role as Role);
                                 setGameMode(challenge.mode);
                                 setDifficulty(challenge.difficulty);
