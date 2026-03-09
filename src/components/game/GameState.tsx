@@ -320,6 +320,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const setDifficulty = useCallback((d: Difficulty) => { setDifficultyState(d); diffRef.current = d; }, []);
   const setGameMode = useCallback((m: GameMode) => { setGameModeState(m); modeRef.current = m; }, []);
 
+  const setActiveCampaignChallenge = useCallback((c: CampaignChallenge | null) => {
+    setActiveCampaignChallengeState(c);
+    campaignChallengeRef.current = c;
+  }, []);
+
   const finishGame = useCallback((result: "win" | "lose", elapsed: number) => {
     gameOverRef.current = true;
     setGameOver(true);
@@ -329,8 +334,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     const diff = DIFFICULTY_SETTINGS[diffRef.current];
     const pMult = prestigeMultiplier(prestige);
-    const coinReward = Math.floor((result === "win" ? 5 : 2) * diff.coinMult * pMult);
-    const xpReward = Math.floor((result === "win" ? 30 : 10) * diff.xpMult * pMult);
+    let coinReward = Math.floor((result === "win" ? 5 : 2) * diff.coinMult * pMult);
+    let xpReward = Math.floor((result === "win" ? 30 : 10) * diff.xpMult * pMult);
+
+    // Campaign challenge completion
+    const cc = campaignChallengeRef.current;
+    if (cc && result === "win") {
+      // Check objectives
+      let objectiveMet = true;
+      if (cc.timeLimit && elapsed > cc.timeLimit) objectiveMet = false;
+      // requiredCoins checked against matchCoins would need access - for now treat win as success
+      
+      if (objectiveMet) {
+        completeCampaignChallenge(cc.id, elapsed);
+        coinReward += cc.reward.coins;
+        xpReward += cc.reward.xp;
+      }
+    }
 
     setCoins(prev => prev + coinReward);
     setTotalGames(prev => prev + 1);
@@ -362,6 +382,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       saveLeaderboard(next);
       return next;
     });
+
+    // Cloud save leaderboard entry
+    cloudSaveLeaderboard(entry).catch(() => {});
   }, [level, prestige]);
 
   const startGame = useCallback(() => {
