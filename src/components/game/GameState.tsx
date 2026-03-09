@@ -8,7 +8,7 @@ import { cloudSave, cloudSaveLeaderboard, getCloudSaveCode } from "./CloudSave";
 import { loadCampaignProgress } from "./CampaignData";
 
 export type Role = "runner" | "hunter";
-export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station";
+export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station" | "ruins" | "swamp" | "rooftop";
 export type Difficulty = "easy" | "medium" | "hard";
 export type GameMode = "classic" | "infection" | "koth" | "lms" | "speedrun" | "collector" | "parkour" | "blockhunt" | "ctf" | "survival" | "deathrun";
 
@@ -25,6 +25,9 @@ export const MAP_BOUNDS: Record<GameMap, MapBounds> = {
   underground:    { minX: -34.5, maxX: 34.5, minZ: -59.5, maxZ: 24.5 },
   volcano:        { minX: -39.5, maxX: 39.5, minZ: -64.5, maxZ: 29.5 },
   space_station:  { minX: -34.5, maxX: 34.5, minZ: -54.5, maxZ: 24.5 },
+  ruins:          { minX: -39.5, maxX: 39.5, minZ: -64.5, maxZ: 29.5 },
+  swamp:          { minX: -39.5, maxX: 39.5, minZ: -64.5, maxZ: 29.5 },
+  rooftop:        { minX: -34.5, maxX: 34.5, minZ: -54.5, maxZ: 24.5 },
 };
 
 export const ESCAPE_POSITIONS: Record<GameMap, [number, number, number]> = {
@@ -35,6 +38,9 @@ export const ESCAPE_POSITIONS: Record<GameMap, [number, number, number]> = {
   underground:    [0, 0, -54],
   volcano:        [0, 0, -59],
   space_station:  [0, 0, -49],
+  ruins:          [0, 0, -59],
+  swamp:          [0, 0, -59],
+  rooftop:        [0, 0, -49],
 };
 
 export const DIFFICULTY_SETTINGS: Record<Difficulty, {
