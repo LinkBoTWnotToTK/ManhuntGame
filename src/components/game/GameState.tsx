@@ -38,6 +38,9 @@ export const ESCAPE_POSITIONS: Record<GameMap, [number, number, number]> = {
   underground:    [0, 0, -54],
   volcano:        [0, 0, -59],
   space_station:  [0, 0, -49],
+  ruins:          [0, 0, -59],
+  swamp:          [0, 0, -59],
+  rooftop:        [0, 0, -49],
 };
 
 export const DIFFICULTY_SETTINGS: Record<Difficulty, {
