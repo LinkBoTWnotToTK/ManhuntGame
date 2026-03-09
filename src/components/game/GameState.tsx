@@ -201,13 +201,13 @@ function spawnCheckpoints(bounds: MapBounds): [number, number, number][] {
 }
 
 function spawnParkourCheckpoints(): [number, number, number][] {
-  // Parkour checkpoints on elevated platforms
+  // Parkour checkpoints on elevated platforms — aligned with ParkourPlatforms in House.tsx
   return [
-    [5, 3, -10],
-    [-8, 5, -20],
-    [10, 7, -30],
-    [-5, 9, -40],
-    [0, 11, -50],
+    [0, 1.5, -8],       // Stage 1: starting platform
+    [-4, 3.2, -17],     // Stage 2: zigzag mid
+    [0, 5, -26],        // Stage 3: bridge
+    [5, 8.5, -38],      // Stage 5: floating island
+    [0, 11, -52],       // Stage 6: finish platform
   ];
 }
 
