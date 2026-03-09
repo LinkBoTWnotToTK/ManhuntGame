@@ -1423,51 +1423,86 @@ function ParkourPlatforms() {
 
   return (
     <group>
-      {/* Starting area platforms */}
-      <Platform position={[3, 1.5, -5]} size={[4, 0.3, 4]} color="#44aa66" emissive="#22ff44" />
-      <Platform position={[-4, 3, -10]} size={[3, 0.3, 3]} color="#4488aa" emissive="#22aaff" />
-      <Platform position={[5, 3, -10]} size={[3, 0.3, 3]} color="#4488aa" emissive="#22aaff" />
-      
-      {/* Mid-section elevated bridges */}
-      <Platform position={[0, 5, -18]} size={[5, 0.3, 2]} color="#8844aa" emissive="#aa44ff" />
-      <Platform position={[-8, 5, -20]} size={[3, 0.3, 3]} color="#8844aa" emissive="#aa44ff" />
-      <Platform position={[8, 5, -22]} size={[3, 0.3, 3]} color="#8844aa" emissive="#aa44ff" />
-      
-      {/* Stepping stones */}
-      <Platform position={[-3, 6.5, -26]} size={[2, 0.3, 2]} color="#aa6644" emissive="#ff8844" />
-      <Platform position={[3, 7, -28]} size={[2, 0.3, 2]} color="#aa6644" emissive="#ff8844" />
-      <Platform position={[-2, 7.5, -32]} size={[2, 0.3, 2]} color="#aa6644" emissive="#ff8844" />
-      
-      {/* High section */}
-      <Platform position={[10, 7, -30]} size={[4, 0.3, 4]} color="#44aa88" emissive="#22ffaa" />
-      <Platform position={[0, 8, -36]} size={[6, 0.3, 3]} color="#aa4466" emissive="#ff4488" />
-      <Platform position={[-5, 9, -40]} size={[4, 0.3, 4]} color="#44aaaa" emissive="#22ffff" />
-      
-      {/* Final approach */}
-      <Platform position={[3, 10, -44]} size={[3, 0.3, 3]} color="#aaaa44" emissive="#ffff22" />
-      <Platform position={[0, 11, -50]} size={[5, 0.3, 5]} color="#ffcc00" emissive="#ffdd44" />
-      
-      {/* Ramps */}
-      <group position={[0, 0.75, -3]} rotation={[-0.3, 0, 0]}>
+      {/* === STAGE 1: Ground-level starter ramp === */}
+      <group position={[0, 0.75, -3]} rotation={[-0.25, 0, 0]}>
         <mesh castShadow receiveShadow>
-          <boxGeometry args={[3, 0.2, 5]} />
+          <boxGeometry args={[4, 0.25, 6]} />
           <meshStandardMaterial color="#667788" roughness={0.4} metalness={0.5} />
         </mesh>
       </group>
-      
-      {/* Deathrun specific: narrow beams */}
+
+      {/* Wide starting platform */}
+      <Platform position={[0, 1.5, -8]} size={[6, 0.4, 5]} color="#44aa66" emissive="#22ff44" />
+
+      {/* === STAGE 2: Zigzag stepping stones (easy jumps) === */}
+      <Platform position={[5, 2.5, -13]} size={[3.5, 0.35, 3.5]} color="#3399aa" emissive="#22bbff" />
+      <Platform position={[-4, 3.2, -17]} size={[3.5, 0.35, 3.5]} color="#3399aa" emissive="#22bbff" />
+      <Platform position={[3, 4, -21]} size={[3, 0.35, 3]} color="#4488aa" emissive="#22aaff" />
+
+      {/* === STAGE 3: Bridge section with pillars === */}
+      <Platform position={[0, 5, -26]} size={[8, 0.35, 2.5]} color="#8844aa" emissive="#aa44ff" />
+      {/* Support pillars (visual only, wall colliders added by Platform) */}
+      <mesh position={[-3, 2.5, -26]} castShadow>
+        <cylinderGeometry args={[0.25, 0.3, 5, 8]} />
+        <meshStandardMaterial color="#555566" metalness={0.6} roughness={0.3} />
+      </mesh>
+      <mesh position={[3, 2.5, -26]} castShadow>
+        <cylinderGeometry args={[0.25, 0.3, 5, 8]} />
+        <meshStandardMaterial color="#555566" metalness={0.6} roughness={0.3} />
+      </mesh>
+
+      {/* === STAGE 4: Ascending staircase platforms === */}
+      <Platform position={[-6, 5.8, -30]} size={[3, 0.3, 3]} color="#aa6644" emissive="#ff8844" />
+      <Platform position={[-2, 6.5, -33]} size={[2.5, 0.3, 2.5]} color="#aa6644" emissive="#ff8844" />
+      <Platform position={[3, 7.2, -35]} size={[3, 0.3, 3]} color="#aa7744" emissive="#ffaa44" />
+      <Platform position={[8, 7.8, -33]} size={[3, 0.3, 3]} color="#aa7744" emissive="#ffaa44" />
+
+      {/* === STAGE 5: Floating island cluster === */}
+      <Platform position={[5, 8.5, -38]} size={[4, 0.4, 4]} color="#44aa88" emissive="#22ffaa" />
+      <Platform position={[-2, 9, -41]} size={[3, 0.3, 3]} color="#44aaaa" emissive="#22ffff" />
+      <Platform position={[0, 9.5, -45]} size={[3.5, 0.3, 3.5]} color="#4488cc" emissive="#44aaff" />
+
+      {/* === STAGE 6: Final approach — wide safe landing === */}
+      <Platform position={[-4, 10.2, -48]} size={[3, 0.3, 3]} color="#aaaa44" emissive="#ffff22" />
+      <Platform position={[0, 11, -52]} size={[7, 0.5, 7]} color="#ffcc00" emissive="#ffdd44" />
+
+      {/* Bounce pad markers (visual indicators) */}
+      <mesh position={[5, 2.7, -13]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.3, 0.8, 6]} />
+        <meshStandardMaterial color="#00ff88" emissive="#00ff88" emissiveIntensity={1.5} transparent opacity={0.6} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[0, 11.3, -52]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1, 2, 8]} />
+        <meshStandardMaterial color="#ffdd44" emissive="#ffdd44" emissiveIntensity={2} transparent opacity={0.4} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Guard rails on bridge */}
+      <mesh position={[-4, 5.6, -26]} castShadow>
+        <boxGeometry args={[0.1, 0.8, 2.5]} />
+        <meshStandardMaterial color="#666688" metalness={0.7} roughness={0.3} />
+      </mesh>
+      <mesh position={[4, 5.6, -26]} castShadow>
+        <boxGeometry args={[0.1, 0.8, 2.5]} />
+        <meshStandardMaterial color="#666688" metalness={0.7} roughness={0.3} />
+      </mesh>
+
+      {/* Deathrun specific: narrow beams and tighter platforms */}
       {gameMode === "deathrun" && (
         <>
-          <Platform position={[0, 4, -14]} size={[1, 0.2, 6]} color="#ff4444" emissive="#ff2222" />
-          <Platform position={[-5, 6, -24]} size={[1, 0.2, 4]} color="#ff4444" emissive="#ff2222" />
-          <Platform position={[5, 8, -38]} size={[1, 0.2, 4]} color="#ff4444" emissive="#ff2222" />
+          <Platform position={[0, 4.2, -15]} size={[1.2, 0.2, 5]} color="#ff4444" emissive="#ff2222" />
+          <Platform position={[-5, 6.2, -29]} size={[1, 0.2, 4]} color="#ff4444" emissive="#ff2222" />
+          <Platform position={[5, 8.2, -40]} size={[1, 0.2, 4]} color="#ff4444" emissive="#ff2222" />
+          {/* Fake platforms (very small, tricky) */}
+          <Platform position={[6, 7, -36]} size={[1.5, 0.15, 1.5]} color="#ff6666" emissive="#ff3333" />
+          <Platform position={[-3, 8.5, -43]} size={[1.5, 0.15, 1.5]} color="#ff6666" emissive="#ff3333" />
         </>
       )}
 
-      {/* Platform edge glow lights */}
-      <pointLight position={[0, 6, -18]} color="#aa44ff" intensity={2} distance={8} />
-      <pointLight position={[0, 9, -36]} color="#ff4488" intensity={2} distance={8} />
-      <pointLight position={[0, 12, -50]} color="#ffdd44" intensity={3} distance={10} />
+      {/* Ambient glow lights along the course */}
+      <pointLight position={[0, 3, -8]} color="#22ff44" intensity={1.5} distance={8} />
+      <pointLight position={[0, 6, -26]} color="#aa44ff" intensity={2} distance={8} />
+      <pointLight position={[5, 10, -38]} color="#22ffaa" intensity={2} distance={8} />
+      <pointLight position={[0, 12, -52]} color="#ffdd44" intensity={3} distance={10} />
     </group>
   );
 }
