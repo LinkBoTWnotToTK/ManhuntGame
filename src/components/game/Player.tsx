@@ -228,16 +228,39 @@ export default function Player() {
     if (weaponCooldownRef.current > 0) weaponCooldownRef.current -= delta;
     if (meleeCooldownRef.current > 0) meleeCooldownRef.current -= delta;
 
+    // --- Mobile input ---
+    // Camera from mobile touch
+    if (mobileCameraDelta.x !== 0 || mobileCameraDelta.y !== 0) {
+      yaw.current -= mobileCameraDelta.x;
+      pitch.current = THREE.MathUtils.clamp(pitch.current - mobileCameraDelta.y, 0.1, 1.0);
+      mobileCameraDelta.x = 0;
+      mobileCameraDelta.y = 0;
+    }
+
+    // Mobile jump
+    if (mobileButtons.jump) {
+      jumpBuffered.current = true;
+      mobileButtons.jump = false;
+    }
+
+    // Mobile shoot
+    if (mobileButtons.shoot && !mobileShootRef.current) {
+      mobileShootRef.current = true;
+      shootRef.current();
+    } else if (!mobileButtons.shoot) {
+      mobileShootRef.current = false;
+    }
+
     const walkSpeed = BASE_WALK_SPEED * speedMultiplier;
     const sprintSpeed = BASE_SPRINT_SPEED * speedMultiplier;
     const staminaDrain = BASE_STAMINA_DRAIN * staminaDrainMultiplier;
 
-    const wantsSprint = keys.current["ShiftLeft"] || keys.current["ShiftRight"];
+    const wantsSprint = keys.current["ShiftLeft"] || keys.current["ShiftRight"] || mobileButtons.sprint;
     const canSprint = stamina > 5;
     const isSprinting = wantsSprint && canSprint;
     if (isSprinting) useStamina(staminaDrain * delta);
     else regenStamina(STAMINA_REGEN * delta);
-    const speed = isDisguised ? 0 : (isSprinting ? sprintSpeed : walkSpeed); // Can't move while disguised
+    const speed = isDisguised ? 0 : (isSprinting ? sprintSpeed : walkSpeed);
 
     // --- Jumping physics with double jump & wall run ---
     const groundH = getGroundHeight(playerPosition.x, playerPosition.z, playerY);
