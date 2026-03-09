@@ -58,13 +58,17 @@ function CrateStack({ position }: { position: [number, number, number] }) {
 function Tree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   return (
     <group position={position} scale={scale}>
-      <mesh position={[0, 1.5, 0]}>
-        <cylinderGeometry args={[0.15, 0.2, 3, 6]} />
+      <mesh position={[0, 1.5, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.15, 0.2, 3, 8]} />
         <meshStandardMaterial color="#5a3a1a" roughness={0.9} />
       </mesh>
-      <mesh position={[0, 3.5, 0]}>
-        <coneGeometry args={[1.5, 3, 6]} />
+      <mesh position={[0, 3.5, 0]} castShadow receiveShadow>
+        <coneGeometry args={[1.5, 3, 8]} />
         <meshStandardMaterial color="#1a5a1a" roughness={0.85} />
+      </mesh>
+      <mesh position={[0, 4.8, 0]} castShadow>
+        <coneGeometry args={[1.0, 2, 8]} />
+        <meshStandardMaterial color="#1e6e1e" roughness={0.85} />
       </mesh>
     </group>
   );
@@ -73,21 +77,26 @@ function Tree({ position, scale = 1 }: { position: [number, number, number]; sca
 function SnowTree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   return (
     <group position={position} scale={scale}>
-      <mesh position={[0, 1.5, 0]}>
-        <cylinderGeometry args={[0.15, 0.2, 3, 6]} />
+      <mesh position={[0, 1.5, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.15, 0.2, 3, 8]} />
         <meshStandardMaterial color="#4a3020" roughness={0.9} />
       </mesh>
-      <mesh position={[0, 3.5, 0]}>
-        <coneGeometry args={[1.5, 3, 6]} />
+      <mesh position={[0, 3.5, 0]} castShadow receiveShadow>
+        <coneGeometry args={[1.5, 3, 8]} />
         <meshStandardMaterial color="#1a4a2a" roughness={0.85} />
       </mesh>
-      <mesh position={[0, 5.0, 0]}>
-        <coneGeometry args={[1.0, 2, 6]} />
+      <mesh position={[0, 5.0, 0]} castShadow>
+        <coneGeometry args={[1.0, 2, 8]} />
         <meshStandardMaterial color="#2a5a3a" roughness={0.85} />
       </mesh>
+      {/* Snow caps */}
       <mesh position={[0, 5.9, 0]}>
-        <coneGeometry args={[0.6, 0.5, 6]} />
+        <coneGeometry args={[0.6, 0.5, 8]} />
         <meshStandardMaterial color="#eeeeff" roughness={0.4} />
+      </mesh>
+      <mesh position={[0, 4.5, 0]}>
+        <torusGeometry args={[1.2, 0.08, 4, 12]} />
+        <meshStandardMaterial color="#dde8f0" roughness={0.3} />
       </mesh>
     </group>
   );
@@ -96,24 +105,31 @@ function SnowTree({ position, scale = 1 }: { position: [number, number, number];
 function Lamppost({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
-      <mesh position={[0, 2, 0]}>
-        <cylinderGeometry args={[0.06, 0.08, 4, 6]} />
+      <mesh position={[0, 2, 0]} castShadow>
+        <cylinderGeometry args={[0.06, 0.08, 4, 8]} />
         <meshStandardMaterial color="#555555" metalness={0.8} roughness={0.3} />
       </mesh>
       <mesh position={[0, 4.2, 0]}>
-        <sphereGeometry args={[0.2, 6, 6]} />
-        <meshStandardMaterial color="#ffffcc" emissive="#ffeeaa" emissiveIntensity={3} />
+        <sphereGeometry args={[0.2, 12, 12]} />
+        <meshStandardMaterial color="#ffffcc" emissive="#ffeeaa" emissiveIntensity={2} />
       </mesh>
+      <pointLight position={[0, 4.2, 0]} color="#ffeedd" intensity={3} distance={15} decay={2} castShadow />
     </group>
   );
 }
 
 function Barrel({ position }: { position: [number, number, number] }) {
   return (
-    <mesh position={[position[0], 0.5, position[2]]}>
-      <cylinderGeometry args={[0.35, 0.35, 1, 8]} />
-      <meshStandardMaterial color="#8B4513" roughness={0.8} />
-    </mesh>
+    <group position={position}>
+      <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.35, 0.35, 1, 12]} />
+        <meshStandardMaterial color="#8B4513" roughness={0.8} />
+      </mesh>
+      <mesh position={[0, 0.5, 0]}>
+        <torusGeometry args={[0.36, 0.03, 8, 16]} />
+        <meshStandardMaterial color="#666" metalness={0.9} roughness={0.3} />
+      </mesh>
+    </group>
   );
 }
 
@@ -178,26 +194,53 @@ function Pipe({ position, length = 6 }: { position: [number, number, number]; le
 function VentDuct({ position, rotation = 0, length = 4 }: { position: [number, number, number]; rotation?: number; length?: number }) {
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <mesh position={[0, 0.5, 0]}>
+      <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[1.2, 1, length]} />
         <meshStandardMaterial color="#555" metalness={0.6} roughness={0.4} />
       </mesh>
       {/* Vent grating */}
+      {Array.from({ length: Math.floor(length / 0.8) }).map((_, i) => (
+        <mesh key={i} position={[0, 1.01, -length / 2 + 0.4 + i * 0.8, ]} receiveShadow>
+          <boxGeometry args={[1.0, 0.02, 0.05]} />
+          <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
+        </mesh>
+      ))}
+      {/* Openings */}
+      <mesh position={[0, 0.5, length / 2 + 0.01]}>
+        <planeGeometry args={[1.0, 0.8]} />
+        <meshStandardMaterial color="#111" />
+      </mesh>
+      <mesh position={[0, 0.5, -length / 2 - 0.01]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[1.0, 0.8]} />
+        <meshStandardMaterial color="#111" />
+      </mesh>
     </group>
   );
 }
 
 function Campfire({ position }: { position: [number, number, number] }) {
+  const lightRef = useRef<THREE.PointLight>(null);
+  useFrame(({ clock }) => {
+    if (lightRef.current) {
+      lightRef.current.intensity = 3 + Math.sin(clock.elapsedTime * 8) * 1.5 + Math.sin(clock.elapsedTime * 13) * 0.5;
+    }
+  });
   return (
     <group position={position}>
-      <mesh position={[0, 0.15, 0]}>
-        <cylinderGeometry args={[0.3, 0.35, 0.3, 6]} />
-        <meshStandardMaterial color="#4a2a0a" roughness={0.9} />
-      </mesh>
-      <mesh position={[0, 0.3, 0]}>
-        <sphereGeometry args={[0.15, 6, 6]} />
+      {[0, 1, 2, 3, 4].map(i => {
+        const a = (i / 5) * Math.PI * 2;
+        return (
+          <mesh key={i} position={[Math.cos(a) * 0.3, 0.15, Math.sin(a) * 0.3]} rotation={[Math.random(), Math.random(), Math.random()]} castShadow>
+            <cylinderGeometry args={[0.04, 0.06, 0.5, 6]} />
+            <meshStandardMaterial color="#4a2a0a" roughness={0.9} />
+          </mesh>
+        );
+      })}
+      <mesh position={[0, 0.2, 0]}>
+        <sphereGeometry args={[0.15, 8, 8]} />
         <meshStandardMaterial color="#ff6600" emissive="#ff4400" emissiveIntensity={4} />
       </mesh>
+      <pointLight ref={lightRef} position={[0, 0.5, 0]} color="#ff6622" intensity={4} distance={12} decay={2} castShadow />
     </group>
   );
 }
@@ -216,14 +259,25 @@ function Tent({ position, rotation = 0 }: { position: [number, number, number]; 
 function Igloo({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
-      <mesh position={[0, 1, 0]}>
-        <sphereGeometry args={[1.8, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      <mesh position={[0, 1, 0]} castShadow receiveShadow>
+        <sphereGeometry args={[1.8, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <meshStandardMaterial color="#dde8f0" roughness={0.4} />
       </mesh>
-      <mesh position={[0, 0.5, 1.7]}>
+      {/* Door opening */}
+      <mesh position={[0, 0.5, 1.7]} castShadow>
         <boxGeometry args={[0.8, 1, 0.5]} />
         <meshStandardMaterial color="#bbc8d0" roughness={0.5} />
       </mesh>
+      {/* Snow blocks pattern */}
+      {Array.from({ length: 8 }).map((_, i) => {
+        const angle = (i / 8) * Math.PI * 2;
+        return (
+          <mesh key={i} position={[Math.cos(angle) * 1.82, 0.3, Math.sin(angle) * 1.82]}>
+            <boxGeometry args={[0.3, 0.15, 0.15]} />
+            <meshStandardMaterial color="#c8d8e0" roughness={0.3} />
+          </mesh>
+        );
+      })}
     </group>
   );
 }
@@ -265,23 +319,32 @@ function EscapeZone({ escapePos }: { escapePos: [number, number, number] }) {
   const { escapeOpen } = useGame();
   const mats = getMats();
   const ref = useRef<THREE.Mesh>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
 
   useFrame((state) => {
-    if (!escapeOpen || !ref.current) return;
+    if (!escapeOpen) return;
     const t = state.clock.elapsedTime;
-    ref.current.rotation.y = t * 0.8;
-    ref.current.scale.setScalar(1 + Math.sin(t * 3) * 0.08);
+    if (ref.current) { ref.current.rotation.y = t * 0.8; ref.current.scale.setScalar(1 + Math.sin(t * 3) * 0.08); }
+    if (ringRef.current) ringRef.current.rotation.z = t * 1.5;
   });
 
   return (
     <group position={escapePos}>
-      <mesh position={[0, 1.5, 0]}>
+      <mesh position={[0, 1.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[3.5, 3.5, 0.3]} />
         <meshStandardMaterial color={escapeOpen ? "#003300" : "#330000"} roughness={0.5} />
       </mesh>
       <mesh ref={ref} position={[0, 1.5, 0]} material={escapeOpen ? mats.escapeOpen : mats.escapeClosed}>
         <boxGeometry args={[2.8, 2.8, 0.15]} />
       </mesh>
+      {escapeOpen && (
+        <mesh ref={ringRef} position={[0, 1.5, 0.2]}>
+          <torusGeometry args={[1.6, 0.06, 8, 32]} />
+          <meshStandardMaterial color="#00ff88" emissive="#00ff88" emissiveIntensity={2} />
+        </mesh>
+      )}
+      {escapeOpen && <pointLight position={[0, 2, 2]} color="#00ff44" intensity={5} distance={15} />}
+      <pointLight position={[0, 1.5, 3]} color={escapeOpen ? "#00ff44" : "#ff0000"} intensity={escapeOpen ? 2 : 0.5} distance={8} />
     </group>
   );
 }
@@ -423,8 +486,12 @@ function SuburbanMap({ escapePos }: { escapePos: [number, number, number] }) {
 
       <ambientLight intensity={0.5} color="#c8d8ff" />
       <directionalLight position={[30, 35, -20]} intensity={1.5} color="#fff8e0" castShadow
-        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
+        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
         shadow-camera-left={-45} shadow-camera-right={45} shadow-camera-top={45} shadow-camera-bottom={-65} shadow-bias={-0.0003} />
+      <directionalLight position={[-15, 10, 10]} intensity={0.4} color="#aabbdd" />
+      <pointLight position={[-3, 2.5, 3]} intensity={1.5} color="#ffe0a0" distance={10} decay={2} castShadow />
+      <pointLight position={[3, 2.5, 3]} intensity={1.0} color="#fff0d0" distance={10} decay={2} />
+      <pointLight position={[4, 2.5, -3.5]} intensity={0.7} color="#ffd080" distance={8} decay={2} />
       <hemisphereLight args={["#87CEEB", "#4a7a3a", 0.4]} />
       <fog attach="fog" args={["#c8d8ff", 25, 90]} />
     </group>
@@ -512,7 +579,7 @@ function IndustrialMap({ escapePos }: { escapePos: [number, number, number] }) {
 
       <ambientLight intensity={0.35} color="#ffddaa" />
       <directionalLight position={[25, 30, -10]} intensity={1.2} color="#ffeedd" castShadow
-        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
+        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
         shadow-camera-left={-50} shadow-camera-right={50} shadow-camera-top={45} shadow-camera-bottom={-70} shadow-bias={-0.0003} />
       
       <Lamppost position={[-22, 0, 2]} />
@@ -636,8 +703,9 @@ function ForestMap({ escapePos }: { escapePos: [number, number, number] }) {
 
       <ambientLight intensity={0.4} color="#eeddcc" />
       <directionalLight position={[35, 25, 10]} intensity={1.3} color="#ffe8c0" castShadow
-        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
+        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
         shadow-camera-left={-55} shadow-camera-right={55} shadow-camera-top={50} shadow-camera-bottom={-75} shadow-bias={-0.0003} />
+      <directionalLight position={[-20, 15, -10]} intensity={0.3} color="#aaddff" />
       <hemisphereLight args={["#87CEEB", "#2a5420", 0.5]} />
       <fog attach="fog" args={["#aabbaa", 18, 80]} />
     </group>
@@ -738,8 +806,9 @@ function ArcticMap({ escapePos }: { escapePos: [number, number, number] }) {
       {/* Cold blue-white lighting */}
       <ambientLight intensity={0.6} color="#dde8ff" />
       <directionalLight position={[30, 30, -15]} intensity={1.4} color="#eef4ff" castShadow
-        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
+        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
         shadow-camera-left={-50} shadow-camera-right={50} shadow-camera-top={45} shadow-camera-bottom={-70} shadow-bias={-0.0003} />
+      <directionalLight position={[-20, 15, 15]} intensity={0.4} color="#ccddff" />
       <hemisphereLight args={["#aabbdd", "#667788", 0.5]} />
       <fog attach="fog" args={["#c0d0e0", 25, 90]} />
     </group>
@@ -828,11 +897,33 @@ function UndergroundMap({ escapePos }: { escapePos: [number, number, number] }) 
       <EscapeZone escapePos={escapePos} />
 
       {/* Dim underground lighting — lots of point lights */}
-      <ambientLight intensity={0.25} color="#aabbcc" />
+      <ambientLight intensity={0.15} color="#aabbcc" />
       <directionalLight position={[0, 10, -20]} intensity={0.3} color="#ddeeff" castShadow
-        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
+        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
         shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={35} shadow-camera-bottom={-65} shadow-bias={-0.0003} />
-      <hemisphereLight args={["#556677", "#222233", 0.3]} />
+      
+      {/* Fluorescent ceiling lights */}
+      <pointLight position={[0, 3.5, 10]} color="#ccddff" intensity={4} distance={15} decay={2} castShadow />
+      <pointLight position={[-20, 3.5, 5]} color="#ccddff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[20, 3.5, 5]} color="#ccddff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[0, 3.5, -5]} color="#ccddff" intensity={4} distance={15} decay={2} castShadow />
+      <pointLight position={[-15, 3.5, -15]} color="#ccddff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[15, 3.5, -15]} color="#ccddff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[0, 3.5, -25]} color="#ccddff" intensity={4} distance={15} decay={2} castShadow />
+      <pointLight position={[-20, 3.5, -30]} color="#aaccee" intensity={2.5} distance={10} decay={2} />
+      <pointLight position={[20, 3.5, -30]} color="#aaccee" intensity={2.5} distance={10} decay={2} />
+      <pointLight position={[0, 3.5, -40]} color="#ccddff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[-15, 3.5, -48]} color="#aaccee" intensity={2.5} distance={10} decay={2} />
+      <pointLight position={[15, 3.5, -48]} color="#aaccee" intensity={2.5} distance={10} decay={2} />
+      <pointLight position={[0, 3.5, -55]} color="#ccddff" intensity={3} distance={12} decay={2} />
+      
+      {/* Emergency red lights */}
+      <pointLight position={[-30, 2, -5]} color="#ff2200" intensity={1.5} distance={8} decay={2} />
+      <pointLight position={[30, 2, -8]} color="#ff2200" intensity={1.5} distance={8} decay={2} />
+      <pointLight position={[-30, 2, -40]} color="#ff2200" intensity={1.5} distance={8} decay={2} />
+      <pointLight position={[30, 2, -42]} color="#ff2200" intensity={1.5} distance={8} decay={2} />
+
+      <hemisphereLight args={["#556677", "#222233", 0.2]} />
       <fog attach="fog" args={["#1a1a22", 10, 55]} />
     </group>
   );
@@ -923,11 +1014,22 @@ function VolcanoMap({ escapePos }: { escapePos: [number, number, number] }) {
       <EscapeZone escapePos={escapePos} />
 
       {/* Hot volcanic lighting */}
-      <ambientLight intensity={0.4} color="#ff8844" />
+      <ambientLight intensity={0.3} color="#ff8844" />
       <directionalLight position={[25, 30, -15]} intensity={0.8} color="#ffeedd" castShadow
-        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
+        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
         shadow-camera-left={-50} shadow-camera-right={50} shadow-camera-top={45} shadow-camera-bottom={-70} shadow-bias={-0.0003} />
-      <hemisphereLight args={["#ff8844", "#331100", 0.4]} />
+      
+      {/* Lava glow lights */}
+      <pointLight position={[-15, 1, -15]} color="#ff4400" intensity={5} distance={15} decay={2} />
+      <pointLight position={[-15, 1, -35]} color="#ff4400" intensity={5} distance={15} decay={2} />
+      <pointLight position={[18, 1, -10]} color="#ff3300" intensity={4} distance={12} decay={2} />
+      <pointLight position={[18, 1, -25]} color="#ff3300" intensity={4} distance={12} decay={2} />
+      <pointLight position={[0, 1, -50]} color="#ff2200" intensity={6} distance={18} decay={2} />
+      <pointLight position={[0, 3, 0]} color="#ffaa44" intensity={2} distance={20} decay={2} />
+      <pointLight position={[-30, 2, -40]} color="#ff6600" intensity={3} distance={10} decay={2} />
+      <pointLight position={[30, 2, -42]} color="#ff6600" intensity={3} distance={10} decay={2} />
+
+      <hemisphereLight args={["#ff8844", "#331100", 0.3]} />
       <fog attach="fog" args={["#1a0800", 20, 80]} />
     </group>
   );
@@ -1024,11 +1126,30 @@ function SpaceStationMap({ escapePos }: { escapePos: [number, number, number] })
       <EscapeZone escapePos={escapePos} />
 
       {/* Sci-fi blue-white lighting */}
-      <ambientLight intensity={0.3} color="#aabbdd" />
+      <ambientLight intensity={0.2} color="#aabbdd" />
       <directionalLight position={[0, 12, -15]} intensity={0.4} color="#ddeeff" castShadow
-        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
+        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
         shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={35} shadow-camera-bottom={-60} shadow-bias={-0.0003} />
-      <hemisphereLight args={["#4466aa", "#111122", 0.4]} />
+      
+      {/* Strip lights along corridors */}
+      <pointLight position={[0, 4, 10]} color="#4488ff" intensity={4} distance={15} decay={2} castShadow />
+      <pointLight position={[-20, 4, 5]} color="#4488ff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[20, 4, 5]} color="#4488ff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[0, 4, -5]} color="#4488ff" intensity={4} distance={15} decay={2} castShadow />
+      <pointLight position={[-20, 4, -15]} color="#4488ff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[20, 4, -15]} color="#4488ff" intensity={3} distance={12} decay={2} />
+      <pointLight position={[0, 4, -25]} color="#4488ff" intensity={4} distance={15} decay={2} castShadow />
+      <pointLight position={[-15, 4, -38]} color="#4488ff" intensity={3} distance={10} decay={2} />
+      <pointLight position={[15, 4, -38]} color="#4488ff" intensity={3} distance={10} decay={2} />
+      <pointLight position={[0, 4, -50]} color="#4488ff" intensity={3} distance={12} decay={2} />
+      
+      {/* Warning lights */}
+      <pointLight position={[-30, 2, -5]} color="#ff2200" intensity={1} distance={6} decay={2} />
+      <pointLight position={[30, 2, -8]} color="#ff2200" intensity={1} distance={6} decay={2} />
+      <pointLight position={[-30, 2, -40]} color="#ff2200" intensity={1} distance={6} decay={2} />
+      <pointLight position={[30, 2, -42]} color="#ff2200" intensity={1} distance={6} decay={2} />
+
+      <hemisphereLight args={["#4466aa", "#111122", 0.3]} />
       <fog attach="fog" args={["#0a0a1a", 15, 60]} />
     </group>
   );

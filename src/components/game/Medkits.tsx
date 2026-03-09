@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { useGame } from "./GameState";
 
 function MedkitItem({ position }: { position: [number, number, number] }) {
-  const ref = useRef<THREE.Mesh>(null);
+  const ref = useRef<THREE.Group>(null);
   useFrame(({ clock }) => {
     if (ref.current) {
       ref.current.rotation.y = clock.elapsedTime * 2;
@@ -12,15 +12,28 @@ function MedkitItem({ position }: { position: [number, number, number] }) {
     }
   });
   return (
-    <mesh ref={ref} position={[position[0], 0.4, position[2]]} castShadow>
-      <boxGeometry args={[0.4, 0.4, 0.4]} />
-      <meshStandardMaterial color="#22cc44" emissive="#22cc44" emissiveIntensity={0.8} roughness={0.3} />
-    </mesh>
+    <group position={[position[0], 0, position[2]]}>
+      <group ref={ref}>
+        <mesh castShadow>
+          <boxGeometry args={[0.4, 0.4, 0.4]} />
+          <meshStandardMaterial color="#22cc44" emissive="#22cc44" emissiveIntensity={0.8} roughness={0.3} />
+        </mesh>
+        <mesh position={[0, 0, 0.21]}>
+          <boxGeometry args={[0.22, 0.06, 0.01]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+        <mesh position={[0, 0, 0.21]}>
+          <boxGeometry args={[0.06, 0.22, 0.01]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+      </group>
+      <pointLight color="#22cc44" intensity={2} distance={5} />
+    </group>
   );
 }
 
 function AmmoPickupItem({ position }: { position: [number, number, number] }) {
-  const ref = useRef<THREE.Mesh>(null);
+  const ref = useRef<THREE.Group>(null);
   useFrame(({ clock }) => {
     if (ref.current) {
       ref.current.rotation.y = -clock.elapsedTime * 2.5;
@@ -28,10 +41,20 @@ function AmmoPickupItem({ position }: { position: [number, number, number] }) {
     }
   });
   return (
-    <mesh ref={ref} position={[position[0], 0.35, position[2]]} castShadow>
-      <dodecahedronGeometry args={[0.2, 0]} />
-      <meshStandardMaterial color="#ffaa00" emissive="#ff8800" emissiveIntensity={1.2} roughness={0.2} metalness={0.5} />
-    </mesh>
+    <group position={[position[0], 0, position[2]]}>
+      <group ref={ref}>
+        <mesh castShadow>
+          <dodecahedronGeometry args={[0.2, 0]} />
+          <meshStandardMaterial color="#ffaa00" emissive="#ff8800" emissiveIntensity={1.2} roughness={0.2} metalness={0.5} />
+        </mesh>
+        {/* Ammo symbol */}
+        <mesh position={[0, 0, 0.21]}>
+          <sphereGeometry args={[0.08, 8, 8]} />
+          <meshStandardMaterial color="#fff" emissive="#ffcc00" emissiveIntensity={2} />
+        </mesh>
+      </group>
+      <pointLight color="#ffaa00" intensity={1.5} distance={4} />
+    </group>
   );
 }
 
