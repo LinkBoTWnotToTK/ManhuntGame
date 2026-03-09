@@ -25,6 +25,9 @@ export const MAP_BOUNDS: Record<GameMap, MapBounds> = {
   underground:    { minX: -34.5, maxX: 34.5, minZ: -59.5, maxZ: 24.5 },
   volcano:        { minX: -39.5, maxX: 39.5, minZ: -64.5, maxZ: 29.5 },
   space_station:  { minX: -34.5, maxX: 34.5, minZ: -54.5, maxZ: 24.5 },
+  ruins:          { minX: -39.5, maxX: 39.5, minZ: -64.5, maxZ: 29.5 },
+  swamp:          { minX: -39.5, maxX: 39.5, minZ: -64.5, maxZ: 29.5 },
+  rooftop:        { minX: -34.5, maxX: 34.5, minZ: -54.5, maxZ: 24.5 },
 };
 
 export const ESCAPE_POSITIONS: Record<GameMap, [number, number, number]> = {
