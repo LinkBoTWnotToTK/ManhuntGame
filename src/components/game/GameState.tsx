@@ -779,6 +779,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         equippedSkin, equippedTrail, equippedHat,
         nearHatch, hatchPromptText, setNearHatch,
         tutorialActive, tutorialStep, startTutorial, advanceTutorial, endTutorial,
+        activeCampaignChallenge, setActiveCampaignChallenge,
         selectRole, selectMap, setDifficulty, setGameMode,
         tagNPC, startGame, resetGame, setEscaped,
         damagePlayer, damageNPC, healPlayer, useAmmo: useAmmoFn,
