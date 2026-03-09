@@ -60,8 +60,15 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   }, [isLocked, isPlaying, gameOver, role, selectedMap, menuStep, startGame]);
 
   useEffect(() => {
-    if (!role && !selectedMap) setMenuStep("main");
-  }, [role, selectedMap]);
+    if (!role && !selectedMap) { setMenuStep("main"); setActiveCampaignChallenge(null); }
+  }, [role, selectedMap, setActiveCampaignChallenge]);
+
+  // Refresh campaign progress when game ends
+  useEffect(() => {
+    if (gameOver) {
+      setCampaignProgress(loadCampaignProgress());
+    }
+  }, [gameOver]);
 
   const transition = (next: typeof menuStep, cb?: () => void) => {
     setTransitioning(true);
