@@ -20,6 +20,7 @@ import WeatherSystem from "@/components/game/WeatherSystem";
 import LevelEditor from "@/components/game/LevelEditor";
 import MobileControls, { PlatformSelector } from "@/components/game/MobileControls";
 import { isMobilePlatform, setMobilePlatform } from "@/components/game/SharedState";
+import FPSCounter from "@/components/game/FPSCounter";
 
 // ... keep existing code (KothZone, Checkpoints, FlagObject, SurvivalWaveIndicator, GameScene, DynamicFOV, HatchPrompt components - lines 20-201)
 
@@ -230,6 +231,7 @@ function GameContent() {
 
   return (
     <div className="w-screen h-screen bg-black overflow-hidden">
+      <FPSCounter />
       <GameUI onOpenEditor={() => setShowEditor(true)} />
       <Minimap />
       <ScreenEffects />
