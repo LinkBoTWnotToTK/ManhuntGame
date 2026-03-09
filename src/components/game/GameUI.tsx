@@ -47,6 +47,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   const [campaignProgress, setCampaignProgress] = useState(loadCampaignProgress());
   const [transitioning, setTransitioning] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const onChange = () => setIsLocked(!!document.pointerLockElement);
