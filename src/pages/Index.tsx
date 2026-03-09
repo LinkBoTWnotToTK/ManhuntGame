@@ -231,6 +231,7 @@ function GameContent() {
 
   return (
     <div className="w-screen h-screen bg-black overflow-hidden">
+      <FPSCounter />
       <GameUI onOpenEditor={() => setShowEditor(true)} />
       <Minimap />
       <ScreenEffects />
