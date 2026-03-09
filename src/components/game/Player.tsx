@@ -350,19 +350,29 @@ export default function Player() {
     if (keys.current["KeyA"] || keys.current["ArrowLeft"]) dir.sub(right);
     if (keys.current["KeyD"] || keys.current["ArrowRight"]) dir.add(right);
 
+    // Mobile joystick input
+    if (Math.abs(mobileJoystick.x) > 0.1 || Math.abs(mobileJoystick.y) > 0.1) {
+      dir.addScaledVector(forward, -mobileJoystick.y);
+      dir.addScaledVector(right, mobileJoystick.x);
+    }
+
     if (dir.lengthSq() > 0 && speed > 0) {
       dir.normalize().multiplyScalar(speed * delta);
       const newPos = playerPosition.clone().add(dir);
       newPos.x = THREE.MathUtils.clamp(newPos.x, bounds.minX, bounds.maxX);
       newPos.z = THREE.MathUtils.clamp(newPos.z, bounds.minZ, bounds.maxZ);
 
-      // Wall collision at player's Y level
+      // Combined wall + platform collision at player's Y level
       const yBase = playerY;
+      const allColliders = [...wallColliders, ...platformColliders.map(p => ({ min: p.min, max: p.max }))];
+
       const pMin = new THREE.Vector3(newPos.x - PLAYER_RADIUS, yBase, newPos.z - PLAYER_RADIUS);
       const pMax = new THREE.Vector3(newPos.x + PLAYER_RADIUS, yBase + 1.8, newPos.z + PLAYER_RADIUS);
       let blocked = false;
-      for (const c of wallColliders) {
+      for (const c of allColliders) {
         if (pMin.x < c.max.x && pMax.x > c.min.x && pMin.y < c.max.y && pMax.y > c.min.y && pMin.z < c.max.z && pMax.z > c.min.z) {
+          // Don't block if we're standing on top of this platform
+          if (yBase >= c.max.y - 0.1) continue;
           blocked = true; break;
         }
       }
@@ -377,20 +387,28 @@ export default function Player() {
         playerPosition.z = THREE.MathUtils.clamp(playerPosition.z, bounds.minZ, bounds.maxZ);
       }
       if (blocked) {
+        // Sliding: try X only
         const sx = playerPosition.clone(); sx.x += dir.x;
         let bx = false;
         const sxMin = new THREE.Vector3(sx.x - PLAYER_RADIUS, yBase, sx.z - PLAYER_RADIUS);
         const sxMax = new THREE.Vector3(sx.x + PLAYER_RADIUS, yBase + 1.8, sx.z + PLAYER_RADIUS);
-        for (const c of wallColliders) {
-          if (sxMin.x < c.max.x && sxMax.x > c.min.x && sxMin.y < c.max.y && sxMax.y > c.min.y && sxMin.z < c.max.z && sxMax.z > c.min.z) { bx = true; break; }
+        for (const c of allColliders) {
+          if (sxMin.x < c.max.x && sxMax.x > c.min.x && sxMin.y < c.max.y && sxMax.y > c.min.y && sxMin.z < c.max.z && sxMax.z > c.min.z) {
+            if (yBase >= c.max.y - 0.1) continue;
+            bx = true; break;
+          }
         }
         if (!bx) playerPosition.x = sx.x;
+        // Try Z only
         const sz = playerPosition.clone(); sz.z += dir.z;
         let bz = false;
         const szMin = new THREE.Vector3(sz.x - PLAYER_RADIUS, yBase, sz.z - PLAYER_RADIUS);
         const szMax = new THREE.Vector3(sz.x + PLAYER_RADIUS, yBase + 1.8, sz.z + PLAYER_RADIUS);
-        for (const c of wallColliders) {
-          if (szMin.x < c.max.x && szMax.x > c.min.x && szMin.y < c.max.y && szMax.y > c.min.y && szMin.z < c.max.z && szMax.z > c.min.z) { bz = true; break; }
+        for (const c of allColliders) {
+          if (szMin.x < c.max.x && szMax.x > c.min.x && szMin.y < c.max.y && szMax.y > c.min.y && szMin.z < c.max.z && szMax.z > c.min.z) {
+            if (yBase >= c.max.y - 0.1) continue;
+            bz = true; break;
+          }
         }
         if (!bz) playerPosition.z = sz.z;
       }
