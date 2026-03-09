@@ -259,6 +259,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [hatchPromptText, setHatchPromptText] = useState("");
   const [tutorialActive, setTutorialActive] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [activeCampaignChallenge, setActiveCampaignChallengeState] = useState<CampaignChallenge | null>(null);
+  const campaignChallengeRef = useRef<CampaignChallenge | null>(null);
 
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
