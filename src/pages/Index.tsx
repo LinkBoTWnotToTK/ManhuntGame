@@ -18,6 +18,7 @@ import WeaponSystem from "@/components/game/WeaponSystem";
 import Tutorial from "@/components/game/Tutorial";
 import WeatherSystem from "@/components/game/WeatherSystem";
 import LevelEditor from "@/components/game/LevelEditor";
+import MobileControls from "@/components/game/MobileControls";
 
 // ... keep existing code (KothZone, Checkpoints, FlagObject, SurvivalWaveIndicator, GameScene, DynamicFOV, HatchPrompt components - lines 20-201)
 
