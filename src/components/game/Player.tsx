@@ -178,6 +178,8 @@ export default function Player() {
     }
   };
 
+  const mobileShootRef = useRef(false);
+  
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!document.pointerLockElement) return;
@@ -197,9 +199,7 @@ export default function Player() {
       if (e.code === "Digit1") switchWeapon("slingshot");
       if (e.code === "Digit2") switchWeapon("shotgun");
       if (e.code === "Digit3") switchWeapon("sniper");
-      // Jump
       if (e.code === "Space") jumpBuffered.current = true;
-      // Block Hunt disguise toggle
       if (e.code === "KeyQ" && gameMode === "blockhunt") {
         toggleDisguise();
         if (!isDisguised) {
