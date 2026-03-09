@@ -719,8 +719,14 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                     {gameMode === "deathrun" && "Navigate deadly narrow platforms to reach all 5 checkpoints! Don't fall!"}
                   </p>
                 </div>
-                <div className="cursor-pointer group" onClick={() => document.body.requestPointerLock()}>
-                  <p className="text-white/80 text-lg font-bold group-hover:text-white transition-colors">🎮 Click to Start</p>
+                <div className="cursor-pointer group" onClick={() => {
+                  if (isMobile) {
+                    handleMobileStart();
+                  } else {
+                    document.body.requestPointerLock();
+                  }
+                }}>
+                  <p className="text-white/80 text-lg font-bold group-hover:text-white transition-colors">🎮 {isMobile ? "Tap to Start" : "Click to Start"}</p>
                 </div>
                 <div className="flex gap-3 justify-center text-white/30 text-[10px] flex-wrap">
                   <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">WASD</kbd> Move</span>
