@@ -14,7 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      game_leaderboard: {
+        Row: {
+          created_at: string
+          difficulty: string
+          id: string
+          map: string
+          mode: string
+          player_name: string
+          result: string
+          role: string
+          save_code: string | null
+          score: number
+          time_seconds: number
+        }
+        Insert: {
+          created_at?: string
+          difficulty: string
+          id?: string
+          map: string
+          mode: string
+          player_name?: string
+          result: string
+          role: string
+          save_code?: string | null
+          score?: number
+          time_seconds: number
+        }
+        Update: {
+          created_at?: string
+          difficulty?: string
+          id?: string
+          map?: string
+          mode?: string
+          player_name?: string
+          result?: string
+          role?: string
+          save_code?: string | null
+          score?: number
+          time_seconds?: number
+        }
+        Relationships: []
+      }
+      game_saves: {
+        Row: {
+          campaign_best_times: Json
+          campaign_completed: string[]
+          campaign_stars: Json
+          coins: number
+          created_at: string
+          equipped_hat: string
+          equipped_skin: string
+          equipped_trail: string
+          id: string
+          level: number
+          powerups: string[]
+          prestige: number
+          save_code: string
+          total_games: number
+          total_wins: number
+          updated_at: string
+          xp: number
+        }
+        Insert: {
+          campaign_best_times?: Json
+          campaign_completed?: string[]
+          campaign_stars?: Json
+          coins?: number
+          created_at?: string
+          equipped_hat?: string
+          equipped_skin?: string
+          equipped_trail?: string
+          id?: string
+          level?: number
+          powerups?: string[]
+          prestige?: number
+          save_code: string
+          total_games?: number
+          total_wins?: number
+          updated_at?: string
+          xp?: number
+        }
+        Update: {
+          campaign_best_times?: Json
+          campaign_completed?: string[]
+          campaign_stars?: Json
+          coins?: number
+          created_at?: string
+          equipped_hat?: string
+          equipped_skin?: string
+          equipped_trail?: string
+          id?: string
+          level?: number
+          powerups?: string[]
+          prestige?: number
+          save_code?: string
+          total_games?: number
+          total_wins?: number
+          updated_at?: string
+          xp?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
