@@ -616,6 +616,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                           {unlocked && done && (
                             <button
                               onClick={() => {
+                                setActiveCampaignChallenge(challenge);
                                 selectRole(challenge.role as Role);
                                 setGameMode(challenge.mode);
                                 setDifficulty(challenge.difficulty);
