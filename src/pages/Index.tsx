@@ -18,6 +18,7 @@ import WeaponSystem from "@/components/game/WeaponSystem";
 import Tutorial from "@/components/game/Tutorial";
 import WeatherSystem from "@/components/game/WeatherSystem";
 import LevelEditor from "@/components/game/LevelEditor";
+import MobileControls from "@/components/game/MobileControls";
 
 // ... keep existing code (KothZone, Checkpoints, FlagObject, SurvivalWaveIndicator, GameScene, DynamicFOV, HatchPrompt components - lines 20-201)
 
@@ -210,6 +211,7 @@ function GameContent() {
       <ScreenEffects />
       <Tutorial />
       <HatchPrompt />
+      <MobileControls />
       <Canvas
         shadows
         camera={{ fov: 55, near: 0.1, far: 150 }}
