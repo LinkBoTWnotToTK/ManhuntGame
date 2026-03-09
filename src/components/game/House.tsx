@@ -1552,6 +1552,8 @@ export default function House() {
   const escapePos = ESCAPE_POSITIONS[map];
 
   useMemo(() => {
+    // Dispose old materials to free GPU memory on map/mode change
+    disposeMats();
     wallColliders.length = 0;
     registeredColliders.clear();
     platformColliders.length = 0;
