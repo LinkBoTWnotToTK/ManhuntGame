@@ -3,7 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { wallColliders } from "./House";
 import { useGame, MAP_BOUNDS, ESCAPE_POSITIONS } from "./GameState";
-import { playerPosition, projectiles, addProjectile, npcPositions, playerY, playerVelocityY, setPlayerY, setPlayerVelocityY, platformColliders, disguisedAs, setDisguise, isMobilePlatform, mobileInput } from "./SharedState";
+import { playerPosition, projectiles, addProjectile, npcPositions, playerY, playerVelocityY, setPlayerY, setPlayerVelocityY, platformColliders, disguisedAs, setDisguise } from "./SharedState";
 import { windForce } from "./WeatherSystem";
 import { ESCAPE_ZONE_RADIUS } from "./House";
 import { WEAPONS, throwRock, throwableRocks } from "./WeaponSystem";
@@ -179,7 +179,6 @@ export default function Player() {
   };
 
   useEffect(() => {
-    if (isMobilePlatform) return; // Skip keyboard/mouse on mobile
     const onMouseMove = (e: MouseEvent) => {
       if (!document.pointerLockElement) return;
       yaw.current -= e.movementX * 0.003;
@@ -226,35 +225,6 @@ export default function Player() {
   useFrame((state, delta) => {
     if (!isPlaying || gameOver) return;
 
-    // --- Mobile input processing ---
-    if (isMobilePlatform) {
-      // Camera from swipe
-      yaw.current -= mobileInput.cameraX;
-      pitch.current = THREE.MathUtils.clamp(pitch.current - mobileInput.cameraY, 0.1, 1.0);
-      mobileInput.cameraX = 0;
-      mobileInput.cameraY = 0;
-
-      // Attack
-      if (mobileInput.attack) {
-        shootRef.current();
-        mobileInput.attack = false;
-      }
-
-      // Jump
-      if (mobileInput.jump) {
-        jumpBuffered.current = true;
-        mobileInput.jump = false;
-      }
-
-      // Disguise
-      if (mobileInput.disguise && gameMode === "blockhunt") {
-        toggleDisguise();
-        if (!isDisguised) setDisguise("crate");
-        else setDisguise(null);
-        mobileInput.disguise = false;
-      }
-    }
-
     if (weaponCooldownRef.current > 0) weaponCooldownRef.current -= delta;
     if (meleeCooldownRef.current > 0) meleeCooldownRef.current -= delta;
 
@@ -262,12 +232,12 @@ export default function Player() {
     const sprintSpeed = BASE_SPRINT_SPEED * speedMultiplier;
     const staminaDrain = BASE_STAMINA_DRAIN * staminaDrainMultiplier;
 
-    const wantsSprint = isMobilePlatform ? mobileInput.sprint : (keys.current["ShiftLeft"] || keys.current["ShiftRight"]);
+    const wantsSprint = keys.current["ShiftLeft"] || keys.current["ShiftRight"];
     const canSprint = stamina > 5;
     const isSprinting = wantsSprint && canSprint;
     if (isSprinting) useStamina(staminaDrain * delta);
     else regenStamina(STAMINA_REGEN * delta);
-    const speed = isDisguised ? 0 : (isSprinting ? sprintSpeed : walkSpeed);
+    const speed = isDisguised ? 0 : (isSprinting ? sprintSpeed : walkSpeed); // Can't move while disguised
 
     // --- Jumping physics with double jump & wall run ---
     const groundH = getGroundHeight(playerPosition.x, playerPosition.z, playerY);
@@ -352,18 +322,10 @@ export default function Player() {
     // --- Horizontal movement ---
 
     const dir = new THREE.Vector3();
-    if (isMobilePlatform) {
-      // Mobile joystick: moveX = left/right, moveY = forward/back (inverted)
-      if (Math.abs(mobileInput.moveX) > 0.1 || Math.abs(mobileInput.moveY) > 0.1) {
-        dir.addScaledVector(forward, -mobileInput.moveY);
-        dir.addScaledVector(right, mobileInput.moveX);
-      }
-    } else {
-      if (keys.current["KeyW"] || keys.current["ArrowUp"]) dir.add(forward);
-      if (keys.current["KeyS"] || keys.current["ArrowDown"]) dir.sub(forward);
-      if (keys.current["KeyA"] || keys.current["ArrowLeft"]) dir.sub(right);
-      if (keys.current["KeyD"] || keys.current["ArrowRight"]) dir.add(right);
-    }
+    if (keys.current["KeyW"] || keys.current["ArrowUp"]) dir.add(forward);
+    if (keys.current["KeyS"] || keys.current["ArrowDown"]) dir.sub(forward);
+    if (keys.current["KeyA"] || keys.current["ArrowLeft"]) dir.sub(right);
+    if (keys.current["KeyD"] || keys.current["ArrowRight"]) dir.add(right);
 
     if (dir.lengthSq() > 0 && speed > 0) {
       dir.normalize().multiplyScalar(speed * delta);
