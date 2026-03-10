@@ -125,6 +125,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     const flow: Record<string, string> = {
       shop: "main", leaderboard: "main", play: "main", campaign: "main",
       campaign_chapter: "campaign",
+      blockhunt_select: "mode",
       mode: "play", difficulty: "mode", map: "difficulty", ready: "map",
     };
     const prev = flow[menuStep] || "main";
