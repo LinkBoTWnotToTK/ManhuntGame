@@ -840,6 +840,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         kothScore, kothZone, checkpoints, checkpointIndex,
         survivalWave, flagCarried, flagPosition, basePosition,
         parkourFinished, isDisguised,
+        blockhuntBlock, blockhuntStillTimer, blockhuntStunTimer,
         equippedSkin, equippedTrail, equippedHat,
         nearHatch, hatchPromptText, setNearHatch,
         tutorialActive, tutorialStep, startTutorial, advanceTutorial, endTutorial,
@@ -855,6 +856,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         grabFlag, returnFlag, finishParkour,
         toggleDisguise, advanceSurvivalWave,
         equipSkin, equipTrail, equipHat,
+        setBlockhuntBlock, updateBlockhuntStillTimer, applyBlockhuntStun,
       }}
     >
       {children}
