@@ -185,9 +185,9 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                   <div className="text-white/30 text-[9px] uppercase tracking-[0.15em]">{GAME_MODES[gameMode].name} • {DIFFICULTY_SETTINGS[difficulty].label}</div>
                 </div>
               </div>
-              <div className="flex gap-0.5">
+              <div className="flex gap-0.5 flex-wrap max-w-[200px]">
                 {Array.from({ length: maxHealth }, (_, i) => (
-                  <span key={i} className={`text-lg transition-all ${i < playerHealth ? "opacity-100" : "opacity-15 grayscale"}`}>❤️</span>
+                  <span key={i} className={`${maxHealth > 5 ? "text-sm" : "text-lg"} transition-all ${i < playerHealth ? "opacity-100" : "opacity-15 grayscale"}`}>❤️</span>
                 ))}
               </div>
               {/* Level badge */}
