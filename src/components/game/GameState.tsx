@@ -75,6 +75,19 @@ interface MedkitData { id: string; position: [number, number, number]; }
 interface AmmoPickupData { id: string; position: [number, number, number]; }
 interface CoinData { id: string; position: [number, number, number]; }
 
+// Block Hunt specific
+export const BLOCKHUNT_MAPS: GameMap[] = ["suburban", "forest", "arctic", "ruins", "rooftop"];
+export const BLOCKHUNT_BLOCKS = [
+  { id: "oak_log", name: "Oak Log", color: "#8B6914", emoji: "🪵" },
+  { id: "stone", name: "Stone", color: "#888888", emoji: "🪨" },
+  { id: "grass_block", name: "Grass Block", color: "#4a8c3f", emoji: "🟩" },
+  { id: "bookshelf", name: "Bookshelf", color: "#8B5E3C", emoji: "📚" },
+  { id: "tnt", name: "TNT", color: "#cc2222", emoji: "🧨" },
+  { id: "melon", name: "Melon", color: "#3a7a2a", emoji: "🍈" },
+  { id: "pumpkin", name: "Pumpkin", color: "#cc7722", emoji: "🎃" },
+  { id: "hay_bale", name: "Hay Bale", color: "#ccaa22", emoji: "🌾" },
+];
+
 interface GameState {
   role: Role | null;
   selectedMap: GameMap | null;
