@@ -276,7 +276,11 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
 
       const distToPlayer = myPos.distanceTo(playerPosition);
       if (npcRole === "runner" && distToPlayer < TAG_DISTANCE) tagNPC(id);
-      if (npcRole === "hunter" && distToPlayer < TAG_DISTANCE) damagePlayer(3);
+      if (npcRole === "hunter" && distToPlayer < TAG_DISTANCE) {
+        // Block Hunt: hunter sword does 2 hearts, or instant kill if undisguised
+        const isBlockHunt = (selectedMap && true); // check mode via damage handler in GameState
+        damagePlayer(3); // GameState handles blockhunt-specific logic
+      }
     }
 
     if (moveDir.lengthSq() > 0) {

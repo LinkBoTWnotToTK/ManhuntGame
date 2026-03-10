@@ -260,6 +260,7 @@ export default function WeatherSystem() {
           <FogEffect density={0.015} />
         </>
       )}
+      {weather === "rain" && <RainDrops />}
       {weather === "snow" && <SnowFlakes />}
       {weather === "ash" && <AshParticles />}
       {weather === "fog" && <FogEffect density={0.03} />}

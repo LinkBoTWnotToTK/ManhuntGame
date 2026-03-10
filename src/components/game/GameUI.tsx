@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useGame, Role, GameMap, Difficulty, GameMode, DIFFICULTY_SETTINGS, GAME_MODES } from "./GameState";
+import { useGame, Role, GameMap, Difficulty, GameMode, DIFFICULTY_SETTINGS, GAME_MODES, BLOCKHUNT_BLOCKS, BLOCKHUNT_MAPS } from "./GameState";
 import Shop from "./Shop";
 import { xpForLevel, prestigeMultiplier } from "./SaveSystem";
 import { TUTORIAL_STEPS } from "./Tutorial";
@@ -41,11 +41,12 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     coins, matchCoins, currentWeapon,
     level, xp, prestige, totalWins, totalGames, leaderboard,
     kothScore, checkpointIndex, survivalWave, flagCarried, isDisguised,
+    blockhuntBlock, blockhuntStillTimer,
     selectRole, selectMap, setDifficulty, setGameMode, startGame, resetGame,
-    startTutorial, setActiveCampaignChallenge,
+    startTutorial, setActiveCampaignChallenge, setBlockhuntBlock,
   } = useGame();
 
-  const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter">("main");
+  const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter" | "blockhunt_select">("main");
   const [selectedChapter, setSelectedChapter] = useState(0);
   const [campaignProgress, setCampaignProgress] = useState(loadCampaignProgress());
   const [transitioning, setTransitioning] = useState(false);
@@ -108,7 +109,14 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   };
 
   const handleSelectRole = (r: Role) => transition("mode", () => selectRole(r));
-  const handleSelectMode = (m: GameMode) => transition("difficulty", () => setGameMode(m));
+  const handleSelectMode = (m: GameMode) => {
+    if (m === "blockhunt") {
+      // Block Hunt: skip map select, go to block selection
+      transition("blockhunt_select", () => setGameMode(m));
+    } else {
+      transition("difficulty", () => setGameMode(m));
+    }
+  };
   const handleSelectDifficulty = (d: Difficulty) => transition("map", () => setDifficulty(d));
   const handleSelectMap = (m: GameMap) => transition("ready", () => selectMap(m));
 
@@ -117,9 +125,12 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     const flow: Record<string, string> = {
       shop: "main", leaderboard: "main", play: "main", campaign: "main",
       campaign_chapter: "campaign",
+      blockhunt_select: "mode",
       mode: "play", difficulty: "mode", map: "difficulty", ready: "map",
     };
-    const prev = flow[menuStep] || "main";
+    // Block Hunt: ready goes back to block selection
+    let prev = flow[menuStep] || "main";
+    if (menuStep === "ready" && gameMode === "blockhunt") prev = "blockhunt_select";
     if (prev === "main" || prev === "play") { selectRole(null as unknown as Role); selectMap(null as unknown as GameMap); }
     if (prev === "map") selectMap(null as unknown as GameMap);
     setTimeout(() => { setMenuStep(prev as typeof menuStep); setTransitioning(false); }, 250);
@@ -166,16 +177,19 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                   ) : gameMode === "ctf" ? (
                     <div className="text-red-400 font-bold text-lg tabular-nums">{flagCarried ? "🚩 RETURN FLAG!" : "🚩 Find Flag"}</div>
                   ) : gameMode === "blockhunt" ? (
-                    <div className="text-purple-400 font-bold text-lg tabular-nums">{isDisguised ? "📦 Hidden" : "🏃 Exposed"}</div>
+                    <div className="text-purple-400 font-bold text-lg tabular-nums">
+                      {isDisguised ? "📦 Hidden" : blockhuntStillTimer > 0 ? `⏳ ${Math.max(0, 3 - blockhuntStillTimer).toFixed(1)}s` : "🏃 Exposed"}
+                      {blockhuntBlock && <span className="text-[10px] text-white/30 ml-1">[{BLOCKHUNT_BLOCKS.find(b=>b.id===blockhuntBlock)?.emoji}]</span>}
+                    </div>
                   ) : (
                     <div className="text-white font-bold text-lg">SURVIVE</div>
                   )}
                   <div className="text-white/30 text-[9px] uppercase tracking-[0.15em]">{GAME_MODES[gameMode].name} • {DIFFICULTY_SETTINGS[difficulty].label}</div>
                 </div>
               </div>
-              <div className="flex gap-0.5">
+              <div className="flex gap-0.5 flex-wrap max-w-[200px]">
                 {Array.from({ length: maxHealth }, (_, i) => (
-                  <span key={i} className={`text-lg transition-all ${i < playerHealth ? "opacity-100" : "opacity-15 grayscale"}`}>❤️</span>
+                  <span key={i} className={`${maxHealth > 5 ? "text-sm" : "text-lg"} transition-all ${i < playerHealth ? "opacity-100" : "opacity-15 grayscale"}`}>❤️</span>
                 ))}
               </div>
               {/* Level badge */}
@@ -521,6 +535,47 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
               </div>
             )}
 
+            {/* BLOCK HUNT: Block Selection */}
+            {menuStep === "blockhunt_select" && (
+              <div className="animate-fade-in space-y-5">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-3xl">📦</span>
+                  <h2 className="text-xl font-black text-white">CHOOSE YOUR BLOCK</h2>
+                </div>
+                <p className="text-white/40 text-xs">Pick a block to disguise as. Stay still for 3 seconds to transform! Map will be randomly selected.</p>
+                <div className="text-white/20 text-[10px] mb-2">
+                  Maps: {BLOCKHUNT_MAPS.map(m => MAP_INFO[m]?.emoji).join(" ")} • 10 ❤️ • 5:00 timer
+                </div>
+                <div className="grid grid-cols-4 gap-3 max-w-md mx-auto">
+                  {BLOCKHUNT_BLOCKS.map(block => (
+                    <button
+                      key={block.id}
+                      onClick={() => {
+                        setBlockhuntBlock(block.id);
+                        // Set a random map, difficulty defaults to medium
+                        const randomMap = BLOCKHUNT_MAPS[Math.floor(Math.random() * BLOCKHUNT_MAPS.length)];
+                        selectMap(randomMap);
+                        setDifficulty("medium");
+                        transition("ready");
+                      }}
+                      className="group p-4 rounded-xl border border-white/10 hover:border-purple-400/50 transition-all hover:scale-105 active:scale-95 space-y-2"
+                      style={{ backgroundColor: block.color + "22" }}
+                    >
+                      <div className="text-3xl group-hover:scale-110 transition-transform">{block.emoji}</div>
+                      <div className="text-[10px] font-black text-white">{block.name}</div>
+                    </button>
+                  ))}
+                </div>
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10 max-w-sm mx-auto text-left space-y-1">
+                  <div className="text-[10px] text-white/50"><span className="text-purple-400 font-bold">Runner:</span> 🪃 Slingshot (2❤️ dmg + 1s stun) • 5 ammo</div>
+                  <div className="text-[10px] text-white/50"><span className="text-red-400 font-bold">Finder:</span> ⚔️ Sword (2❤️ dmg) • Mining reveals blocks</div>
+                  <div className="text-[10px] text-white/50"><span className="text-yellow-400 font-bold">Tip:</span> Stand still 3s to transform. Moving breaks disguise!</div>
+                  <div className="text-[10px] text-white/50"><span className="text-red-400 font-bold">Warning:</span> If caught undisguised = instant death!</div>
+                </div>
+                <button onClick={handleBack} className="text-white/15 text-xs hover:text-white/40 transition-colors">← Back</button>
+              </div>
+            )}
+
             {/* CAMPAIGN */}
             {menuStep === "campaign" && (
               <div className="animate-fade-in space-y-5">
@@ -716,7 +771,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                     {gameMode === "speedrun" && "Race through 5 checkpoints as fast as possible!"}
                     {gameMode === "collector" && "Grab as many coins as you can before time runs out!"}
                     {gameMode === "parkour" && "Jump across platforms to reach all 5 checkpoints! Press SPACE to jump."}
-                    {gameMode === "blockhunt" && "Press Q to disguise as a crate. Stay hidden from seekers! Don't move while disguised."}
+                    {gameMode === "blockhunt" && `📦 Block Hunt! You're disguised as ${BLOCKHUNT_BLOCKS.find(b=>b.id===blockhuntBlock)?.name || "a block"}. Stand still 3s to transform. 10 hearts, 5 min timer. ${role === "runner" ? "Slingshot: 2❤️ + stun" : "Sword: 2❤️ per hit"}. If caught undisguised = instant death!`}
                     {gameMode === "ctf" && "Find the enemy flag and bring it back to your base!"}
                     {gameMode === "survival" && "Survive endless waves of hunters. Each wave adds more!"}
                     {gameMode === "deathrun" && "Navigate deadly narrow platforms to reach all 5 checkpoints! Don't fall!"}

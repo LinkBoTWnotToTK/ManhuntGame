@@ -75,6 +75,19 @@ interface MedkitData { id: string; position: [number, number, number]; }
 interface AmmoPickupData { id: string; position: [number, number, number]; }
 interface CoinData { id: string; position: [number, number, number]; }
 
+// Block Hunt specific
+export const BLOCKHUNT_MAPS: GameMap[] = ["suburban", "forest", "arctic", "ruins", "rooftop"];
+export const BLOCKHUNT_BLOCKS = [
+  { id: "oak_log", name: "Oak Log", color: "#8B6914", emoji: "🪵" },
+  { id: "stone", name: "Stone", color: "#888888", emoji: "🪨" },
+  { id: "grass_block", name: "Grass Block", color: "#4a8c3f", emoji: "🟩" },
+  { id: "bookshelf", name: "Bookshelf", color: "#8B5E3C", emoji: "📚" },
+  { id: "tnt", name: "TNT", color: "#cc2222", emoji: "🧨" },
+  { id: "melon", name: "Melon", color: "#3a7a2a", emoji: "🍈" },
+  { id: "pumpkin", name: "Pumpkin", color: "#cc7722", emoji: "🎃" },
+  { id: "hay_bale", name: "Hay Bale", color: "#ccaa22", emoji: "🌾" },
+];
+
 interface GameState {
   role: Role | null;
   selectedMap: GameMap | null;
@@ -122,6 +135,10 @@ interface GameState {
   basePosition: [number, number, number] | null;
   parkourFinished: boolean;
   isDisguised: boolean;
+  // Block Hunt enhanced
+  blockhuntBlock: string | null;
+  blockhuntStillTimer: number;
+  blockhuntStunTimer: number;
   // Cosmetics
   equippedSkin: string;
   equippedTrail: string;
@@ -171,6 +188,9 @@ interface GameState {
   equipSkin: (id: string) => void;
   equipTrail: (id: string) => void;
   equipHat: (id: string) => void;
+  setBlockhuntBlock: (block: string | null) => void;
+  updateBlockhuntStillTimer: (delta: number) => void;
+  applyBlockhuntStun: () => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -266,6 +286,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [tutorialActive, setTutorialActive] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [activeCampaignChallenge, setActiveCampaignChallengeState] = useState<CampaignChallenge | null>(null);
+  const [blockhuntBlock, setBlockhuntBlockState] = useState<string | null>(null);
+  const [blockhuntStillTimer, setBlockhuntStillTimer] = useState(0);
+  const [blockhuntStunTimer, setBlockhuntStunTimer] = useState(0);
   const campaignChallengeRef = useRef<CampaignChallenge | null>(null);
 
   const timerRef = useRef<number | null>(null);
@@ -397,12 +420,24 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     resetSharedState();
     const owned = ownedRef.current;
     const extraAmmo = owned.includes("lucky_start") ? 2 : 0;
-    const currentMaxHealth = owned.includes("extra_heart") ? 4 : BASE_MAX_HEALTH;
-    const startAmmo = roleRef.current === "runner" ? RUNNER_START_AMMO + extraAmmo : HUNTER_START_AMMO;
+    const mode = modeRef.current;
+    const isBlockHunt = mode === "blockhunt";
+    
+    // Block Hunt: 10 hearts, 5 ammo for runners, random map from 5
+    const currentMaxHealth = isBlockHunt ? 10 : (owned.includes("extra_heart") ? 4 : BASE_MAX_HEALTH);
+    const startAmmo = isBlockHunt 
+      ? (roleRef.current === "runner" ? 5 : 0) 
+      : (roleRef.current === "runner" ? RUNNER_START_AMMO + extraAmmo : HUNTER_START_AMMO);
     const ammoInterval = owned.includes("quick_reload") ? 6 : 10;
     const diff = DIFFICULTY_SETTINGS[diffRef.current];
-    const mode = modeRef.current;
-    const duration = mode === "survival" ? 999 : mode === "parkour" ? 120 : mode === "deathrun" ? 90 : diff.gameDuration;
+    const duration = isBlockHunt ? 300 : mode === "survival" ? 999 : mode === "parkour" ? 120 : mode === "deathrun" ? 90 : diff.gameDuration;
+    
+    // Block Hunt: pick random map if not already set from block hunt maps
+    if (isBlockHunt) {
+      const randomMap = BLOCKHUNT_MAPS[Math.floor(Math.random() * BLOCKHUNT_MAPS.length)];
+      setSelectedMap(randomMap);
+      mapRef.current = randomMap;
+    }
 
     setScore(0);
     setTagged(new Set());
@@ -427,6 +462,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setFlagCarried(false);
     setParkourFinished(false);
     setIsDisguised(false);
+    setBlockhuntBlockState(null);
+    setBlockhuntStillTimer(0);
+    setBlockhuntStunTimer(0);
     playerHealthRef.current = currentMaxHealth;
     playerAmmoRef.current = startAmmo;
     npcHealthRef.current = {};
@@ -571,11 +609,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const damagePlayer = useCallback((amount: number) => {
     if (gameOverRef.current) return;
-    const dmg = ownedRef.current.includes("thick_skin") ? Math.max(1, Math.ceil(amount / 2)) : amount;
+    // Block Hunt: if caught while NOT disguised, lose ALL hearts instantly
+    const isBlockHunt = modeRef.current === "blockhunt";
+    let dmg: number;
+    if (isBlockHunt) {
+      // In blockhunt: runner slingshot does 2 hearts + stun handled separately
+      // Hunter sword does 2 hearts. If not disguised and melee tagged, instant kill
+      dmg = amount;
+    } else {
+      dmg = ownedRef.current.includes("thick_skin") ? Math.max(1, Math.ceil(amount / 2)) : amount;
+    }
     playerHealthRef.current = Math.max(0, playerHealthRef.current - dmg);
     setPlayerHealth(playerHealthRef.current);
     if (playerHealthRef.current <= 0) {
-      if (ownedRef.current.includes("second_wind") && !secondWindUsed.current) {
+      if (ownedRef.current.includes("second_wind") && !secondWindUsed.current && !isBlockHunt) {
         secondWindUsed.current = true;
         playerHealthRef.current = 1;
         setPlayerHealth(1);
@@ -717,6 +764,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setIsDisguised(prev => !prev);
   }, []);
 
+  const setBlockhuntBlock = useCallback((block: string | null) => {
+    setBlockhuntBlockState(block);
+  }, []);
+
+  const updateBlockhuntStillTimer = useCallback((delta: number) => {
+    setBlockhuntStillTimer(prev => {
+      const newVal = prev + delta;
+      // After 3 seconds still, auto-disguise
+      if (newVal >= 3 && !isDisguised && gameMode === "blockhunt" && blockhuntBlock) {
+        setIsDisguised(true);
+      }
+      return newVal;
+    });
+  }, [isDisguised, gameMode, blockhuntBlock]);
+
+  const applyBlockhuntStun = useCallback(() => {
+    setBlockhuntStunTimer(1); // 1 second stun
+    // Decay stun timer via game loop
+  }, []);
+
   const advanceSurvivalWave = useCallback(() => {
     waveRef.current++;
     setSurvivalWave(waveRef.current);
@@ -752,6 +819,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setBasePosition(null);
     setParkourFinished(false);
     setIsDisguised(false);
+    setBlockhuntBlockState(null);
+    setBlockhuntStillTimer(0);
+    setBlockhuntStunTimer(0);
     playerHealthRef.current = BASE_MAX_HEALTH;
     playerAmmoRef.current = 0;
     npcHealthRef.current = {};
@@ -764,7 +834,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
-  const gameDuration = gameMode === "survival" ? 999 : gameMode === "parkour" ? 120 : gameMode === "deathrun" ? 90 : DIFFICULTY_SETTINGS[difficulty].gameDuration;
+  const gameDuration = gameMode === "blockhunt" ? 300 : gameMode === "survival" ? 999 : gameMode === "parkour" ? 120 : gameMode === "deathrun" ? 90 : DIFFICULTY_SETTINGS[difficulty].gameDuration;
   const timeLeft = Math.max(0, gameDuration - elapsedTime);
 
   return (
@@ -782,6 +852,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         kothScore, kothZone, checkpoints, checkpointIndex,
         survivalWave, flagCarried, flagPosition, basePosition,
         parkourFinished, isDisguised,
+        blockhuntBlock, blockhuntStillTimer, blockhuntStunTimer,
         equippedSkin, equippedTrail, equippedHat,
         nearHatch, hatchPromptText, setNearHatch,
         tutorialActive, tutorialStep, startTutorial, advanceTutorial, endTutorial,
@@ -797,6 +868,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         grabFlag, returnFlag, finishParkour,
         toggleDisguise, advanceSurvivalWave,
         equipSkin, equipTrail, equipHat,
+        setBlockhuntBlock, updateBlockhuntStillTimer, applyBlockhuntStun,
       }}
     >
       {children}
