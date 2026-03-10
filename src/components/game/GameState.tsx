@@ -609,11 +609,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const damagePlayer = useCallback((amount: number) => {
     if (gameOverRef.current) return;
-    const dmg = ownedRef.current.includes("thick_skin") ? Math.max(1, Math.ceil(amount / 2)) : amount;
+    // Block Hunt: if caught while NOT disguised, lose ALL hearts instantly
+    const isBlockHunt = modeRef.current === "blockhunt";
+    let dmg: number;
+    if (isBlockHunt) {
+      // In blockhunt: runner slingshot does 2 hearts + stun handled separately
+      // Hunter sword does 2 hearts. If not disguised and melee tagged, instant kill
+      dmg = amount;
+    } else {
+      dmg = ownedRef.current.includes("thick_skin") ? Math.max(1, Math.ceil(amount / 2)) : amount;
+    }
     playerHealthRef.current = Math.max(0, playerHealthRef.current - dmg);
     setPlayerHealth(playerHealthRef.current);
     if (playerHealthRef.current <= 0) {
-      if (ownedRef.current.includes("second_wind") && !secondWindUsed.current) {
+      if (ownedRef.current.includes("second_wind") && !secondWindUsed.current && !isBlockHunt) {
         secondWindUsed.current = true;
         playerHealthRef.current = 1;
         setPlayerHealth(1);
