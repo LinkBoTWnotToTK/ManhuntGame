@@ -135,6 +135,10 @@ interface GameState {
   basePosition: [number, number, number] | null;
   parkourFinished: boolean;
   isDisguised: boolean;
+  // Block Hunt enhanced
+  blockhuntBlock: string | null;
+  blockhuntStillTimer: number;
+  blockhuntStunTimer: number;
   // Cosmetics
   equippedSkin: string;
   equippedTrail: string;
@@ -184,6 +188,9 @@ interface GameState {
   equipSkin: (id: string) => void;
   equipTrail: (id: string) => void;
   equipHat: (id: string) => void;
+  setBlockhuntBlock: (block: string | null) => void;
+  updateBlockhuntStillTimer: (delta: number) => void;
+  applyBlockhuntStun: () => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
