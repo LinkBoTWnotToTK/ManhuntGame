@@ -11,6 +11,9 @@ const MAP_AMBIENT: Record<GameMap, { freqs: number[]; filterFreq: number; type: 
   underground:    { freqs: [55, 82, 110], filterFreq: 200, type: "triangle", noiseLevel: 0.03 },
   volcano:        { freqs: [50, 75, 100], filterFreq: 350, type: "sawtooth", noiseLevel: 0.06 },
   space_station:  { freqs: [92, 138, 184, 276], filterFreq: 500, type: "sine", noiseLevel: 0.02 },
+  ruins:          { freqs: [70, 105, 140], filterFreq: 220, type: "triangle", noiseLevel: 0.04 },
+  swamp:          { freqs: [60, 90, 120], filterFreq: 280, type: "sine", noiseLevel: 0.05 },
+  rooftop:        { freqs: [100, 150, 200, 250], filterFreq: 450, type: "sine", noiseLevel: 0.03 },
 };
 
 // Procedural music notes — adventure-style arpeggios (BoTW-inspired calm exploration)

@@ -13,6 +13,9 @@ export const MAP_WEATHER: Record<GameMap, WeatherType> = {
   underground: "clear",
   volcano: "ash",
   space_station: "clear",
+  ruins: "fog",
+  swamp: "rain",
+  rooftop: "clear",
 };
 
 export const windForce = new THREE.Vector3(0, 0, 0);

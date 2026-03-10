@@ -69,6 +69,27 @@ function getLooseObjects(map: GameMap): LooseObject[] {
       { pos: [-22, 0, -38], type: "box" }, { pos: [8, 0, -45], type: "crate" },
       { pos: [0, 0, 15], type: "box" }, { pos: [-15, 0, -50], type: "crate" },
     ],
+    ruins: [
+      { pos: [-12, 0, 5], type: "crate" }, { pos: [15, 0, -8], type: "barrel" },
+      { pos: [-22, 0, -20], type: "crate" }, { pos: [10, 0, -28], type: "barrel" },
+      { pos: [-8, 0, -40], type: "crate" }, { pos: [25, 0, -15], type: "barrel" },
+      { pos: [-28, 0, -45], type: "crate" }, { pos: [18, 0, -50], type: "barrel" },
+      { pos: [0, 0, 18], type: "crate" }, { pos: [-18, 0, -55], type: "barrel" },
+    ],
+    swamp: [
+      { pos: [-10, 0, 8], type: "sack" }, { pos: [12, 0, -5], type: "barrel" },
+      { pos: [-20, 0, -18], type: "crate" }, { pos: [18, 0, -22], type: "sack" },
+      { pos: [-5, 0, -35], type: "barrel" }, { pos: [25, 0, -15], type: "crate" },
+      { pos: [-28, 0, -40], type: "sack" }, { pos: [10, 0, -45], type: "barrel" },
+      { pos: [0, 0, 12], type: "crate" }, { pos: [-18, 0, -50], type: "sack" },
+    ],
+    rooftop: [
+      { pos: [-10, 0, 5], type: "box" }, { pos: [12, 0, -3], type: "crate" },
+      { pos: [-18, 0, -15], type: "box" }, { pos: [20, 0, -10], type: "crate" },
+      { pos: [-5, 0, -25], type: "box" }, { pos: [15, 0, -30], type: "crate" },
+      { pos: [-22, 0, -38], type: "box" }, { pos: [8, 0, -45], type: "crate" },
+      { pos: [0, 0, 15], type: "box" }, { pos: [-15, 0, -50], type: "crate" },
+    ],
   };
 
   const mapLayout = layouts[map] || layouts.suburban;
@@ -179,6 +200,21 @@ export function getHatchPositions(map: GameMap): HatchData[] {
       { pos: [0, 0, -35], target: [0, baseY, -35] },
     ],
     space_station: [
+      { pos: [-10, 0, 5], target: [-10, baseY, 5], coveredBy: 0 },
+      { pos: [15, 0, -30], target: [15, baseY, -30], coveredBy: 5 },
+      { pos: [0, 0, -20], target: [0, baseY, -20] },
+    ],
+    ruins: [
+      { pos: [-12, 0, 5], target: [-12, baseY, 5], coveredBy: 0 },
+      { pos: [25, 0, -15], target: [25, baseY, -15], coveredBy: 5 },
+      { pos: [0, 0, -35], target: [0, baseY, -35] },
+    ],
+    swamp: [
+      { pos: [-10, 0, 8], target: [-10, baseY, 8], coveredBy: 0 },
+      { pos: [25, 0, -15], target: [25, baseY, -15], coveredBy: 5 },
+      { pos: [0, 0, -35], target: [0, baseY, -35] },
+    ],
+    rooftop: [
       { pos: [-10, 0, 5], target: [-10, baseY, 5], coveredBy: 0 },
       { pos: [15, 0, -30], target: [15, baseY, -30], coveredBy: 5 },
       { pos: [0, 0, -20], target: [0, baseY, -20] },

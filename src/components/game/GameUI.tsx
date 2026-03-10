@@ -22,6 +22,9 @@ const MAP_INFO: Record<GameMap, { name: string; emoji: string; desc: string; col
   underground:    { name: "UNDERGROUND", emoji: "🕳️", desc: "Bunker tunnels", color: "bg-purple-950/50 hover:bg-purple-900/60", borderColor: "border-purple-500/20 hover:border-purple-500/50" },
   volcano:        { name: "VOLCANO", emoji: "🌋", desc: "Molten lava caverns", color: "bg-red-950/50 hover:bg-red-900/60", borderColor: "border-red-500/20 hover:border-red-500/50" },
   space_station:  { name: "SPACE STATION", emoji: "🚀", desc: "Sci-fi corridors", color: "bg-indigo-950/50 hover:bg-indigo-900/60", borderColor: "border-indigo-500/20 hover:border-indigo-500/50" },
+  ruins:          { name: "RUINS", emoji: "🏛️", desc: "Ancient stone ruins", color: "bg-stone-950/50 hover:bg-stone-900/60", borderColor: "border-stone-500/20 hover:border-stone-500/50" },
+  swamp:          { name: "SWAMP", emoji: "🐊", desc: "Murky wetlands", color: "bg-lime-950/50 hover:bg-lime-900/60", borderColor: "border-lime-500/20 hover:border-lime-500/50" },
+  rooftop:        { name: "ROOFTOP", emoji: "🏙️", desc: "City rooftops at night", color: "bg-slate-950/50 hover:bg-slate-900/60", borderColor: "border-slate-500/20 hover:border-slate-500/50" },
 };
 
 const DIFF_COLORS: Record<Difficulty, string> = {
