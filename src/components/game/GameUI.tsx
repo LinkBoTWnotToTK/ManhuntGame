@@ -533,6 +533,47 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
               </div>
             )}
 
+            {/* BLOCK HUNT: Block Selection */}
+            {menuStep === "blockhunt_select" && (
+              <div className="animate-fade-in space-y-5">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-3xl">📦</span>
+                  <h2 className="text-xl font-black text-white">CHOOSE YOUR BLOCK</h2>
+                </div>
+                <p className="text-white/40 text-xs">Pick a block to disguise as. Stay still for 3 seconds to transform! Map will be randomly selected.</p>
+                <div className="text-white/20 text-[10px] mb-2">
+                  Maps: {BLOCKHUNT_MAPS.map(m => MAP_INFO[m]?.emoji).join(" ")} • 10 ❤️ • 5:00 timer
+                </div>
+                <div className="grid grid-cols-4 gap-3 max-w-md mx-auto">
+                  {BLOCKHUNT_BLOCKS.map(block => (
+                    <button
+                      key={block.id}
+                      onClick={() => {
+                        setBlockhuntBlock(block.id);
+                        // Set a random map, difficulty defaults to medium
+                        const randomMap = BLOCKHUNT_MAPS[Math.floor(Math.random() * BLOCKHUNT_MAPS.length)];
+                        selectMap(randomMap);
+                        setDifficulty("medium");
+                        transition("ready");
+                      }}
+                      className="group p-4 rounded-xl border border-white/10 hover:border-purple-400/50 transition-all hover:scale-105 active:scale-95 space-y-2"
+                      style={{ backgroundColor: block.color + "22" }}
+                    >
+                      <div className="text-3xl group-hover:scale-110 transition-transform">{block.emoji}</div>
+                      <div className="text-[10px] font-black text-white">{block.name}</div>
+                    </button>
+                  ))}
+                </div>
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10 max-w-sm mx-auto text-left space-y-1">
+                  <div className="text-[10px] text-white/50"><span className="text-purple-400 font-bold">Runner:</span> 🪃 Slingshot (2❤️ dmg + 1s stun) • 5 ammo</div>
+                  <div className="text-[10px] text-white/50"><span className="text-red-400 font-bold">Finder:</span> ⚔️ Sword (2❤️ dmg) • Mining reveals blocks</div>
+                  <div className="text-[10px] text-white/50"><span className="text-yellow-400 font-bold">Tip:</span> Stand still 3s to transform. Moving breaks disguise!</div>
+                  <div className="text-[10px] text-white/50"><span className="text-red-400 font-bold">Warning:</span> If caught undisguised = instant death!</div>
+                </div>
+                <button onClick={handleBack} className="text-white/15 text-xs hover:text-white/40 transition-colors">← Back</button>
+              </div>
+            )}
+
             {/* CAMPAIGN */}
             {menuStep === "campaign" && (
               <div className="animate-fade-in space-y-5">
