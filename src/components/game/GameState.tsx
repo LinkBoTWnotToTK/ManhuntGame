@@ -822,7 +822,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
-  const gameDuration = gameMode === "survival" ? 999 : gameMode === "parkour" ? 120 : gameMode === "deathrun" ? 90 : DIFFICULTY_SETTINGS[difficulty].gameDuration;
+  const gameDuration = gameMode === "blockhunt" ? 300 : gameMode === "survival" ? 999 : gameMode === "parkour" ? 120 : gameMode === "deathrun" ? 90 : DIFFICULTY_SETTINGS[difficulty].gameDuration;
   const timeLeft = Math.max(0, gameDuration - elapsedTime);
 
   return (
