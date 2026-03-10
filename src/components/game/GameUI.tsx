@@ -175,7 +175,10 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                   ) : gameMode === "ctf" ? (
                     <div className="text-red-400 font-bold text-lg tabular-nums">{flagCarried ? "🚩 RETURN FLAG!" : "🚩 Find Flag"}</div>
                   ) : gameMode === "blockhunt" ? (
-                    <div className="text-purple-400 font-bold text-lg tabular-nums">{isDisguised ? "📦 Hidden" : "🏃 Exposed"}</div>
+                    <div className="text-purple-400 font-bold text-lg tabular-nums">
+                      {isDisguised ? "📦 Hidden" : blockhuntStillTimer > 0 ? `⏳ ${Math.max(0, 3 - blockhuntStillTimer).toFixed(1)}s` : "🏃 Exposed"}
+                      {blockhuntBlock && <span className="text-[10px] text-white/30 ml-1">[{BLOCKHUNT_BLOCKS.find(b=>b.id===blockhuntBlock)?.emoji}]</span>}
+                    </div>
                   ) : (
                     <div className="text-white font-bold text-lg">SURVIVE</div>
                   )}
