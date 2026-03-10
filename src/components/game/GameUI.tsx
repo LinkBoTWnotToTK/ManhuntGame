@@ -128,7 +128,9 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
       blockhunt_select: "mode",
       mode: "play", difficulty: "mode", map: "difficulty", ready: "map",
     };
-    const prev = flow[menuStep] || "main";
+    // Block Hunt: ready goes back to block selection
+    let prev = flow[menuStep] || "main";
+    if (menuStep === "ready" && gameMode === "blockhunt") prev = "blockhunt_select";
     if (prev === "main" || prev === "play") { selectRole(null as unknown as Role); selectMap(null as unknown as GameMap); }
     if (prev === "map") selectMap(null as unknown as GameMap);
     setTimeout(() => { setMenuStep(prev as typeof menuStep); setTransitioning(false); }, 250);
