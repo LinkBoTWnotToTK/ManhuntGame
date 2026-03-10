@@ -397,6 +397,33 @@ function getSpawnPositions(map: GameMap) {
         { pos: [15,0,-45], color: "#f8b500" },
       ],
     },
+    ruins: {
+      hunterPos: [[-28,0,-28],[28,0,-25],[0,0,-50],[-20,0,-8],[22,0,12],[-12,0,18],[20,0,-42]],
+      runnerPos: [
+        { pos: [-30,0,-25], color: "#4ecdc4" }, { pos: [30,0,-30], color: "#feca57" },
+        { pos: [-33,0,-50], color: "#ff9ff3" }, { pos: [33,0,-15], color: "#a8e6cf" },
+        { pos: [0,0,22], color: "#c792ea" }, { pos: [-25,0,15], color: "#48dbfb" },
+        { pos: [20,0,-50], color: "#f8b500" },
+      ],
+    },
+    swamp: {
+      hunterPos: [[-28,0,-28],[28,0,-25],[0,0,-50],[-20,0,-8],[22,0,12],[-12,0,18],[20,0,-42]],
+      runnerPos: [
+        { pos: [-30,0,-25], color: "#4ecdc4" }, { pos: [30,0,-30], color: "#feca57" },
+        { pos: [-33,0,-50], color: "#ff9ff3" }, { pos: [33,0,-15], color: "#a8e6cf" },
+        { pos: [0,0,22], color: "#c792ea" }, { pos: [-25,0,15], color: "#48dbfb" },
+        { pos: [20,0,-50], color: "#f8b500" },
+      ],
+    },
+    rooftop: {
+      hunterPos: [[-22,0,-22],[22,0,-20],[0,0,-42],[-15,0,-5],[18,0,8],[-10,0,15],[15,0,-35]],
+      runnerPos: [
+        { pos: [-25,0,-20], color: "#4ecdc4" }, { pos: [25,0,-25], color: "#feca57" },
+        { pos: [-28,0,-45], color: "#ff9ff3" }, { pos: [28,0,-10], color: "#a8e6cf" },
+        { pos: [0,0,18], color: "#c792ea" }, { pos: [-20,0,10], color: "#48dbfb" },
+        { pos: [15,0,-45], color: "#f8b500" },
+      ],
+    },
   };
 
   const mp = mapPositions[map] || mapPositions.suburban;

@@ -204,6 +204,21 @@ export function getHatchPositions(map: GameMap): HatchData[] {
       { pos: [15, 0, -30], target: [15, baseY, -30], coveredBy: 5 },
       { pos: [0, 0, -20], target: [0, baseY, -20] },
     ],
+    ruins: [
+      { pos: [-12, 0, 5], target: [-12, baseY, 5], coveredBy: 0 },
+      { pos: [25, 0, -15], target: [25, baseY, -15], coveredBy: 5 },
+      { pos: [0, 0, -35], target: [0, baseY, -35] },
+    ],
+    swamp: [
+      { pos: [-10, 0, 8], target: [-10, baseY, 8], coveredBy: 0 },
+      { pos: [25, 0, -15], target: [25, baseY, -15], coveredBy: 5 },
+      { pos: [0, 0, -35], target: [0, baseY, -35] },
+    ],
+    rooftop: [
+      { pos: [-10, 0, 5], target: [-10, baseY, 5], coveredBy: 0 },
+      { pos: [15, 0, -30], target: [15, baseY, -30], coveredBy: 5 },
+      { pos: [0, 0, -20], target: [0, baseY, -20] },
+    ],
   };
 
   const mapHatches = hatches[map] || hatches.suburban;
