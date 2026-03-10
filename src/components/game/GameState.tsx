@@ -462,6 +462,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setFlagCarried(false);
     setParkourFinished(false);
     setIsDisguised(false);
+    setBlockhuntBlockState(null);
+    setBlockhuntStillTimer(0);
+    setBlockhuntStunTimer(0);
     playerHealthRef.current = currentMaxHealth;
     playerAmmoRef.current = startAmmo;
     npcHealthRef.current = {};
