@@ -286,6 +286,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [tutorialActive, setTutorialActive] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [activeCampaignChallenge, setActiveCampaignChallengeState] = useState<CampaignChallenge | null>(null);
+  const [blockhuntBlock, setBlockhuntBlockState] = useState<string | null>(null);
+  const [blockhuntStillTimer, setBlockhuntStillTimer] = useState(0);
+  const [blockhuntStunTimer, setBlockhuntStunTimer] = useState(0);
   const campaignChallengeRef = useRef<CampaignChallenge | null>(null);
 
   const timerRef = useRef<number | null>(null);
