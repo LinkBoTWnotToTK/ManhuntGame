@@ -755,6 +755,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setIsDisguised(prev => !prev);
   }, []);
 
+  const setBlockhuntBlock = useCallback((block: string | null) => {
+    setBlockhuntBlockState(block);
+  }, []);
+
+  const updateBlockhuntStillTimer = useCallback((delta: number) => {
+    setBlockhuntStillTimer(prev => {
+      const newVal = prev + delta;
+      // After 3 seconds still, auto-disguise
+      if (newVal >= 3 && !isDisguised && gameMode === "blockhunt" && blockhuntBlock) {
+        setIsDisguised(true);
+      }
+      return newVal;
+    });
+  }, [isDisguised, gameMode, blockhuntBlock]);
+
+  const applyBlockhuntStun = useCallback(() => {
+    setBlockhuntStunTimer(1); // 1 second stun
+    // Decay stun timer via game loop
+  }, []);
+
   const advanceSurvivalWave = useCallback(() => {
     waveRef.current++;
     setSurvivalWave(waveRef.current);
