@@ -769,7 +769,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                     {gameMode === "speedrun" && "Race through 5 checkpoints as fast as possible!"}
                     {gameMode === "collector" && "Grab as many coins as you can before time runs out!"}
                     {gameMode === "parkour" && "Jump across platforms to reach all 5 checkpoints! Press SPACE to jump."}
-                    {gameMode === "blockhunt" && "Press Q to disguise as a crate. Stay hidden from seekers! Don't move while disguised."}
+                    {gameMode === "blockhunt" && `📦 Block Hunt! You're disguised as ${BLOCKHUNT_BLOCKS.find(b=>b.id===blockhuntBlock)?.name || "a block"}. Stand still 3s to transform. 10 hearts, 5 min timer. ${role === "runner" ? "Slingshot: 2❤️ + stun" : "Sword: 2❤️ per hit"}. If caught undisguised = instant death!`}
                     {gameMode === "ctf" && "Find the enemy flag and bring it back to your base!"}
                     {gameMode === "survival" && "Survive endless waves of hunters. Each wave adds more!"}
                     {gameMode === "deathrun" && "Navigate deadly narrow platforms to reach all 5 checkpoints! Don't fall!"}
