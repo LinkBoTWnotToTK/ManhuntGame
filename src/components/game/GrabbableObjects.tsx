@@ -69,6 +69,27 @@ function getLooseObjects(map: GameMap): LooseObject[] {
       { pos: [-22, 0, -38], type: "box" }, { pos: [8, 0, -45], type: "crate" },
       { pos: [0, 0, 15], type: "box" }, { pos: [-15, 0, -50], type: "crate" },
     ],
+    ruins: [
+      { pos: [-12, 0, 5], type: "crate" }, { pos: [15, 0, -8], type: "barrel" },
+      { pos: [-22, 0, -20], type: "crate" }, { pos: [10, 0, -28], type: "barrel" },
+      { pos: [-8, 0, -40], type: "crate" }, { pos: [25, 0, -15], type: "barrel" },
+      { pos: [-28, 0, -45], type: "crate" }, { pos: [18, 0, -50], type: "barrel" },
+      { pos: [0, 0, 18], type: "crate" }, { pos: [-18, 0, -55], type: "barrel" },
+    ],
+    swamp: [
+      { pos: [-10, 0, 8], type: "sack" }, { pos: [12, 0, -5], type: "barrel" },
+      { pos: [-20, 0, -18], type: "crate" }, { pos: [18, 0, -22], type: "sack" },
+      { pos: [-5, 0, -35], type: "barrel" }, { pos: [25, 0, -15], type: "crate" },
+      { pos: [-28, 0, -40], type: "sack" }, { pos: [10, 0, -45], type: "barrel" },
+      { pos: [0, 0, 12], type: "crate" }, { pos: [-18, 0, -50], type: "sack" },
+    ],
+    rooftop: [
+      { pos: [-10, 0, 5], type: "box" }, { pos: [12, 0, -3], type: "crate" },
+      { pos: [-18, 0, -15], type: "box" }, { pos: [20, 0, -10], type: "crate" },
+      { pos: [-5, 0, -25], type: "box" }, { pos: [15, 0, -30], type: "crate" },
+      { pos: [-22, 0, -38], type: "box" }, { pos: [8, 0, -45], type: "crate" },
+      { pos: [0, 0, 15], type: "box" }, { pos: [-15, 0, -50], type: "crate" },
+    ],
   };
 
   const mapLayout = layouts[map] || layouts.suburban;
