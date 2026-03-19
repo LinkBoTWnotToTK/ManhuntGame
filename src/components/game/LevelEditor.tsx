@@ -343,6 +343,11 @@ export default function LevelEditor({ onExit }: { onExit: () => void }) {
       theme,
       items,
       bounds: { minX: -35, maxX: 35, minZ: -60, maxZ: 30 },
+      hatches: items.filter(i => i.itemId === "hatch").map((h, idx) => ({
+        fromPos: h.position,
+        toPos: [h.position[0], -5, h.position[2]] as [number, number, number],
+        label: `Hatch ${idx + 1}`,
+      })),
       createdAt: Date.now(),
     };
     saveCustomLevel(level);

@@ -83,13 +83,25 @@ export const EDITOR_THEMES: EditorThemeDef[] = [
   { id: "space", name: "Space", emoji: "🚀", groundColor: "#111122", skyColor: "#000011", ambientColor: "#4466aa", ambientIntensity: 0.3, fogColor: "#000022", fogDensity: 0.005 },
 ];
 
+export interface HatchLink {
+  fromPos: [number, number, number];
+  toPos: [number, number, number]; // underground destination
+  label: string;
+}
+
 export interface CustomLevel {
   id: string;
   name: string;
   theme: EditorTheme;
   items: PlacedItem[];
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
+  hatches: HatchLink[];
   createdAt: number;
+}
+
+export function getCustomLevel(id: string): CustomLevel | null {
+  const levels = loadCustomLevels();
+  return levels.find(l => l.id === id) || null;
 }
 
 const STORAGE_KEY = "hide_seek_custom_levels";
