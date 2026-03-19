@@ -21,7 +21,7 @@ const GRAVITY = -20;
 const JUMP_VELOCITY = 8;
 const DOUBLE_JUMP_VELOCITY = 7;
 const WALL_RUN_SPEED = 5;
-const WALL_RUN_DURATION = 0.8; // seconds
+const WALL_RUN_DURATION = 0.8;
 const WALL_CHECK_DIST = 0.6;
 
 function PlayerFigure({ role, isDisguised }: { role: string | null; isDisguised: boolean }) {
@@ -43,12 +43,10 @@ function PlayerFigure({ role, isDisguised }: { role: string | null; isDisguised:
   
   return (
     <group>
-      {/* Head */}
       <mesh position={[0, 1.6, 0]} castShadow>
         <sphereGeometry args={[0.18, 8, 6]} />
         <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      {/* Eyes */}
       <mesh position={[0.06, 1.63, 0.14]}>
         <sphereGeometry args={[0.03, 4, 4]} />
         <meshStandardMaterial color="#222" />
@@ -57,12 +55,10 @@ function PlayerFigure({ role, isDisguised }: { role: string | null; isDisguised:
         <sphereGeometry args={[0.03, 4, 4]} />
         <meshStandardMaterial color="#222" />
       </mesh>
-      {/* Body */}
       <mesh position={[0, 1.15, 0]} castShadow>
         <capsuleGeometry args={[0.16, 0.45, 4, 8]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      {/* Arms */}
       <mesh position={[-0.25, 1.1, 0]} rotation={[0, 0, 0.25]}>
         <capsuleGeometry args={[0.05, 0.35, 3, 6]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
@@ -71,7 +67,6 @@ function PlayerFigure({ role, isDisguised }: { role: string | null; isDisguised:
         <capsuleGeometry args={[0.05, 0.35, 3, 6]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      {/* Legs */}
       <mesh position={[-0.09, 0.5, 0]}>
         <capsuleGeometry args={[0.06, 0.45, 3, 6]} />
         <meshStandardMaterial color={pantsColor} roughness={0.8} />
@@ -84,18 +79,34 @@ function PlayerFigure({ role, isDisguised }: { role: string | null; isDisguised:
   );
 }
 
-// Get ground height at a position (checks platforms)
+// Get ground height at a position (checks platforms) — improved to handle head bonking
 function getGroundHeight(x: number, z: number, currentY: number): number {
-  let groundY = 0; // base ground
+  let groundY = 0;
   for (const plat of platformColliders) {
     if (x >= plat.min.x && x <= plat.max.x && z >= plat.min.z && z <= plat.max.z) {
-      // Only count if we're above or near the platform top
-      if (currentY >= plat.max.y - 0.3) {
-        groundY = Math.max(groundY, plat.max.y);
+      // Only land on platform if we're above or very near the top
+      const platTop = plat.max.y;
+      if (currentY >= platTop - 0.5) {
+        groundY = Math.max(groundY, platTop);
       }
     }
   }
   return groundY;
+}
+
+// Check if head would hit platform underside
+function checkCeilingHit(x: number, z: number, currentY: number, velocityY: number): number | null {
+  if (velocityY <= 0) return null;
+  const headY = currentY + 1.8;
+  for (const plat of platformColliders) {
+    if (x >= plat.min.x && x <= plat.max.x && z >= plat.min.z && z <= plat.max.z) {
+      // If head would go into platform from below
+      if (headY >= plat.min.y && currentY < plat.min.y) {
+        return plat.min.y - 1.8; // push player down so head doesn't clip
+      }
+    }
+  }
+  return null;
 }
 
 export default function Player() {
@@ -127,8 +138,9 @@ export default function Player() {
   const jumpBuffered = useRef(false);
   const doubleJumpUsed = useRef(false);
   const wallRunTimer = useRef(0);
-  const wallRunSide = useRef(0); // -1 left, 1 right, 0 none
+  const wallRunSide = useRef(0);
   const isWallRunning = useRef(false);
+  const lastMoving = useRef(false);
 
   const shootRef = useRef<() => void>(() => {});
   shootRef.current = () => {
@@ -228,8 +240,7 @@ export default function Player() {
     if (weaponCooldownRef.current > 0) weaponCooldownRef.current -= delta;
     if (meleeCooldownRef.current > 0) meleeCooldownRef.current -= delta;
 
-    // --- Mobile input ---
-    // Camera from mobile touch
+    // Mobile camera input
     if (mobileCameraDelta.x !== 0 || mobileCameraDelta.y !== 0) {
       yaw.current -= mobileCameraDelta.x;
       pitch.current = THREE.MathUtils.clamp(pitch.current - mobileCameraDelta.y, 0.1, 1.0);
@@ -237,13 +248,11 @@ export default function Player() {
       mobileCameraDelta.y = 0;
     }
 
-    // Mobile jump
     if (mobileButtons.jump) {
       jumpBuffered.current = true;
       mobileButtons.jump = false;
     }
 
-    // Mobile shoot
     if (mobileButtons.shoot && !mobileShootRef.current) {
       mobileShootRef.current = true;
       shootRef.current();
@@ -272,23 +281,21 @@ export default function Player() {
       wallRunTimer.current = 0;
     }
 
-    // Wall run detection
     const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
     const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
+    // Wall run detection
     if (!onGround && !isWallRunning.current && playerVelocityY < 0) {
-      // Check for walls on left and right
       for (const side of [-1, 1]) {
         const checkPos = playerPosition.clone().addScaledVector(right, side * WALL_CHECK_DIST);
         const pMin = new THREE.Vector3(checkPos.x - 0.1, playerY, checkPos.z - 0.1);
         const pMax = new THREE.Vector3(checkPos.x + 0.1, playerY + 1.5, checkPos.z + 0.1);
         for (const c of wallColliders) {
           if (pMin.x < c.max.x && pMax.x > c.min.x && pMin.y < c.max.y && pMax.y > c.min.y && pMin.z < c.max.z && pMax.z > c.min.z) {
-            // Touching wall — start wall run
-            if ((keys.current["KeyW"] || keys.current["ArrowUp"]) && wallRunTimer.current < WALL_RUN_DURATION) {
+            if ((keys.current["KeyW"] || keys.current["ArrowUp"] || Math.abs(mobileJoystick.y) > 0.3) && wallRunTimer.current < WALL_RUN_DURATION) {
               isWallRunning.current = true;
               wallRunSide.current = side;
-              setPlayerVelocityY(0); // cancel falling
+              setPlayerVelocityY(0);
             }
             break;
           }
@@ -297,14 +304,12 @@ export default function Player() {
       }
     }
 
-    // Wall running
     if (isWallRunning.current) {
       wallRunTimer.current += delta;
-      if (wallRunTimer.current >= WALL_RUN_DURATION || !(keys.current["KeyW"] || keys.current["ArrowUp"])) {
+      if (wallRunTimer.current >= WALL_RUN_DURATION || !(keys.current["KeyW"] || keys.current["ArrowUp"] || Math.abs(mobileJoystick.y) > 0.3)) {
         isWallRunning.current = false;
       } else {
-        // Move forward along wall, slight upward
-        setPlayerVelocityY(1); // slight lift
+        setPlayerVelocityY(1);
       }
     }
 
@@ -314,23 +319,27 @@ export default function Player() {
         isGrounded.current = false;
         doubleJumpUsed.current = false;
       } else if (isWallRunning.current) {
-        // Wall jump — launch away from wall
         setPlayerVelocityY(JUMP_VELOCITY * 0.9);
         isWallRunning.current = false;
-        // Push away from wall
         playerPosition.addScaledVector(right, -wallRunSide.current * 2);
       } else if (!doubleJumpUsed.current) {
-        // Double jump
         setPlayerVelocityY(DOUBLE_JUMP_VELOCITY);
         doubleJumpUsed.current = true;
       }
       jumpBuffered.current = false;
     }
-    jumpBuffered.current = false; // consume
+    jumpBuffered.current = false;
 
     // Apply gravity
     let vy = isWallRunning.current ? playerVelocityY : playerVelocityY + GRAVITY * delta;
     let newY = playerY + vy * delta;
+
+    // Ceiling check — bonk head on platform underside
+    const ceilingY = checkCeilingHit(playerPosition.x, playerPosition.z, newY, vy);
+    if (ceilingY !== null && vy > 0) {
+      newY = ceilingY;
+      vy = 0; // stop upward velocity
+    }
 
     const newGroundH = getGroundHeight(playerPosition.x, playerPosition.z, newY);
     if (newY <= newGroundH) {
@@ -343,26 +352,26 @@ export default function Player() {
     setPlayerVelocityY(vy);
 
     // --- Horizontal movement ---
-
     const dir = new THREE.Vector3();
     if (keys.current["KeyW"] || keys.current["ArrowUp"]) dir.add(forward);
     if (keys.current["KeyS"] || keys.current["ArrowDown"]) dir.sub(forward);
     if (keys.current["KeyA"] || keys.current["ArrowLeft"]) dir.sub(right);
     if (keys.current["KeyD"] || keys.current["ArrowRight"]) dir.add(right);
 
-    // Mobile joystick input
+    // Mobile joystick
     if (Math.abs(mobileJoystick.x) > 0.1 || Math.abs(mobileJoystick.y) > 0.1) {
       dir.addScaledVector(forward, -mobileJoystick.y);
       dir.addScaledVector(right, mobileJoystick.x);
     }
 
-    if (dir.lengthSq() > 0 && speed > 0) {
+    const isMoving = dir.lengthSq() > 0 && speed > 0;
+
+    if (isMoving) {
       dir.normalize().multiplyScalar(speed * delta);
       const newPos = playerPosition.clone().add(dir);
       newPos.x = THREE.MathUtils.clamp(newPos.x, bounds.minX, bounds.maxX);
       newPos.z = THREE.MathUtils.clamp(newPos.z, bounds.minZ, bounds.maxZ);
 
-      // Combined wall + platform collision at player's Y level
       const yBase = playerY;
       const allColliders = [...wallColliders, ...platformColliders.map(p => ({ min: p.min, max: p.max }))];
 
@@ -371,7 +380,6 @@ export default function Player() {
       let blocked = false;
       for (const c of allColliders) {
         if (pMin.x < c.max.x && pMax.x > c.min.x && pMin.y < c.max.y && pMax.y > c.min.y && pMin.z < c.max.z && pMax.z > c.min.z) {
-          // Don't block if we're standing on top of this platform
           if (yBase >= c.max.y - 0.1) continue;
           blocked = true; break;
         }
@@ -379,7 +387,6 @@ export default function Player() {
       if (!blocked) {
         playerPosition.copy(newPos);
       }
-      // Apply wind push
       if (windForce.lengthSq() > 0.01) {
         playerPosition.x += windForce.x * delta * 0.4;
         playerPosition.z += windForce.z * delta * 0.4;
@@ -399,7 +406,6 @@ export default function Player() {
           }
         }
         if (!bx) playerPosition.x = sx.x;
-        // Try Z only
         const sz = playerPosition.clone(); sz.z += dir.z;
         let bz = false;
         const szMin = new THREE.Vector3(sz.x - PLAYER_RADIUS, yBase, sz.z - PLAYER_RADIUS);
@@ -412,14 +418,14 @@ export default function Player() {
         }
         if (!bz) playerPosition.z = sz.z;
       }
-      if (meshRef.current) {
+      if (meshRef.current && isGrounded.current) {
         const t = state.clock.elapsedTime;
-        // Bob only when on ground
-        if (isGrounded.current) {
-          meshRef.current.position.y = playerY + Math.abs(Math.sin(t * (isSprinting ? 14 : 8))) * 0.06;
-        }
+        meshRef.current.position.y = playerY + Math.abs(Math.sin(t * (isSprinting ? 14 : 8))) * 0.06;
       }
     }
+
+    // Track movement for blockhunt still timer
+    lastMoving.current = isMoving;
 
     if (meshRef.current) {
       meshRef.current.position.x = playerPosition.x;
@@ -434,7 +440,7 @@ export default function Player() {
       Math.cos(yaw.current) * CAMERA_DIST
     );
     const targetCamPos = playerPosition.clone().add(camOffset);
-    targetCamPos.y = camOffset.y; // absolute Y for camera
+    targetCamPos.y = camOffset.y;
     camera.position.lerp(targetCamPos, 0.1);
     camera.lookAt(playerPosition.x, playerY + 1.3, playerPosition.z);
 
@@ -487,14 +493,16 @@ export default function Player() {
       }
     }
 
-    // Checkpoint collection (speedrun, parkour, deathrun)
+    // Checkpoint collection (speedrun, parkour, deathrun) - larger radius, 3D distance
     if ((gameMode === "speedrun" || gameMode === "parkour" || gameMode === "deathrun") && checkpoints.length > 0 && checkpointIndex < checkpoints.length) {
       const cp = checkpoints[checkpointIndex];
       const dx = playerPosition.x - cp[0];
       const dy = playerY - cp[1];
       const dz = playerPosition.z - cp[2];
+      // Parkour: larger checkpoint radius (4 units) to be more forgiving
+      const checkRadius = (gameMode === "parkour" || gameMode === "deathrun") ? 4 : 3;
       const dist3d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      if (dist3d < 3) {
+      if (dist3d < checkRadius) {
         advanceCheckpoint();
       }
     }
@@ -520,11 +528,23 @@ export default function Player() {
     // Deathrun: fall into lava/void = damage
     if (gameMode === "deathrun" && playerY < -2) {
       damagePlayer(1);
-      // Reset to last checkpoint or start
       setPlayerY(0);
       setPlayerVelocityY(0);
       if (checkpointIndex > 0 && checkpoints[checkpointIndex - 1]) {
         playerPosition.set(checkpoints[checkpointIndex - 1][0], 0, checkpoints[checkpointIndex - 1][2]);
+      } else {
+        playerPosition.set(0, 0, 4);
+      }
+    }
+
+    // Parkour: reset on fall
+    if (gameMode === "parkour" && playerY < -2) {
+      setPlayerY(0);
+      setPlayerVelocityY(0);
+      if (checkpointIndex > 0 && checkpoints[checkpointIndex - 1]) {
+        const cp = checkpoints[checkpointIndex - 1];
+        playerPosition.set(cp[0], cp[1] + 1, cp[2]);
+        setPlayerY(cp[1] + 1);
       } else {
         playerPosition.set(0, 0, 4);
       }

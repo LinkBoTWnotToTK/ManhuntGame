@@ -20,8 +20,6 @@ import WeatherSystem from "@/components/game/WeatherSystem";
 import LevelEditor from "@/components/game/LevelEditor";
 import MobileControls from "@/components/game/MobileControls";
 
-// ... keep existing code (KothZone, Checkpoints, FlagObject, SurvivalWaveIndicator, GameScene, DynamicFOV, HatchPrompt components - lines 20-201)
-
 function KothZone() {
   const { kothZone, isPlaying } = useGame();
   if (!kothZone || !isPlaying) return null;
@@ -134,6 +132,7 @@ function GameScene() {
   const survivalHunterCount = gameMode === "survival" ? Math.min(7, 2 + survivalWave) : diff.hunterCount;
   const isPlatformMode = gameMode === "parkour" || gameMode === "deathrun";
   const isBlockHunt = gameMode === "blockhunt";
+  const isTeamMode = gameMode === "ctf" || gameMode === "survival" || gameMode === "infection";
 
   return (
     <>
@@ -143,19 +142,24 @@ function GameScene() {
       {role === "hunter" && !isPlatformMode && (
         <>
           {spawns.runners.map((npc) => <NPC key={npc.id} {...npc} npcRole="runner" />)}
+          {/* Allies help the hunter */}
           {spawns.allies.map((npc) => <NPC key={npc.id} {...npc} npcRole="ally" />)}
         </>
       )}
-      {role === "runner" && !isPlatformMode && (
+      {role === "runner" && !isPlatformMode && !isBlockHunt && (
         <>
           {gameMode === "survival"
             ? spawns.hunters.slice(0, survivalHunterCount).map((npc) => <NPC key={npc.id} {...npc} npcRole="hunter" />)
             : spawns.hunters.slice(0, diff.hunterCount).map((npc) => <NPC key={npc.id} {...npc} npcRole="hunter" />)
           }
+          {/* In team modes, allies help the runner too */}
+          {isTeamMode && spawns.allies.map((npc) => <NPC key={npc.id} {...npc} npcRole="ally" />)}
         </>
       )}
       {isBlockHunt && role === "runner" && (
-        spawns.hunters.slice(0, 3).map((npc) => <NPC key={npc.id} {...npc} npcRole="hunter" />)
+        <>
+          {spawns.hunters.slice(0, 3).map((npc) => <NPC key={npc.id} {...npc} npcRole="hunter" />)}
+        </>
       )}
       {isPlatformMode && role === "runner" && (
         spawns.hunters.slice(0, 1).map((npc) => <NPC key={npc.id} {...npc} npcRole="hunter" />)

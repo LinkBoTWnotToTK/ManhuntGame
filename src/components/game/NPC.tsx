@@ -12,7 +12,6 @@ interface NPCProps {
   npcRole: "runner" | "hunter" | "ally";
 }
 
-// Base NPC speeds
 const RUNNER_BASE_SPEED = 3.8;
 const RUNNER_SPRINT_SPEED = 5.2;
 const HUNTER_BASE_SPEED = 2.4;
@@ -31,12 +30,10 @@ function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
   
   return (
     <group>
-      {/* Head */}
       <mesh position={[0, 1.6, 0]} castShadow>
         <sphereGeometry args={[isHunter ? 0.19 : 0.16, 8, 6]} />
         <meshStandardMaterial color={skinColor} roughness={0.7} />
       </mesh>
-      {/* Eyes */}
       <mesh position={[0.05, 1.63, 0.13]}>
         <sphereGeometry args={[0.03, 4, 4]} />
         <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={isHunter ? 2 : 0.5} />
@@ -45,12 +42,10 @@ function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
         <sphereGeometry args={[0.03, 4, 4]} />
         <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={isHunter ? 2 : 0.5} />
       </mesh>
-      {/* Body */}
       <mesh position={[0, 1.15, 0]} castShadow>
         <capsuleGeometry args={[isHunter ? 0.17 : 0.14, isHunter ? 0.48 : 0.4, 4, 8]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      {/* Arms */}
       <mesh position={[-0.24, 1.1, 0]} rotation={[0, 0, 0.25]}>
         <capsuleGeometry args={[0.05, 0.35, 3, 6]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
@@ -59,7 +54,6 @@ function NPCFigure({ color, npcRole }: { color: string; npcRole: string }) {
         <capsuleGeometry args={[0.05, 0.35, 3, 6]} />
         <meshStandardMaterial color={bodyColor} roughness={0.7} />
       </mesh>
-      {/* Legs */}
       <mesh position={[-0.09, 0.5, 0]}>
         <capsuleGeometry args={[0.06, 0.45, 3, 6]} />
         <meshStandardMaterial color={pantsColor} roughness={0.8} />
@@ -112,7 +106,7 @@ function tryMove(myPos: THREE.Vector3, moveDir: THREE.Vector3, speed: number, de
 export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   const ref = useRef<THREE.Group>(null);
   const posRef = useRef(new THREE.Vector3(...startPosition));
-  const { tagged, tagNPC, isPlaying, damagePlayer, damageNPC, npcHealth, selectedMap, role: playerRole, difficulty } = useGame();
+  const { tagged, tagNPC, isPlaying, damagePlayer, damageNPC, npcHealth, selectedMap, role: playerRole, difficulty, gameMode } = useGame();
   const wanderDir = useRef(new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize());
   const wanderTimer = useRef(Math.random() * 2);
   const jukeTimer = useRef(0);
@@ -154,11 +148,16 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
     lastPos.current.copy(myPos);
 
     if (npcRole === "ally") {
+      // Ally AI: chase enemy runners (or enemy hunters depending on player role)
       let nearestDist = Infinity;
       let nearestPos: THREE.Vector3 | null = null;
       let nearestId: string | null = null;
+      
+      // If player is hunter, allies chase runners. If player is runner, allies chase hunters.
+      const targetPrefix = playerRole === "hunter" ? "r" : "h";
+      
       for (const [nid, npos] of npcPositions) {
-        if (!nid.startsWith("r") || tagged.has(nid)) continue;
+        if (!nid.startsWith(targetPrefix) || tagged.has(nid)) continue;
         const d = myPos.distanceTo(npos);
         if (d < nearestDist) { nearestDist = d; nearestPos = npos; nearestId = nid; }
       }
@@ -168,15 +167,26 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
         moveDir.normalize().addScaledVector(flankPerp, Math.sin(t * 2) * 0.4);
         moveDir.normalize();
         speed = nearestDist < 5 ? HUNTER_SPRINT_SPEED : HUNTER_BASE_SPEED;
-        if (nearestDist < TAG_DISTANCE && nearestId) tagNPC(nearestId);
-      } else {
-        wanderTimer.current -= delta;
-        if (wanderTimer.current <= 0) {
-          wanderDir.current.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
-          wanderTimer.current = 3 + Math.random() * 3;
+        if (nearestDist < TAG_DISTANCE && nearestId) {
+          damageNPC(nearestId, 1);
         }
-        moveDir.copy(wanderDir.current);
-        speed = HUNTER_BASE_SPEED * 0.5;
+      } else {
+        // Follow player loosely
+        const toPlayer = new THREE.Vector3().subVectors(playerPosition, myPos);
+        toPlayer.y = 0;
+        const playerDist = toPlayer.length();
+        if (playerDist > 8) {
+          moveDir.copy(toPlayer).normalize();
+          speed = HUNTER_SPRINT_SPEED;
+        } else {
+          wanderTimer.current -= delta;
+          if (wanderTimer.current <= 0) {
+            wanderDir.current.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+            wanderTimer.current = 3 + Math.random() * 3;
+          }
+          moveDir.copy(wanderDir.current);
+          speed = HUNTER_BASE_SPEED * 0.5;
+        }
       }
     } else {
       const toPlayer = new THREE.Vector3().subVectors(playerPosition, myPos);
@@ -234,7 +244,7 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
           }
         }
       } else {
-        // HUNTER AI — difficulty-scaled
+        // HUNTER AI
         const isSprinting = dist < 6;
         speed = (isSprinting ? HUNTER_SPRINT_SPEED : HUNTER_BASE_SPEED) * hunterSpeedMult;
 
@@ -277,9 +287,9 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
       const distToPlayer = myPos.distanceTo(playerPosition);
       if (npcRole === "runner" && distToPlayer < TAG_DISTANCE) tagNPC(id);
       if (npcRole === "hunter" && distToPlayer < TAG_DISTANCE) {
-        // Block Hunt: hunter sword does 2 hearts, or instant kill if undisguised
-        const isBlockHunt = (selectedMap && true); // check mode via damage handler in GameState
-        damagePlayer(3); // GameState handles blockhunt-specific logic
+        // Block Hunt: 2 hearts damage via GameState handler
+        const dmg = gameMode === "blockhunt" ? 2 : 3;
+        damagePlayer(dmg);
       }
     }
 
@@ -325,7 +335,7 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
   );
 }
 
-// NPC spawn positions per map — hunter count adjusted by difficulty at runtime
+// NPC spawn positions per map — more allies for team modes
 function getSpawnPositions(map: GameMap) {
   const allHunters = [
     { id: "h1", color: "#ff3333" },
@@ -442,7 +452,12 @@ function getSpawnPositions(map: GameMap) {
       ...h,
       startPosition: mp.hunterPos[i % mp.hunterPos.length],
     })),
-    allies: [{ id: "ah1", startPosition: [3, 0, 2] as [number, number, number], color: "#ff8800" }],
+    // 3 ally teammates instead of 1
+    allies: [
+      { id: "ah1", startPosition: [3, 0, 2] as [number, number, number], color: "#ff8800" },
+      { id: "ah2", startPosition: [-5, 0, 5] as [number, number, number], color: "#00ff88" },
+      { id: "ah3", startPosition: [6, 0, -3] as [number, number, number], color: "#8888ff" },
+    ],
   };
 }
 
