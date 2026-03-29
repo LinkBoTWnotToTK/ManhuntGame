@@ -307,6 +307,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [blockhuntBlock, setBlockhuntBlockState] = useState<string | null>(null);
   const [blockhuntStillTimer, setBlockhuntStillTimer] = useState(0);
   const [blockhuntStunTimer, setBlockhuntStunTimer] = useState(0);
+  // Warfare state
+  const [warfarePhase, setWarfarePhaseState] = useState<"prep" | "battle" | null>(null);
+  const [warfareElixir, setWarfareElixir] = useState(5);
+  const [warfareTowers, setWarfareTowers] = useState<WarfareTower[]>([]);
+  const [warfareUnits, setWarfareUnits] = useState<WarfareUnit[]>([]);
+  const [warfareDuration, setWarfareDurationState] = useState(WARFARE_DURATION);
+  const [warfareSelectedUnit, setWarfareSelectedUnitState] = useState<string | null>(null);
+  const warfareStockpilesCollected = useRef<Set<number>>(new Set());
+  const warfareEnemySpawnTimer = useRef(0);
+  const warfareElixirRef = useRef(5);
   const campaignChallengeRef = useRef<CampaignChallenge | null>(null);
 
   const timerRef = useRef<number | null>(null);
