@@ -170,7 +170,7 @@ function WarfareTower3D({ tower }: { tower: WarfareTowerType }) {
   );
 }
 
-function WarfareUnit3D({ unit }: { unit: WarfareUnitType & { position: [number, number, number]; team: string; health: number; maxHealth: number; id: string } }) {
+function WarfareUnit3D({ unit }: { unit: { id: string; typeId: string; position: [number, number, number]; team: string; health: number; maxHealth: number } }) {
   const ref = useRef<THREE.Group>(null);
   const posRef = useRef(new THREE.Vector3(...unit.position));
   const { warfareTowers, warfareUnits, damageWarfareTower, damageWarfareUnit } = useGame();
