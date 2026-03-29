@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useGame, Role, GameMap, Difficulty, GameMode, DIFFICULTY_SETTINGS, GAME_MODES, BLOCKHUNT_BLOCKS, BLOCKHUNT_MAPS } from "./GameState";
+import { WARFARE_UNITS, MAX_ELIXIR } from "./WarfareData";
 import Shop from "./Shop";
 import { xpForLevel, prestigeMultiplier } from "./SaveSystem";
 import { TUTORIAL_STEPS } from "./Tutorial";
@@ -42,11 +43,14 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     level, xp, prestige, totalWins, totalGames, leaderboard,
     kothScore, checkpointIndex, survivalWave, flagCarried, isDisguised,
     blockhuntBlock, blockhuntStillTimer,
+    warfarePhase, warfareElixir, warfareTowers, warfareUnits,
+    warfareDuration, warfareSelectedUnit,
     selectRole, selectMap, setDifficulty, setGameMode, startGame, resetGame,
     startTutorial, setActiveCampaignChallenge, setBlockhuntBlock,
+    setWarfarePhase, placeWarfareUnit, setWarfareDuration, setWarfareSelectedUnit,
   } = useGame();
 
-  const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter" | "blockhunt_select">("main");
+  const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter" | "blockhunt_select" | "warfare_setup">("main");
   const [selectedChapter, setSelectedChapter] = useState(0);
   const [campaignProgress, setCampaignProgress] = useState(loadCampaignProgress());
   const [transitioning, setTransitioning] = useState(false);
@@ -111,8 +115,9 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   const handleSelectRole = (r: Role) => transition("mode", () => selectRole(r));
   const handleSelectMode = (m: GameMode) => {
     if (m === "blockhunt") {
-      // Block Hunt: skip map select, go to block selection
       transition("blockhunt_select", () => setGameMode(m));
+    } else if (m === "warfare") {
+      transition("warfare_setup", () => setGameMode(m));
     } else {
       transition("difficulty", () => setGameMode(m));
     }
@@ -126,11 +131,13 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
       shop: "main", leaderboard: "main", play: "main", campaign: "main",
       campaign_chapter: "campaign",
       blockhunt_select: "mode",
+      warfare_setup: "mode",
       mode: "play", difficulty: "mode", map: "difficulty", ready: "map",
     };
     // Block Hunt: ready goes back to block selection
     let prev = flow[menuStep] || "main";
     if (menuStep === "ready" && gameMode === "blockhunt") prev = "blockhunt_select";
+    if (menuStep === "ready" && gameMode === "warfare") prev = "warfare_setup";
     if (prev === "main" || prev === "play") { selectRole(null as unknown as Role); selectMap(null as unknown as GameMap); }
     if (prev === "map") selectMap(null as unknown as GameMap);
     setTimeout(() => { setMenuStep(prev as typeof menuStep); setTransitioning(false); }, 250);
@@ -305,6 +312,93 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                 <span className="text-red-300 font-bold text-xs uppercase tracking-wider">🛡️ WAVE {survivalWave}</span>
               </div>
             </div>
+          )}
+          {/* Warfare HUD */}
+          {gameMode === "warfare" && (
+            <>
+              {/* Elixir bar */}
+              <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+                <div className="bg-black/80 backdrop-blur-md rounded-xl px-4 py-3 border border-purple-500/20 shadow-2xl w-[400px]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm">💧</span>
+                    <div className="flex-1 h-3 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full transition-all" style={{ width: `${(warfareElixir / MAX_ELIXIR) * 100}%` }} />
+                    </div>
+                    <span className="text-purple-300 font-bold text-sm tabular-nums">{Math.floor(warfareElixir)}/{MAX_ELIXIR}</span>
+                  </div>
+                  <div className="flex gap-1.5 justify-center flex-wrap">
+                    {WARFARE_UNITS.map(unit => {
+                      const canAfford = warfareElixir >= unit.cost;
+                      const isSelected = warfareSelectedUnit === unit.id;
+                      return (
+                        <button
+                          key={unit.id}
+                          onClick={() => setWarfareSelectedUnit(isSelected ? null : unit.id)}
+                          disabled={!canAfford}
+                          className={`px-2 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${
+                            isSelected ? "bg-purple-600/50 border-purple-400/60 text-white scale-105" :
+                            canAfford ? "bg-white/5 border-white/15 text-white/70 hover:bg-white/10 hover:scale-105" :
+                            "bg-white/[0.02] border-white/5 text-white/20 cursor-not-allowed"
+                          }`}
+                        >
+                          <span className="text-base">{unit.emoji}</span>
+                          <div className="text-[8px]">{unit.cost}💧</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {warfareSelectedUnit && (
+                    <div className="text-center mt-1.5 text-[9px] text-purple-300/60">
+                      Click on the ground to deploy {WARFARE_UNITS.find(u => u.id === warfareSelectedUnit)?.name}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Tower status */}
+              <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+                <div className="bg-black/70 backdrop-blur-md rounded-xl px-4 py-2 border border-orange-500/20 flex gap-4">
+                  <div className="text-center">
+                    <div className="text-[8px] text-blue-400 font-bold uppercase">Your Towers</div>
+                    <div className="flex gap-1">
+                      {warfareTowers.filter(t => t.team === "player").map(t => (
+                        <div key={t.id} className="text-center">
+                          <div className="text-[10px]">{t.type === "king" ? "🏰" : "🗼"}</div>
+                          <div className="w-8 h-1 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-400 rounded-full" style={{ width: `${(t.health / t.maxHealth) * 100}%` }} />
+                          </div>
+                          <div className="text-[7px] text-blue-300/60 tabular-nums">{t.health}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-px bg-white/10" />
+                  <div className="text-center">
+                    <div className="text-[8px] text-red-400 font-bold uppercase">Enemy Towers</div>
+                    <div className="flex gap-1">
+                      {warfareTowers.filter(t => t.team === "enemy").map(t => (
+                        <div key={t.id} className="text-center">
+                          <div className="text-[10px]">{t.type === "king" ? "🏰" : "🗼"}</div>
+                          <div className="w-8 h-1 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-red-400 rounded-full" style={{ width: `${(t.health / t.maxHealth) * 100}%` }} />
+                          </div>
+                          <div className="text-[7px] text-red-300/60 tabular-nums">{t.health}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Unit count */}
+              <div className="fixed top-4 right-4 z-50 pointer-events-none">
+                <div className="bg-black/70 backdrop-blur-md rounded-xl px-4 py-2.5 border border-white/10">
+                  <div className="text-white/50 text-[9px] uppercase">Units Deployed</div>
+                  <div className="flex gap-2">
+                    <span className="text-blue-400 font-bold text-sm">🔵 {warfareUnits.filter(u => u.team === "player").length}</span>
+                    <span className="text-red-400 font-bold text-sm">🔴 {warfareUnits.filter(u => u.team === "enemy").length}</span>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
           {escapeOpen && role === "hunter" && (
             <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
@@ -576,6 +670,65 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
               </div>
             )}
 
+            {/* WARFARE SETUP */}
+            {menuStep === "warfare_setup" && (
+              <div className="animate-fade-in space-y-5">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-3xl">⚔️</span>
+                  <h2 className="text-xl font-black text-white">GIANT WARFARE</h2>
+                </div>
+                <p className="text-white/40 text-xs">Deploy units, capture towers, destroy the enemy King Tower!</p>
+                
+                {/* Duration select */}
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => setWarfareDuration(300)}
+                    className={`px-4 py-2 rounded-xl border transition-all text-sm font-bold ${warfareDuration === 300 ? "bg-orange-600/40 border-orange-400/50 text-orange-300" : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10"}`}
+                  >⏱ 5 Minutes</button>
+                  <button
+                    onClick={() => setWarfareDuration(600)}
+                    className={`px-4 py-2 rounded-xl border transition-all text-sm font-bold ${warfareDuration === 600 ? "bg-orange-600/40 border-orange-400/50 text-orange-300" : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10"}`}
+                  >⏱ 10 Minutes</button>
+                </div>
+
+                {/* Unit preview */}
+                <div className="grid grid-cols-4 gap-2 max-w-lg mx-auto">
+                  {WARFARE_UNITS.map(unit => (
+                    <div key={unit.id} className="p-2 rounded-lg border border-white/10 bg-white/[0.03] space-y-1 text-center">
+                      <div className="text-2xl">{unit.emoji}</div>
+                      <div className="text-[10px] font-bold text-white">{unit.name}</div>
+                      <div className="text-[8px] text-white/30">{unit.description}</div>
+                      <div className="flex justify-center gap-1">
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-300">{unit.cost}💧</span>
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/20 text-red-300">{unit.damage}⚔️</span>
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-green-500/20 text-green-300">{unit.health}❤️</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10 max-w-sm mx-auto text-left space-y-1">
+                  <div className="text-[10px] text-white/50"><span className="text-orange-400 font-bold">Goal:</span> Destroy the enemy King Tower 🏰</div>
+                  <div className="text-[10px] text-white/50"><span className="text-purple-400 font-bold">Elixir:</span> Deploy units using elixir (regenerates over time)</div>
+                  <div className="text-[10px] text-white/50"><span className="text-yellow-400 font-bold">Stockpiles:</span> Find underground caches for bonus resources</div>
+                  <div className="text-[10px] text-white/50"><span className="text-cyan-400 font-bold">You:</span> Walk around the battlefield and command your troops!</div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    selectRole("runner");
+                    selectMap("forest");
+                    setDifficulty("medium");
+                    transition("ready");
+                  }}
+                  className="px-8 py-3 bg-gradient-to-b from-orange-600/50 to-orange-800/60 text-white rounded-2xl border border-orange-500/30 hover:border-orange-400/60 font-black transition-all hover:scale-105 active:scale-95"
+                >
+                  ⚔️ START WARFARE
+                </button>
+                <button onClick={handleBack} className="text-white/15 text-xs hover:text-white/40 transition-colors block mx-auto">← Back</button>
+              </div>
+            )}
+
             {/* CAMPAIGN */}
             {menuStep === "campaign" && (
               <div className="animate-fade-in space-y-5">
@@ -775,6 +928,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                     {gameMode === "ctf" && "Find the enemy flag and bring it back to your base!"}
                     {gameMode === "survival" && "Survive endless waves of hunters. Each wave adds more!"}
                     {gameMode === "deathrun" && "Navigate deadly narrow platforms to reach all 5 checkpoints! Don't fall!"}
+                    {gameMode === "warfare" && `⚔️ Giant Warfare! Deploy units using elixir, capture enemy towers. ${warfareDuration / 60} min match. Click ground to place units. Find underground stockpiles for bonus elixir!`}
                   </p>
                 </div>
                 <div className="cursor-pointer group" onClick={() => {
