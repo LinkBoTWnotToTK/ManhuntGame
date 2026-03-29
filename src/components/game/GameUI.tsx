@@ -313,6 +313,93 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
               </div>
             </div>
           )}
+          {/* Warfare HUD */}
+          {gameMode === "warfare" && (
+            <>
+              {/* Elixir bar */}
+              <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+                <div className="bg-black/80 backdrop-blur-md rounded-xl px-4 py-3 border border-purple-500/20 shadow-2xl w-[400px]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm">💧</span>
+                    <div className="flex-1 h-3 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full transition-all" style={{ width: `${(warfareElixir / MAX_ELIXIR) * 100}%` }} />
+                    </div>
+                    <span className="text-purple-300 font-bold text-sm tabular-nums">{Math.floor(warfareElixir)}/{MAX_ELIXIR}</span>
+                  </div>
+                  <div className="flex gap-1.5 justify-center flex-wrap">
+                    {WARFARE_UNITS.map(unit => {
+                      const canAfford = warfareElixir >= unit.cost;
+                      const isSelected = warfareSelectedUnit === unit.id;
+                      return (
+                        <button
+                          key={unit.id}
+                          onClick={() => setWarfareSelectedUnit(isSelected ? null : unit.id)}
+                          disabled={!canAfford}
+                          className={`px-2 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${
+                            isSelected ? "bg-purple-600/50 border-purple-400/60 text-white scale-105" :
+                            canAfford ? "bg-white/5 border-white/15 text-white/70 hover:bg-white/10 hover:scale-105" :
+                            "bg-white/[0.02] border-white/5 text-white/20 cursor-not-allowed"
+                          }`}
+                        >
+                          <span className="text-base">{unit.emoji}</span>
+                          <div className="text-[8px]">{unit.cost}💧</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {warfareSelectedUnit && (
+                    <div className="text-center mt-1.5 text-[9px] text-purple-300/60">
+                      Click on the ground to deploy {WARFARE_UNITS.find(u => u.id === warfareSelectedUnit)?.name}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Tower status */}
+              <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+                <div className="bg-black/70 backdrop-blur-md rounded-xl px-4 py-2 border border-orange-500/20 flex gap-4">
+                  <div className="text-center">
+                    <div className="text-[8px] text-blue-400 font-bold uppercase">Your Towers</div>
+                    <div className="flex gap-1">
+                      {warfareTowers.filter(t => t.team === "player").map(t => (
+                        <div key={t.id} className="text-center">
+                          <div className="text-[10px]">{t.type === "king" ? "🏰" : "🗼"}</div>
+                          <div className="w-8 h-1 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-400 rounded-full" style={{ width: `${(t.health / t.maxHealth) * 100}%` }} />
+                          </div>
+                          <div className="text-[7px] text-blue-300/60 tabular-nums">{t.health}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-px bg-white/10" />
+                  <div className="text-center">
+                    <div className="text-[8px] text-red-400 font-bold uppercase">Enemy Towers</div>
+                    <div className="flex gap-1">
+                      {warfareTowers.filter(t => t.team === "enemy").map(t => (
+                        <div key={t.id} className="text-center">
+                          <div className="text-[10px]">{t.type === "king" ? "🏰" : "🗼"}</div>
+                          <div className="w-8 h-1 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-red-400 rounded-full" style={{ width: `${(t.health / t.maxHealth) * 100}%` }} />
+                          </div>
+                          <div className="text-[7px] text-red-300/60 tabular-nums">{t.health}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Unit count */}
+              <div className="fixed top-4 right-4 z-50 pointer-events-none">
+                <div className="bg-black/70 backdrop-blur-md rounded-xl px-4 py-2.5 border border-white/10">
+                  <div className="text-white/50 text-[9px] uppercase">Units Deployed</div>
+                  <div className="flex gap-2">
+                    <span className="text-blue-400 font-bold text-sm">🔵 {warfareUnits.filter(u => u.team === "player").length}</span>
+                    <span className="text-red-400 font-bold text-sm">🔴 {warfareUnits.filter(u => u.team === "enemy").length}</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
           {escapeOpen && role === "hunter" && (
             <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
               <div className="bg-red-950/90 backdrop-blur-md rounded-full px-5 py-1.5 border border-red-500/50">
