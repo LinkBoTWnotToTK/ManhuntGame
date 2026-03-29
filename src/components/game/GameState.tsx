@@ -615,8 +615,54 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (modeRef.current === "blockhunt" && elapsed >= duration + 30) {
         finishGame(roleRef.current === "runner" ? "win" : "lose", elapsed);
       }
+
+      // Warfare: elixir regen + enemy spawning + timeout
+      if (modeRef.current === "warfare") {
+        // Regen elixir
+        warfareElixirRef.current = Math.min(MAX_ELIXIR, warfareElixirRef.current + ELIXIR_REGEN_RATE * 0.1);
+        setWarfareElixir(Math.floor(warfareElixirRef.current * 10) / 10);
+        
+        // Enemy spawns every 8-12 seconds, faster as time goes on
+        warfareEnemySpawnTimer.current += 0.1;
+        const spawnInterval = Math.max(5, 10 - elapsed / 60);
+        if (warfareEnemySpawnTimer.current >= spawnInterval) {
+          warfareEnemySpawnTimer.current = 0;
+          // Spawn 1-3 enemies based on elapsed time
+          const count = Math.min(3, 1 + Math.floor(elapsed / 120));
+          for (let i = 0; i < count; i++) {
+            const pool = WARFARE_UNITS.filter(u => u.cost <= 5);
+            const unitDef = pool[Math.floor(Math.random() * pool.length)];
+            const side = Math.random() > 0.5 ? 1 : -1;
+            const eu: WarfareUnit = {
+              id: `eu_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 5)}`,
+              typeId: unitDef.id,
+              position: [side * (5 + Math.random() * 15), 0, -48],
+              team: "enemy",
+              health: unitDef.health,
+              maxHealth: unitDef.health,
+              targetId: null,
+              lastAttack: 0,
+              alive: true,
+            };
+            setWarfareUnits(prev => [...prev, eu]);
+          }
+        }
+
+        if (elapsed >= duration) {
+          // Time up — check who has more tower HP
+          let playerHP = 0, enemyHP = 0;
+          setWarfareTowers(prev => {
+            prev.forEach(t => {
+              if (t.team === "player") playerHP += t.health;
+              else if (t.team === "enemy") enemyHP += t.health;
+            });
+            return prev;
+          });
+          finishGame(playerHP >= enemyHP ? "win" : "lose", elapsed);
+        }
+      }
     }, 100);
-  }, [finishGame]);
+  }, [finishGame, warfareDuration]);
 
   const diff = DIFFICULTY_SETTINGS[difficulty];
   const totalNPCs = role === "hunter" ? 7 : diff.hunterCount;
