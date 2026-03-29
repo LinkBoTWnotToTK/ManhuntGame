@@ -6,6 +6,7 @@ import type { WeaponType } from "./WeaponSystem";
 import { completeCampaignChallenge, type CampaignChallenge } from "./CampaignData";
 import { cloudSave, cloudSaveLeaderboard, getCloudSaveCode } from "./CloudSave";
 import { loadCampaignProgress } from "./CampaignData";
+import { WARFARE_UNITS, WARFARE_TOWERS, WARFARE_STOCKPILES, MAX_ELIXIR, ELIXIR_REGEN_RATE, WARFARE_DURATION, WARFARE_MAP_BOUNDS, type WarfareTower, type WarfareUnit, type WarfareUnitType } from "./WarfareData";
 
 export type Role = "runner" | "hunter";
 export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station" | "ruins" | "swamp" | "rooftop";
