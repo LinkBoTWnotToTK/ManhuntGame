@@ -380,16 +380,12 @@ function WarfareBattlefield() {
         <WarfareTower3D key={tower.id} tower={tower} />
       ))}
       {/* Units */}
-      {warfareUnits.filter(u => u.alive).map(unit => {
-        const unitDef = WARFARE_UNITS.find(ud => ud.id === unit.typeId);
-        if (!unitDef) return null;
-        return (
-          <WarfareUnit3D
-            key={unit.id}
-            unit={{ ...unitDef, position: unit.position, team: unit.team, health: unit.health, maxHealth: unit.maxHealth, id: unit.id, typeId: unit.typeId }}
-          />
-        );
-      })}
+      {warfareUnits.filter(u => u.alive).map(unit => (
+        <WarfareUnit3D
+          key={unit.id}
+          unit={{ id: unit.id, typeId: unit.typeId, position: unit.position, team: unit.team, health: unit.health, maxHealth: unit.maxHealth }}
+        />
+      ))}
       {/* Battlefield dividing line */}
       <mesh position={[0, 0.02, -10]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[60, 0.3]} />
