@@ -43,8 +43,11 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     level, xp, prestige, totalWins, totalGames, leaderboard,
     kothScore, checkpointIndex, survivalWave, flagCarried, isDisguised,
     blockhuntBlock, blockhuntStillTimer,
+    warfarePhase, warfareElixir, warfareTowers, warfareUnits,
+    warfareDuration, warfareSelectedUnit,
     selectRole, selectMap, setDifficulty, setGameMode, startGame, resetGame,
     startTutorial, setActiveCampaignChallenge, setBlockhuntBlock,
+    setWarfarePhase, placeWarfareUnit, setWarfareDuration, setWarfareSelectedUnit,
   } = useGame();
 
   const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter" | "blockhunt_select">("main");
