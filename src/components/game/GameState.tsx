@@ -141,6 +141,13 @@ interface GameState {
   blockhuntBlock: string | null;
   blockhuntStillTimer: number;
   blockhuntStunTimer: number;
+  // Warfare mode
+  warfarePhase: "prep" | "battle" | null;
+  warfareElixir: number;
+  warfareTowers: WarfareTower[];
+  warfareUnits: WarfareUnit[];
+  warfareDuration: number; // 300 or 600
+  warfareSelectedUnit: string | null;
   // Cosmetics
   equippedSkin: string;
   equippedTrail: string;
