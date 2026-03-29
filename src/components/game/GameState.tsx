@@ -200,6 +200,15 @@ interface GameState {
   setBlockhuntBlock: (block: string | null) => void;
   updateBlockhuntStillTimer: (delta: number) => void;
   applyBlockhuntStun: () => void;
+  // Warfare
+  setWarfarePhase: (phase: "prep" | "battle" | null) => void;
+  placeWarfareUnit: (typeId: string, position: [number, number, number]) => void;
+  setWarfareDuration: (d: number) => void;
+  setWarfareSelectedUnit: (id: string | null) => void;
+  damageWarfareTower: (towerId: string, amount: number) => void;
+  damageWarfareUnit: (unitId: string, amount: number) => void;
+  spawnEnemyUnit: () => void;
+  collectStockpile: (index: number) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
