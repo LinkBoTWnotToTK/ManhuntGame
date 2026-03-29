@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useGame, Role, GameMap, Difficulty, GameMode, DIFFICULTY_SETTINGS, GAME_MODES, BLOCKHUNT_BLOCKS, BLOCKHUNT_MAPS } from "./GameState";
+import { WARFARE_UNITS, MAX_ELIXIR } from "./WarfareData";
 import Shop from "./Shop";
 import { xpForLevel, prestigeMultiplier } from "./SaveSystem";
 import { TUTORIAL_STEPS } from "./Tutorial";
