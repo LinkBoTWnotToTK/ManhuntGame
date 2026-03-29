@@ -10,7 +10,7 @@ import { loadCampaignProgress } from "./CampaignData";
 export type Role = "runner" | "hunter";
 export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station" | "ruins" | "swamp" | "rooftop";
 export type Difficulty = "easy" | "medium" | "hard";
-export type GameMode = "classic" | "infection" | "koth" | "lms" | "speedrun" | "collector" | "parkour" | "blockhunt" | "ctf" | "survival" | "deathrun";
+export type GameMode = "classic" | "infection" | "koth" | "lms" | "speedrun" | "collector" | "parkour" | "blockhunt" | "ctf" | "survival" | "deathrun" | "warfare";
 
 export interface MapBounds {
   minX: number; maxX: number;
@@ -69,6 +69,7 @@ export const GAME_MODES: Record<GameMode, { name: string; emoji: string; desc: s
   ctf:        { name: "Capture Flag", emoji: "🚩", desc: "Grab the flag and return to base" },
   survival:   { name: "Survival", emoji: "🛡️", desc: "Survive waves of hunters" },
   deathrun:   { name: "Death Run", emoji: "☠️", desc: "Dodge traps to reach the end" },
+  warfare:    { name: "Warfare", emoji: "⚔️", desc: "Place units, capture towers — epic battle!" },
 };
 
 interface MedkitData { id: string; position: [number, number, number]; }
