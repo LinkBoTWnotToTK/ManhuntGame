@@ -997,6 +997,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setBlockhuntBlockState(null);
     setBlockhuntStillTimer(0);
     setBlockhuntStunTimer(0);
+    // Warfare reset
+    setWarfarePhaseState(null);
+    setWarfareElixir(5);
+    setWarfareTowers([]);
+    setWarfareUnits([]);
+    setWarfareSelectedUnitState(null);
+    warfareElixirRef.current = 5;
+    warfareStockpilesCollected.current.clear();
+    warfareEnemySpawnTimer.current = 0;
+
     playerHealthRef.current = BASE_MAX_HEALTH;
     playerAmmoRef.current = 0;
     npcHealthRef.current = {};
@@ -1009,7 +1019,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
-  const gameDuration = gameMode === "blockhunt" ? 300 : gameMode === "survival" ? 999 : gameMode === "parkour" ? 120 : gameMode === "deathrun" ? 90 : DIFFICULTY_SETTINGS[difficulty].gameDuration;
+  const gameDuration = gameMode === "warfare" ? warfareDuration : gameMode === "blockhunt" ? 300 : gameMode === "survival" ? 999 : gameMode === "parkour" ? 120 : gameMode === "deathrun" ? 90 : DIFFICULTY_SETTINGS[difficulty].gameDuration;
   const timeLeft = Math.max(0, gameDuration - elapsedTime);
 
   return (
@@ -1028,6 +1038,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         survivalWave, flagCarried, flagPosition, basePosition,
         parkourFinished, isDisguised,
         blockhuntBlock, blockhuntStillTimer, blockhuntStunTimer,
+        warfarePhase, warfareElixir, warfareTowers, warfareUnits,
+        warfareDuration, warfareSelectedUnit,
         equippedSkin, equippedTrail, equippedHat,
         nearHatch, hatchPromptText, setNearHatch,
         tutorialActive, tutorialStep, startTutorial, advanceTutorial, endTutorial,
@@ -1044,6 +1056,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         toggleDisguise, advanceSurvivalWave,
         equipSkin, equipTrail, equipHat,
         setBlockhuntBlock, updateBlockhuntStillTimer, applyBlockhuntStun,
+        setWarfarePhase, placeWarfareUnit, setWarfareDuration,
+        setWarfareSelectedUnit, damageWarfareTower, damageWarfareUnit,
+        spawnEnemyUnit, collectStockpile,
       }}
     >
       {children}
