@@ -450,21 +450,36 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const extraAmmo = owned.includes("lucky_start") ? 2 : 0;
     const mode = modeRef.current;
     const isBlockHunt = mode === "blockhunt";
+    const isWarfare = mode === "warfare";
     
     // Block Hunt: 10 hearts, 5 ammo for runners, random map from 5
-    const currentMaxHealth = isBlockHunt ? 10 : (owned.includes("extra_heart") ? 4 : BASE_MAX_HEALTH);
+    const currentMaxHealth = isWarfare ? 10 : isBlockHunt ? 10 : (owned.includes("extra_heart") ? 4 : BASE_MAX_HEALTH);
     const startAmmo = isBlockHunt 
       ? (roleRef.current === "runner" ? 5 : 0) 
+      : isWarfare ? 0
       : (roleRef.current === "runner" ? RUNNER_START_AMMO + extraAmmo : HUNTER_START_AMMO);
     const ammoInterval = owned.includes("quick_reload") ? 6 : 10;
     const diff = DIFFICULTY_SETTINGS[diffRef.current];
-    const duration = isBlockHunt ? 300 : mode === "survival" ? 999 : mode === "parkour" ? 120 : mode === "deathrun" ? 90 : diff.gameDuration;
+    const duration = isWarfare ? warfareDuration : isBlockHunt ? 300 : mode === "survival" ? 999 : mode === "parkour" ? 120 : mode === "deathrun" ? 90 : diff.gameDuration;
     
     // Block Hunt: pick random map if not already set from block hunt maps
     if (isBlockHunt) {
       const randomMap = BLOCKHUNT_MAPS[Math.floor(Math.random() * BLOCKHUNT_MAPS.length)];
       setSelectedMap(randomMap);
       mapRef.current = randomMap;
+    }
+
+    // Warfare: set up towers and use forest map
+    if (isWarfare) {
+      setSelectedMap("forest");
+      mapRef.current = "forest";
+      setWarfarePhaseState("battle");
+      setWarfareTowers(WARFARE_TOWERS.map(t => ({ ...t, health: t.maxHealth })));
+      setWarfareUnits([]);
+      warfareElixirRef.current = 5;
+      setWarfareElixir(5);
+      warfareStockpilesCollected.current.clear();
+      warfareEnemySpawnTimer.current = 0;
     }
 
     setScore(0);
