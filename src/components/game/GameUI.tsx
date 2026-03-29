@@ -928,6 +928,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                     {gameMode === "ctf" && "Find the enemy flag and bring it back to your base!"}
                     {gameMode === "survival" && "Survive endless waves of hunters. Each wave adds more!"}
                     {gameMode === "deathrun" && "Navigate deadly narrow platforms to reach all 5 checkpoints! Don't fall!"}
+                    {gameMode === "warfare" && `⚔️ Giant Warfare! Deploy units using elixir, capture enemy towers. ${warfareDuration / 60} min match. Click ground to place units. Find underground stockpiles for bonus elixir!`}
                   </p>
                 </div>
                 <div className="cursor-pointer group" onClick={() => {
