@@ -115,8 +115,9 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
   const handleSelectRole = (r: Role) => transition("mode", () => selectRole(r));
   const handleSelectMode = (m: GameMode) => {
     if (m === "blockhunt") {
-      // Block Hunt: skip map select, go to block selection
       transition("blockhunt_select", () => setGameMode(m));
+    } else if (m === "warfare") {
+      transition("warfare_setup", () => setGameMode(m));
     } else {
       transition("difficulty", () => setGameMode(m));
     }
