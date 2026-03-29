@@ -50,7 +50,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     setWarfarePhase, placeWarfareUnit, setWarfareDuration, setWarfareSelectedUnit,
   } = useGame();
 
-  const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter" | "blockhunt_select">("main");
+  const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter" | "blockhunt_select" | "warfare_setup">("main");
   const [selectedChapter, setSelectedChapter] = useState(0);
   const [campaignProgress, setCampaignProgress] = useState(loadCampaignProgress());
   const [transitioning, setTransitioning] = useState(false);
