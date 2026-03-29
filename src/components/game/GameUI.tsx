@@ -583,6 +583,65 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
               </div>
             )}
 
+            {/* WARFARE SETUP */}
+            {menuStep === "warfare_setup" && (
+              <div className="animate-fade-in space-y-5">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-3xl">⚔️</span>
+                  <h2 className="text-xl font-black text-white">GIANT WARFARE</h2>
+                </div>
+                <p className="text-white/40 text-xs">Deploy units, capture towers, destroy the enemy King Tower!</p>
+                
+                {/* Duration select */}
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => setWarfareDuration(300)}
+                    className={`px-4 py-2 rounded-xl border transition-all text-sm font-bold ${warfareDuration === 300 ? "bg-orange-600/40 border-orange-400/50 text-orange-300" : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10"}`}
+                  >⏱ 5 Minutes</button>
+                  <button
+                    onClick={() => setWarfareDuration(600)}
+                    className={`px-4 py-2 rounded-xl border transition-all text-sm font-bold ${warfareDuration === 600 ? "bg-orange-600/40 border-orange-400/50 text-orange-300" : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10"}`}
+                  >⏱ 10 Minutes</button>
+                </div>
+
+                {/* Unit preview */}
+                <div className="grid grid-cols-4 gap-2 max-w-lg mx-auto">
+                  {WARFARE_UNITS.map(unit => (
+                    <div key={unit.id} className="p-2 rounded-lg border border-white/10 bg-white/[0.03] space-y-1 text-center">
+                      <div className="text-2xl">{unit.emoji}</div>
+                      <div className="text-[10px] font-bold text-white">{unit.name}</div>
+                      <div className="text-[8px] text-white/30">{unit.description}</div>
+                      <div className="flex justify-center gap-1">
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-300">{unit.cost}💧</span>
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/20 text-red-300">{unit.damage}⚔️</span>
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-green-500/20 text-green-300">{unit.health}❤️</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10 max-w-sm mx-auto text-left space-y-1">
+                  <div className="text-[10px] text-white/50"><span className="text-orange-400 font-bold">Goal:</span> Destroy the enemy King Tower 🏰</div>
+                  <div className="text-[10px] text-white/50"><span className="text-purple-400 font-bold">Elixir:</span> Deploy units using elixir (regenerates over time)</div>
+                  <div className="text-[10px] text-white/50"><span className="text-yellow-400 font-bold">Stockpiles:</span> Find underground caches for bonus resources</div>
+                  <div className="text-[10px] text-white/50"><span className="text-cyan-400 font-bold">You:</span> Walk around the battlefield and command your troops!</div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    selectRole("runner");
+                    selectMap("forest");
+                    setDifficulty("medium");
+                    transition("ready");
+                  }}
+                  className="px-8 py-3 bg-gradient-to-b from-orange-600/50 to-orange-800/60 text-white rounded-2xl border border-orange-500/30 hover:border-orange-400/60 font-black transition-all hover:scale-105 active:scale-95"
+                >
+                  ⚔️ START WARFARE
+                </button>
+                <button onClick={handleBack} className="text-white/15 text-xs hover:text-white/40 transition-colors block mx-auto">← Back</button>
+              </div>
+            )}
+
             {/* CAMPAIGN */}
             {menuStep === "campaign" && (
               <div className="animate-fade-in space-y-5">
