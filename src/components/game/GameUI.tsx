@@ -131,11 +131,13 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
       shop: "main", leaderboard: "main", play: "main", campaign: "main",
       campaign_chapter: "campaign",
       blockhunt_select: "mode",
+      warfare_setup: "mode",
       mode: "play", difficulty: "mode", map: "difficulty", ready: "map",
     };
     // Block Hunt: ready goes back to block selection
     let prev = flow[menuStep] || "main";
     if (menuStep === "ready" && gameMode === "blockhunt") prev = "blockhunt_select";
+    if (menuStep === "ready" && gameMode === "warfare") prev = "warfare_setup";
     if (prev === "main" || prev === "play") { selectRole(null as unknown as Role); selectMap(null as unknown as GameMap); }
     if (prev === "map") selectMap(null as unknown as GameMap);
     setTimeout(() => { setMenuStep(prev as typeof menuStep); setTransitioning(false); }, 250);
