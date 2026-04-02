@@ -502,29 +502,11 @@ export default function Player() {
       }
     }
 
-    // Deathrun: fall into lava/void = damage
-    if (gameMode === "deathrun" && playerY < -2) {
-      damagePlayer(1);
+    // Fall reset
+    if (playerY < -10) {
       setPlayerY(0);
       setPlayerVelocityY(0);
-      if (checkpointIndex > 0 && checkpoints[checkpointIndex - 1]) {
-        playerPosition.set(checkpoints[checkpointIndex - 1][0], 0, checkpoints[checkpointIndex - 1][2]);
-      } else {
-        playerPosition.set(0, 0, 4);
-      }
-    }
-
-    // Parkour: reset on fall
-    if (gameMode === "parkour" && playerY < -2) {
-      setPlayerY(0);
-      setPlayerVelocityY(0);
-      if (checkpointIndex > 0 && checkpoints[checkpointIndex - 1]) {
-        const cp = checkpoints[checkpointIndex - 1];
-        playerPosition.set(cp[0], cp[1] + 1, cp[2]);
-        setPlayerY(cp[1] + 1);
-      } else {
-        playerPosition.set(0, 0, 4);
-      }
+      playerPosition.set(0, 0, 4);
     }
 
     // NPC projectile hits
