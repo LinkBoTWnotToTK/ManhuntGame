@@ -212,7 +212,7 @@ export default function Player() {
       if (e.code === "Digit2") switchWeapon("shotgun");
       if (e.code === "Digit3") switchWeapon("sniper");
       if (e.code === "Space") jumpBuffered.current = true;
-      if (e.code === "KeyQ" && gameMode === "blockhunt") {
+      if (e.code === "KeyQ") {
         toggleDisguise();
         if (!isDisguised) {
           setDisguise("crate");
