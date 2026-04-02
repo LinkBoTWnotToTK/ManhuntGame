@@ -484,29 +484,6 @@ export default function Player() {
       }
     }
 
-    // KOTH zone scoring
-    if (gameMode === "koth" && kothZone) {
-      const dx = playerPosition.x - kothZone[0];
-      const dz = playerPosition.z - kothZone[2];
-      if (Math.sqrt(dx * dx + dz * dz) < 4) {
-        addKothScore(delta * 5);
-      }
-    }
-
-    // Checkpoint collection (speedrun, parkour, deathrun) - larger radius, 3D distance
-    if ((gameMode === "speedrun" || gameMode === "parkour" || gameMode === "deathrun") && checkpoints.length > 0 && checkpointIndex < checkpoints.length) {
-      const cp = checkpoints[checkpointIndex];
-      const dx = playerPosition.x - cp[0];
-      const dy = playerY - cp[1];
-      const dz = playerPosition.z - cp[2];
-      // Parkour: larger checkpoint radius (4 units) to be more forgiving
-      const checkRadius = (gameMode === "parkour" || gameMode === "deathrun") ? 4 : 3;
-      const dist3d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      if (dist3d < checkRadius) {
-        advanceCheckpoint();
-      }
-    }
-
     // CTF: grab flag
     if (gameMode === "ctf" && flagPosition && !flagCarried) {
       const dx = playerPosition.x - flagPosition[0];
