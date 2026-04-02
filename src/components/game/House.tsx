@@ -1277,16 +1277,6 @@ function ParkourPlatforms() {
       <mesh position={[-4, 5.6, -26]}><boxGeometry args={[0.1, 0.8, 2.5]} /><meshStandardMaterial color="#666688" metalness={0.7} roughness={0.3} /></mesh>
       <mesh position={[4, 5.6, -26]}><boxGeometry args={[0.1, 0.8, 2.5]} /><meshStandardMaterial color="#666688" metalness={0.7} roughness={0.3} /></mesh>
 
-      {/* Deathrun extras */}
-      {gameMode === "deathrun" && (
-        <>
-          <Platform position={[0, 4.2, -15]} size={[1.2, 0.2, 5]} color="#ff4444" emissive="#ff2222" />
-          <Platform position={[-5, 6.2, -29]} size={[1, 0.2, 4]} color="#ff4444" emissive="#ff2222" />
-          <Platform position={[5, 8.2, -40]} size={[1, 0.2, 4]} color="#ff4444" emissive="#ff2222" />
-          <Platform position={[6, 7, -36]} size={[1.5, 0.15, 1.5]} color="#ff6666" emissive="#ff3333" />
-          <Platform position={[-3, 8.5, -43]} size={[1.5, 0.15, 1.5]} color="#ff6666" emissive="#ff3333" />
-        </>
-      )}
 
       {/* Glow lights */}
       <pointLight position={[0, 2, -8]} color="#22ff44" intensity={2} distance={8} />
