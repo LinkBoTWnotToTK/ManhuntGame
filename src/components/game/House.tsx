@@ -1224,10 +1224,9 @@ function Platform({ position, size, color = "#556677", emissive }: {
   );
 }
 
-// ===== PARKOUR PLATFORMS =====
+// ===== PARKOUR PLATFORMS (disabled) =====
 function ParkourPlatforms() {
-  const { gameMode } = useGame();
-  if (gameMode !== "parkour" && gameMode !== "deathrun") return null;
+  return null;
 
   return (
     <group>
