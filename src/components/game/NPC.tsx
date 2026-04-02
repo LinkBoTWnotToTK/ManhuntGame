@@ -287,8 +287,7 @@ export default function NPC({ id, startPosition, color, npcRole }: NPCProps) {
       const distToPlayer = myPos.distanceTo(playerPosition);
       if (npcRole === "runner" && distToPlayer < TAG_DISTANCE) tagNPC(id);
       if (npcRole === "hunter" && distToPlayer < TAG_DISTANCE) {
-        // Block Hunt: 2 hearts damage via GameState handler
-        const dmg = gameMode === "blockhunt" ? 2 : 3;
+        const dmg = 3;
         damagePlayer(dmg);
       }
     }

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useGame, Role, GameMap, Difficulty, GameMode, DIFFICULTY_SETTINGS, GAME_MODES, BLOCKHUNT_BLOCKS, BLOCKHUNT_MAPS } from "./GameState";
-import { WARFARE_UNITS, MAX_ELIXIR } from "./WarfareData";
+import { useGame, Role, GameMap, Difficulty, GameMode, DIFFICULTY_SETTINGS, GAME_MODES } from "./GameState";
 import Shop from "./Shop";
 import { xpForLevel, prestigeMultiplier } from "./SaveSystem";
 import { TUTORIAL_STEPS } from "./Tutorial";
@@ -41,16 +40,12 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     isPlaying, escapeOpen, stamina, maxStamina, playerHealth, playerAmmo, maxHealth,
     coins, matchCoins, currentWeapon,
     level, xp, prestige, totalWins, totalGames, leaderboard,
-    kothScore, checkpointIndex, survivalWave, flagCarried, isDisguised,
-    blockhuntBlock, blockhuntStillTimer,
-    warfarePhase, warfareElixir, warfareTowers, warfareUnits,
-    warfareDuration, warfareSelectedUnit,
+    survivalWave, flagCarried, isDisguised, isUnderground,
     selectRole, selectMap, setDifficulty, setGameMode, startGame, resetGame,
-    startTutorial, setActiveCampaignChallenge, setBlockhuntBlock,
-    setWarfarePhase, placeWarfareUnit, setWarfareDuration, setWarfareSelectedUnit,
+    startTutorial, setActiveCampaignChallenge,
   } = useGame();
 
-  const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter" | "blockhunt_select" | "warfare_setup">("main");
+  const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter">("main");
   const [selectedChapter, setSelectedChapter] = useState(0);
   const [campaignProgress, setCampaignProgress] = useState(loadCampaignProgress());
   const [transitioning, setTransitioning] = useState(false);
@@ -63,11 +58,9 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     return () => document.removeEventListener("pointerlockchange", onChange);
   }, []);
 
-  // Auto-fullscreen when game starts
   useEffect(() => {
     if (isLocked && !isPlaying && !gameOver && role && selectedMap && menuStep === "ready") {
       startGame();
-      // Request fullscreen when entering game
       try {
         if (!document.fullscreenElement) {
           document.documentElement.requestFullscreen?.().catch(() => {});
@@ -76,14 +69,12 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     }
   }, [isLocked, isPlaying, gameOver, role, selectedMap, menuStep, startGame]);
 
-  // Exit fullscreen when game ends
   useEffect(() => {
     if (gameOver && document.fullscreenElement) {
       document.exitFullscreen?.().catch(() => {});
     }
   }, [gameOver]);
 
-  // Mobile: auto-start game on "ready" tap (no pointer lock needed)
   const handleMobileStart = useCallback(() => {
     if (isMobile && menuStep === "ready" && !isPlaying && !gameOver && role && selectedMap) {
       startGame();
@@ -99,7 +90,6 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     if (!role && !selectedMap) { setMenuStep("main"); setActiveCampaignChallenge(null); }
   }, [role, selectedMap, setActiveCampaignChallenge]);
 
-  // Refresh campaign progress when game ends
   useEffect(() => {
     if (gameOver) {
       setCampaignProgress(loadCampaignProgress());
@@ -114,13 +104,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
 
   const handleSelectRole = (r: Role) => transition("mode", () => selectRole(r));
   const handleSelectMode = (m: GameMode) => {
-    if (m === "blockhunt") {
-      transition("blockhunt_select", () => setGameMode(m));
-    } else if (m === "warfare") {
-      transition("warfare_setup", () => setGameMode(m));
-    } else {
-      transition("difficulty", () => setGameMode(m));
-    }
+    transition("difficulty", () => setGameMode(m));
   };
   const handleSelectDifficulty = (d: Difficulty) => transition("map", () => setDifficulty(d));
   const handleSelectMap = (m: GameMap) => transition("ready", () => selectMap(m));
@@ -130,14 +114,9 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     const flow: Record<string, string> = {
       shop: "main", leaderboard: "main", play: "main", campaign: "main",
       campaign_chapter: "campaign",
-      blockhunt_select: "mode",
-      warfare_setup: "mode",
       mode: "play", difficulty: "mode", map: "difficulty", ready: "map",
     };
-    // Block Hunt: ready goes back to block selection
     let prev = flow[menuStep] || "main";
-    if (menuStep === "ready" && gameMode === "blockhunt") prev = "blockhunt_select";
-    if (menuStep === "ready" && gameMode === "warfare") prev = "warfare_setup";
     if (prev === "main" || prev === "play") { selectRole(null as unknown as Role); selectMap(null as unknown as GameMap); }
     if (prev === "map") selectMap(null as unknown as GameMap);
     setTimeout(() => { setMenuStep(prev as typeof menuStep); setTransitioning(false); }, 250);
@@ -165,7 +144,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
             </div>
           </div>
 
-          {/* Top-left: Hearts + Role */}
+          {/* Top-left: Hearts + Role + Mode info */}
           <div className="fixed top-4 left-4 z-50 pointer-events-none">
             <div className="bg-black/70 backdrop-blur-md rounded-xl px-4 py-2.5 border border-white/10 shadow-2xl space-y-1.5">
               <div className="flex items-center gap-2">
@@ -173,21 +152,10 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                 <div>
                   {role === "hunter" ? (
                     <div className="text-white font-bold text-lg tabular-nums">{score}/{totalNPCs}</div>
-                  ) : gameMode === "koth" ? (
-                    <div className="text-yellow-400 font-bold text-lg tabular-nums">👑 {kothScore}/100</div>
-                  ) : gameMode === "speedrun" || gameMode === "parkour" || gameMode === "deathrun" ? (
-                    <div className="text-cyan-400 font-bold text-lg tabular-nums">⚡ {checkpointIndex}/5</div>
-                  ) : gameMode === "collector" ? (
-                    <div className="text-yellow-400 font-bold text-lg tabular-nums">🪙 {matchCoins}</div>
                   ) : gameMode === "survival" ? (
                     <div className="text-red-400 font-bold text-lg tabular-nums">🛡️ Wave {survivalWave}</div>
                   ) : gameMode === "ctf" ? (
                     <div className="text-red-400 font-bold text-lg tabular-nums">{flagCarried ? "🚩 RETURN FLAG!" : "🚩 Find Flag"}</div>
-                  ) : gameMode === "blockhunt" ? (
-                    <div className="text-purple-400 font-bold text-lg tabular-nums">
-                      {isDisguised ? "📦 Hidden" : blockhuntStillTimer > 0 ? `⏳ ${Math.max(0, 3 - blockhuntStillTimer).toFixed(1)}s` : "🏃 Exposed"}
-                      {blockhuntBlock && <span className="text-[10px] text-white/30 ml-1">[{BLOCKHUNT_BLOCKS.find(b=>b.id===blockhuntBlock)?.emoji}]</span>}
-                    </div>
                   ) : (
                     <div className="text-white font-bold text-lg">SURVIVE</div>
                   )}
@@ -196,9 +164,16 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
               </div>
               <div className="flex gap-0.5 flex-wrap max-w-[200px]">
                 {Array.from({ length: maxHealth }, (_, i) => (
-                  <span key={i} className={`${maxHealth > 5 ? "text-sm" : "text-lg"} transition-all ${i < playerHealth ? "opacity-100" : "opacity-15 grayscale"}`}>❤️</span>
+                  <span key={i} className={`text-lg transition-all ${i < playerHealth ? "opacity-100" : "opacity-15 grayscale"}`}>❤️</span>
                 ))}
               </div>
+              {/* Underground indicator */}
+              {isUnderground && (
+                <div className="flex items-center gap-1">
+                  <span className="text-xs">🕳️</span>
+                  <span className="text-[9px] text-yellow-400/80 font-bold uppercase">Underground</span>
+                </div>
+              )}
               {/* Level badge */}
               <div className="flex items-center gap-1.5">
                 <span className="text-[9px] text-white/30 font-bold">LV {level}</span>
@@ -259,10 +234,12 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
               <div className={`font-mono text-xl font-black tracking-wider text-center tabular-nums ${
                 timeLeft <= 10 ? "text-red-400 animate-pulse" : timeLeft <= 20 ? "text-yellow-400" : "text-white"
               }`}>
-                {formatTime(timeLeft)}
+                {gameMode === "survival" ? formatTime(elapsedTime) : formatTime(timeLeft)}
               </div>
               <div className="text-white/30 text-[9px] uppercase tracking-[0.15em] text-center">
-                {escapeOpen ? "⚡ ESCAPE OPEN" : "Until Escape"}
+                {gameMode === "survival" ? `Wave ${survivalWave}/10` :
+                 gameMode === "ctf" ? (flagCarried ? "⚡ RETURN TO BASE" : "Find the Flag") :
+                 escapeOpen ? "⚡ ESCAPE OPEN" : "Until Escape"}
               </div>
             </div>
           </div>
@@ -289,14 +266,6 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
               </div>
             </div>
           )}
-          {/* Block Hunt disguise alert */}
-          {gameMode === "blockhunt" && isDisguised && (
-            <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-              <div className="bg-purple-950/90 backdrop-blur-md rounded-full px-5 py-1.5 border border-purple-500/50 shadow-[0_0_20px_rgba(128,0,255,0.3)]">
-                <span className="text-purple-300 font-bold text-xs uppercase tracking-wider">📦 DISGUISED — Don&apos;t move!</span>
-              </div>
-            </div>
-          )}
           {/* CTF flag carried */}
           {gameMode === "ctf" && flagCarried && (
             <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
@@ -309,96 +278,9 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
           {gameMode === "survival" && (
             <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
               <div className="bg-red-950/80 backdrop-blur-md rounded-full px-5 py-1.5 border border-red-500/30">
-                <span className="text-red-300 font-bold text-xs uppercase tracking-wider">🛡️ WAVE {survivalWave}</span>
+                <span className="text-red-300 font-bold text-xs uppercase tracking-wider">🛡️ WAVE {survivalWave}/10</span>
               </div>
             </div>
-          )}
-          {/* Warfare HUD */}
-          {gameMode === "warfare" && (
-            <>
-              {/* Elixir bar */}
-              <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-                <div className="bg-black/80 backdrop-blur-md rounded-xl px-4 py-3 border border-purple-500/20 shadow-2xl w-[400px]">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm">💧</span>
-                    <div className="flex-1 h-3 bg-white/10 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full transition-all" style={{ width: `${(warfareElixir / MAX_ELIXIR) * 100}%` }} />
-                    </div>
-                    <span className="text-purple-300 font-bold text-sm tabular-nums">{Math.floor(warfareElixir)}/{MAX_ELIXIR}</span>
-                  </div>
-                  <div className="flex gap-1.5 justify-center flex-wrap">
-                    {WARFARE_UNITS.map(unit => {
-                      const canAfford = warfareElixir >= unit.cost;
-                      const isSelected = warfareSelectedUnit === unit.id;
-                      return (
-                        <button
-                          key={unit.id}
-                          onClick={() => setWarfareSelectedUnit(isSelected ? null : unit.id)}
-                          disabled={!canAfford}
-                          className={`px-2 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${
-                            isSelected ? "bg-purple-600/50 border-purple-400/60 text-white scale-105" :
-                            canAfford ? "bg-white/5 border-white/15 text-white/70 hover:bg-white/10 hover:scale-105" :
-                            "bg-white/[0.02] border-white/5 text-white/20 cursor-not-allowed"
-                          }`}
-                        >
-                          <span className="text-base">{unit.emoji}</span>
-                          <div className="text-[8px]">{unit.cost}💧</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {warfareSelectedUnit && (
-                    <div className="text-center mt-1.5 text-[9px] text-purple-300/60">
-                      Click on the ground to deploy {WARFARE_UNITS.find(u => u.id === warfareSelectedUnit)?.name}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {/* Tower status */}
-              <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-                <div className="bg-black/70 backdrop-blur-md rounded-xl px-4 py-2 border border-orange-500/20 flex gap-4">
-                  <div className="text-center">
-                    <div className="text-[8px] text-blue-400 font-bold uppercase">Your Towers</div>
-                    <div className="flex gap-1">
-                      {warfareTowers.filter(t => t.team === "player").map(t => (
-                        <div key={t.id} className="text-center">
-                          <div className="text-[10px]">{t.type === "king" ? "🏰" : "🗼"}</div>
-                          <div className="w-8 h-1 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-400 rounded-full" style={{ width: `${(t.health / t.maxHealth) * 100}%` }} />
-                          </div>
-                          <div className="text-[7px] text-blue-300/60 tabular-nums">{t.health}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="w-px bg-white/10" />
-                  <div className="text-center">
-                    <div className="text-[8px] text-red-400 font-bold uppercase">Enemy Towers</div>
-                    <div className="flex gap-1">
-                      {warfareTowers.filter(t => t.team === "enemy").map(t => (
-                        <div key={t.id} className="text-center">
-                          <div className="text-[10px]">{t.type === "king" ? "🏰" : "🗼"}</div>
-                          <div className="w-8 h-1 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-red-400 rounded-full" style={{ width: `${(t.health / t.maxHealth) * 100}%` }} />
-                          </div>
-                          <div className="text-[7px] text-red-300/60 tabular-nums">{t.health}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Unit count */}
-              <div className="fixed top-4 right-4 z-50 pointer-events-none">
-                <div className="bg-black/70 backdrop-blur-md rounded-xl px-4 py-2.5 border border-white/10">
-                  <div className="text-white/50 text-[9px] uppercase">Units Deployed</div>
-                  <div className="flex gap-2">
-                    <span className="text-blue-400 font-bold text-sm">🔵 {warfareUnits.filter(u => u.team === "player").length}</span>
-                    <span className="text-red-400 font-bold text-sm">🔴 {warfareUnits.filter(u => u.team === "enemy").length}</span>
-                  </div>
-                </div>
-              </div>
-            </>
           )}
           {escapeOpen && role === "hunter" && (
             <div className="fixed top-[68px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
@@ -435,7 +317,6 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
             <p className="text-xl text-white/50 font-mono tabular-nums">{formatTime(elapsedTime)}</p>
             <div className="text-white/30 text-xs">{GAME_MODES[gameMode].name} • {DIFFICULTY_SETTINGS[difficulty].label}</div>
 
-            {/* XP + Coin summary */}
             <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-1 text-sm">
               <div className="flex justify-between"><span className="text-white/40">Coins collected</span><span className="text-yellow-400 font-bold">🪙 {matchCoins}</span></div>
               <div className="flex justify-between"><span className="text-white/40">{gameResult === "win" ? "Win bonus" : "Consolation"}</span><span className="text-yellow-400 font-bold">🪙 {gameResult === "win" ? Math.floor(5 * DIFFICULTY_SETTINGS[difficulty].coinMult * prestigeMultiplier(prestige)) : Math.floor(2 * DIFFICULTY_SETTINGS[difficulty].coinMult * prestigeMultiplier(prestige))}</span></div>
@@ -463,7 +344,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
           style={{ background: "radial-gradient(ellipse at 50% 30%, rgba(20,20,40,0.98) 0%, rgba(5,5,15,0.99) 100%)" }}>
           <div className={`text-center w-full max-w-4xl px-6 transition-all duration-250 ${transitioning ? "opacity-0 scale-95 translate-y-2" : "opacity-100 scale-100 translate-y-0"}`}>
 
-            {/* Header — always visible */}
+            {/* Header */}
             <div className="mb-6">
               <h1 className="text-6xl sm:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 tracking-tight mb-1"
                 style={{ textShadow: "0 0 60px rgba(100,150,255,0.15)" }}>
@@ -471,7 +352,6 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
               </h1>
               <p className="text-[10px] text-white/20 uppercase tracking-[0.5em] mb-3">Third Person Combat</p>
 
-              {/* Stats bar */}
               <div className="flex items-center justify-center gap-4 text-xs">
                 <div className="flex items-center gap-1.5 bg-white/5 rounded-lg px-3 py-1.5 border border-white/5">
                   <span>🪙</span><span className="text-yellow-400 font-bold tabular-nums">{coins}</span>
@@ -495,7 +375,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
             {/* MAIN MENU */}
             {menuStep === "main" && (
               <div className="animate-fade-in space-y-4">
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 max-w-3xl mx-auto">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5 max-w-3xl mx-auto">
                   <button onClick={() => transition("play")}
                     className="group p-4 bg-gradient-to-b from-blue-900/40 to-blue-950/60 text-white rounded-2xl border border-blue-500/20 hover:border-blue-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
                     <div className="text-2xl group-hover:scale-110 transition-transform">🎮</div>
@@ -520,11 +400,6 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                     className="group p-4 bg-gradient-to-b from-cyan-900/40 to-cyan-950/60 text-white rounded-2xl border border-cyan-500/20 hover:border-cyan-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
                     <div className="text-2xl group-hover:scale-110 transition-transform">🗺️</div>
                     <div className="text-xs font-black">EDITOR</div>
-                  </button>
-                  <button onClick={() => startTutorial()}
-                    className="group p-4 bg-gradient-to-b from-emerald-900/40 to-emerald-950/60 text-white rounded-2xl border border-emerald-500/20 hover:border-emerald-400/50 transition-all hover:scale-105 active:scale-95 space-y-1.5">
-                    <div className="text-2xl group-hover:scale-110 transition-transform">📖</div>
-                    <div className="text-xs font-black">TUTORIAL</div>
                   </button>
                 </div>
               </div>
@@ -556,17 +431,17 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
             {menuStep === "mode" && (
               <div className="animate-fade-in space-y-5">
                 <p className="text-base text-white/50 font-medium">Game Mode</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-w-lg mx-auto">
+                <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
                   {(Object.keys(GAME_MODES) as GameMode[]).map(m => {
                     const info = GAME_MODES[m];
                     return (
                       <button key={m} onClick={() => handleSelectMode(m)}
-                        className="group p-4 bg-white/[0.03] hover:bg-white/[0.07] text-white rounded-xl border border-white/10 hover:border-white/25 transition-all hover:scale-[1.03] active:scale-95 space-y-1 text-left">
+                        className="group p-5 bg-white/[0.03] hover:bg-white/[0.07] text-white rounded-xl border border-white/10 hover:border-white/25 transition-all hover:scale-[1.03] active:scale-95 space-y-1.5 text-left">
                         <div className="flex items-center gap-2">
-                          <span className="text-xl">{info.emoji}</span>
-                          <span className="text-xs font-black uppercase">{info.name}</span>
+                          <span className="text-2xl">{info.emoji}</span>
+                          <span className="text-sm font-black uppercase">{info.name}</span>
                         </div>
-                        <div className="text-[9px] text-white/30 leading-relaxed">{info.desc}</div>
+                        <div className="text-[10px] text-white/30 leading-relaxed">{info.desc}</div>
                       </button>
                     );
                   })}
@@ -584,12 +459,12 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                     const s = DIFFICULTY_SETTINGS[d];
                     return (
                       <button key={d} onClick={() => handleSelectDifficulty(d)}
-                        className={`group p-5 rounded-2xl border transition-all hover:scale-105 active:scale-95 space-y-1.5 w-40 ${DIFF_COLORS[d]}`}>
-                        <div className="text-2xl">{d === "easy" ? "🟢" : d === "medium" ? "🟡" : "🔴"}</div>
-                        <div className="text-sm font-black uppercase">{s.label}</div>
-                        <div className="text-[9px] opacity-60 leading-relaxed">
-                          {s.hunterCount} hunters • {s.gameDuration}s<br/>
-                          ×{s.coinMult} coins • ×{s.xpMult} XP
+                        className={`p-5 rounded-2xl border transition-all hover:scale-105 active:scale-95 w-36 space-y-2 ${DIFF_COLORS[d]}`}>
+                        <div className="text-lg font-black uppercase">{s.label}</div>
+                        <div className="space-y-0.5 text-[9px] opacity-60">
+                          <div>{d === "easy" ? "3" : d === "medium" ? "5" : "7"} hunters</div>
+                          <div>{s.gameDuration}s match</div>
+                          <div>×{s.coinMult} coins</div>
                         </div>
                       </button>
                     );
@@ -602,130 +477,21 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
             {/* MAP SELECT */}
             {menuStep === "map" && (
               <div className="animate-fade-in space-y-5">
-                <p className="text-base text-white/50 font-medium">Choose your arena</p>
-                <div className="flex gap-2.5 justify-center flex-wrap">
+                <p className="text-base text-white/50 font-medium">Choose Map</p>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 max-w-3xl mx-auto">
                   {(Object.keys(MAP_INFO) as GameMap[]).map(m => {
                     const info = MAP_INFO[m];
                     return (
                       <button key={m} onClick={() => handleSelectMap(m)}
-                        className={`group px-4 py-4 ${info.color} text-white rounded-xl border ${info.borderColor} transition-all hover:scale-105 active:scale-95 space-y-1.5 w-28`}>
-                        <div className="text-3xl group-hover:scale-110 transition-transform">{info.emoji}</div>
-                        <div className="text-[10px] font-black">{info.name}</div>
-                        <div className="text-[8px] text-white/30 leading-relaxed">{info.desc}</div>
+                        className={`group p-3 rounded-xl border transition-all hover:scale-105 active:scale-95 space-y-1 ${info.color} ${info.borderColor}`}>
+                        <div className="text-2xl group-hover:scale-110 transition-transform">{info.emoji}</div>
+                        <div className="text-[10px] font-black text-white tracking-wider">{info.name}</div>
+                        <div className="text-[8px] text-white/25">{info.desc}</div>
                       </button>
                     );
                   })}
-                  {/* Custom levels from editor */}
-                  {loadCustomLevels().map(lvl => (
-                    <button key={lvl.id} onClick={() => handleSelectMap("suburban" as GameMap)}
-                      className="group px-4 py-4 bg-cyan-950/50 hover:bg-cyan-900/60 text-white rounded-xl border border-cyan-500/20 hover:border-cyan-500/50 transition-all hover:scale-105 active:scale-95 space-y-1.5 w-28">
-                      <div className="text-3xl group-hover:scale-110 transition-transform">🗺️</div>
-                      <div className="text-[10px] font-black truncate">{lvl.name}</div>
-                      <div className="text-[8px] text-white/30 leading-relaxed">{lvl.items.length} objects</div>
-                    </button>
-                  ))}
                 </div>
                 <button onClick={handleBack} className="text-white/15 text-xs hover:text-white/40 transition-colors">← Back</button>
-              </div>
-            )}
-
-            {/* BLOCK HUNT: Block Selection */}
-            {menuStep === "blockhunt_select" && (
-              <div className="animate-fade-in space-y-5">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-3xl">📦</span>
-                  <h2 className="text-xl font-black text-white">CHOOSE YOUR BLOCK</h2>
-                </div>
-                <p className="text-white/40 text-xs">Pick a block to disguise as. Stay still for 3 seconds to transform! Map will be randomly selected.</p>
-                <div className="text-white/20 text-[10px] mb-2">
-                  Maps: {BLOCKHUNT_MAPS.map(m => MAP_INFO[m]?.emoji).join(" ")} • 10 ❤️ • 5:00 timer
-                </div>
-                <div className="grid grid-cols-4 gap-3 max-w-md mx-auto">
-                  {BLOCKHUNT_BLOCKS.map(block => (
-                    <button
-                      key={block.id}
-                      onClick={() => {
-                        setBlockhuntBlock(block.id);
-                        // Set a random map, difficulty defaults to medium
-                        const randomMap = BLOCKHUNT_MAPS[Math.floor(Math.random() * BLOCKHUNT_MAPS.length)];
-                        selectMap(randomMap);
-                        setDifficulty("medium");
-                        transition("ready");
-                      }}
-                      className="group p-4 rounded-xl border border-white/10 hover:border-purple-400/50 transition-all hover:scale-105 active:scale-95 space-y-2"
-                      style={{ backgroundColor: block.color + "22" }}
-                    >
-                      <div className="text-3xl group-hover:scale-110 transition-transform">{block.emoji}</div>
-                      <div className="text-[10px] font-black text-white">{block.name}</div>
-                    </button>
-                  ))}
-                </div>
-                <div className="bg-white/5 rounded-lg p-3 border border-white/10 max-w-sm mx-auto text-left space-y-1">
-                  <div className="text-[10px] text-white/50"><span className="text-purple-400 font-bold">Runner:</span> 🪃 Slingshot (2❤️ dmg + 1s stun) • 5 ammo</div>
-                  <div className="text-[10px] text-white/50"><span className="text-red-400 font-bold">Finder:</span> ⚔️ Sword (2❤️ dmg) • Mining reveals blocks</div>
-                  <div className="text-[10px] text-white/50"><span className="text-yellow-400 font-bold">Tip:</span> Stand still 3s to transform. Moving breaks disguise!</div>
-                  <div className="text-[10px] text-white/50"><span className="text-red-400 font-bold">Warning:</span> If caught undisguised = instant death!</div>
-                </div>
-                <button onClick={handleBack} className="text-white/15 text-xs hover:text-white/40 transition-colors">← Back</button>
-              </div>
-            )}
-
-            {/* WARFARE SETUP */}
-            {menuStep === "warfare_setup" && (
-              <div className="animate-fade-in space-y-5">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-3xl">⚔️</span>
-                  <h2 className="text-xl font-black text-white">GIANT WARFARE</h2>
-                </div>
-                <p className="text-white/40 text-xs">Deploy units, capture towers, destroy the enemy King Tower!</p>
-                
-                {/* Duration select */}
-                <div className="flex gap-3 justify-center">
-                  <button
-                    onClick={() => setWarfareDuration(300)}
-                    className={`px-4 py-2 rounded-xl border transition-all text-sm font-bold ${warfareDuration === 300 ? "bg-orange-600/40 border-orange-400/50 text-orange-300" : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10"}`}
-                  >⏱ 5 Minutes</button>
-                  <button
-                    onClick={() => setWarfareDuration(600)}
-                    className={`px-4 py-2 rounded-xl border transition-all text-sm font-bold ${warfareDuration === 600 ? "bg-orange-600/40 border-orange-400/50 text-orange-300" : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10"}`}
-                  >⏱ 10 Minutes</button>
-                </div>
-
-                {/* Unit preview */}
-                <div className="grid grid-cols-4 gap-2 max-w-lg mx-auto">
-                  {WARFARE_UNITS.map(unit => (
-                    <div key={unit.id} className="p-2 rounded-lg border border-white/10 bg-white/[0.03] space-y-1 text-center">
-                      <div className="text-2xl">{unit.emoji}</div>
-                      <div className="text-[10px] font-bold text-white">{unit.name}</div>
-                      <div className="text-[8px] text-white/30">{unit.description}</div>
-                      <div className="flex justify-center gap-1">
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-300">{unit.cost}💧</span>
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/20 text-red-300">{unit.damage}⚔️</span>
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-green-500/20 text-green-300">{unit.health}❤️</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-white/5 rounded-lg p-3 border border-white/10 max-w-sm mx-auto text-left space-y-1">
-                  <div className="text-[10px] text-white/50"><span className="text-orange-400 font-bold">Goal:</span> Destroy the enemy King Tower 🏰</div>
-                  <div className="text-[10px] text-white/50"><span className="text-purple-400 font-bold">Elixir:</span> Deploy units using elixir (regenerates over time)</div>
-                  <div className="text-[10px] text-white/50"><span className="text-yellow-400 font-bold">Stockpiles:</span> Find underground caches for bonus resources</div>
-                  <div className="text-[10px] text-white/50"><span className="text-cyan-400 font-bold">You:</span> Walk around the battlefield and command your troops!</div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    selectRole("runner");
-                    selectMap("forest");
-                    setDifficulty("medium");
-                    transition("ready");
-                  }}
-                  className="px-8 py-3 bg-gradient-to-b from-orange-600/50 to-orange-800/60 text-white rounded-2xl border border-orange-500/30 hover:border-orange-400/60 font-black transition-all hover:scale-105 active:scale-95"
-                >
-                  ⚔️ START WARFARE
-                </button>
-                <button onClick={handleBack} className="text-white/15 text-xs hover:text-white/40 transition-colors block mx-auto">← Back</button>
               </div>
             )}
 
@@ -824,7 +590,6 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                               <span key={i} className="text-[8px] bg-white/5 rounded px-1.5 py-0.5 text-white/30 border border-white/5">{obj}</span>
                             ))}
                           </div>
-                          {/* Star rating */}
                           {done && (
                             <div className="flex items-center gap-1 mt-1">
                               {[1, 2, 3].map(s => (
@@ -842,7 +607,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                               onClick={() => {
                                 setActiveCampaignChallenge(challenge);
                                 selectRole(challenge.role as Role);
-                                setGameMode(challenge.mode);
+                                setGameMode(challenge.mode as GameMode);
                                 setDifficulty(challenge.difficulty);
                                 selectMap(challenge.map);
                                 transition("ready");
@@ -857,7 +622,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                               onClick={() => {
                                 setActiveCampaignChallenge(challenge);
                                 selectRole(challenge.role as Role);
-                                setGameMode(challenge.mode);
+                                setGameMode(challenge.mode as GameMode);
                                 setDifficulty(challenge.difficulty);
                                 selectMap(challenge.map);
                                 transition("ready");
@@ -919,17 +684,12 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                     {gameMode === "classic" && role === "hunter" && `Hunt all 7 runners in ${DIFFICULTY_SETTINGS[difficulty].gameDuration}s. Melee to tag.`}
                     {gameMode === "classic" && role === "runner" && `Evade ${DIFFICULTY_SETTINGS[difficulty].hunterCount} hunters, escape through the portal.`}
                     {gameMode === "infection" && "Tagged runners convert to hunters. Be the last runner standing!"}
-                    {gameMode === "koth" && "Stand in the golden zone to score. First to 100 wins!"}
-                    {gameMode === "lms" && "Free-for-all. Eliminate all opponents to win!"}
-                    {gameMode === "speedrun" && "Race through 5 checkpoints as fast as possible!"}
-                    {gameMode === "collector" && "Grab as many coins as you can before time runs out!"}
-                    {gameMode === "parkour" && "Jump across platforms to reach all 5 checkpoints! Press SPACE to jump."}
-                    {gameMode === "blockhunt" && `📦 Block Hunt! You're disguised as ${BLOCKHUNT_BLOCKS.find(b=>b.id===blockhuntBlock)?.name || "a block"}. Stand still 3s to transform. 10 hearts, 5 min timer. ${role === "runner" ? "Slingshot: 2❤️ + stun" : "Sword: 2❤️ per hit"}. If caught undisguised = instant death!`}
                     {gameMode === "ctf" && "Find the enemy flag and bring it back to your base!"}
-                    {gameMode === "survival" && "Survive endless waves of hunters. Each wave adds more!"}
-                    {gameMode === "deathrun" && "Navigate deadly narrow platforms to reach all 5 checkpoints! Don't fall!"}
-                    {gameMode === "warfare" && `⚔️ Giant Warfare! Deploy units using elixir, capture enemy towers. ${warfareDuration / 60} min match. Click ground to place units. Find underground stockpiles for bonus elixir!`}
+                    {gameMode === "survival" && "Survive 10 waves of hunters. Each wave adds more enemies!"}
                   </p>
+                  <div className="mt-2 text-[9px] text-yellow-400/50 flex items-center gap-1 justify-center">
+                    <span>🕳️</span> <span>Find hatches to access dark underground tunnels with supplies!</span>
+                  </div>
                 </div>
                 <div className="cursor-pointer group" onClick={() => {
                   if (isMobile) {
@@ -946,8 +706,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
                   <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">SPACE</kbd> Jump</span>
                   <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">LMB</kbd> {role === "runner" ? "Shoot" : "Melee"}</span>
                   {role === "runner" && <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">1/2/3</kbd> Weapons</span>}
-                  <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">E</kbd> Grab</span>
-                  {gameMode === "blockhunt" && <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">Q</kbd> Disguise</span>}
+                  <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/50 font-mono text-[9px]">E</kbd> Hatch / Grab</span>
                 </div>
                 <button onClick={handleBack} className="text-white/15 text-xs hover:text-white/40 transition-colors">← Back</button>
               </div>

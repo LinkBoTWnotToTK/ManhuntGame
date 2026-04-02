@@ -125,7 +125,7 @@ export default function Player() {
     speedMultiplier, staminaDrainMultiplier, maxHealth,
     currentWeapon, meleeCooldown, setMeleeCooldown, switchWeapon,
     npcHealth, tagged,
-    gameMode, kothZone, addKothScore, checkpoints, checkpointIndex, advanceCheckpoint,
+    gameMode,
     flagPosition, flagCarried, grabFlag, returnFlag, basePosition,
     isDisguised, toggleDisguise,
   } = useGame();
@@ -212,7 +212,7 @@ export default function Player() {
       if (e.code === "Digit2") switchWeapon("shotgun");
       if (e.code === "Digit3") switchWeapon("sniper");
       if (e.code === "Space") jumpBuffered.current = true;
-      if (e.code === "KeyQ" && gameMode === "blockhunt") {
+      if (e.code === "KeyQ") {
         toggleDisguise();
         if (!isDisguised) {
           setDisguise("crate");
@@ -484,29 +484,6 @@ export default function Player() {
       }
     }
 
-    // KOTH zone scoring
-    if (gameMode === "koth" && kothZone) {
-      const dx = playerPosition.x - kothZone[0];
-      const dz = playerPosition.z - kothZone[2];
-      if (Math.sqrt(dx * dx + dz * dz) < 4) {
-        addKothScore(delta * 5);
-      }
-    }
-
-    // Checkpoint collection (speedrun, parkour, deathrun) - larger radius, 3D distance
-    if ((gameMode === "speedrun" || gameMode === "parkour" || gameMode === "deathrun") && checkpoints.length > 0 && checkpointIndex < checkpoints.length) {
-      const cp = checkpoints[checkpointIndex];
-      const dx = playerPosition.x - cp[0];
-      const dy = playerY - cp[1];
-      const dz = playerPosition.z - cp[2];
-      // Parkour: larger checkpoint radius (4 units) to be more forgiving
-      const checkRadius = (gameMode === "parkour" || gameMode === "deathrun") ? 4 : 3;
-      const dist3d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      if (dist3d < checkRadius) {
-        advanceCheckpoint();
-      }
-    }
-
     // CTF: grab flag
     if (gameMode === "ctf" && flagPosition && !flagCarried) {
       const dx = playerPosition.x - flagPosition[0];
@@ -525,29 +502,11 @@ export default function Player() {
       }
     }
 
-    // Deathrun: fall into lava/void = damage
-    if (gameMode === "deathrun" && playerY < -2) {
-      damagePlayer(1);
+    // Fall reset
+    if (playerY < -10) {
       setPlayerY(0);
       setPlayerVelocityY(0);
-      if (checkpointIndex > 0 && checkpoints[checkpointIndex - 1]) {
-        playerPosition.set(checkpoints[checkpointIndex - 1][0], 0, checkpoints[checkpointIndex - 1][2]);
-      } else {
-        playerPosition.set(0, 0, 4);
-      }
-    }
-
-    // Parkour: reset on fall
-    if (gameMode === "parkour" && playerY < -2) {
-      setPlayerY(0);
-      setPlayerVelocityY(0);
-      if (checkpointIndex > 0 && checkpoints[checkpointIndex - 1]) {
-        const cp = checkpoints[checkpointIndex - 1];
-        playerPosition.set(cp[0], cp[1] + 1, cp[2]);
-        setPlayerY(cp[1] + 1);
-      } else {
-        playerPosition.set(0, 0, 4);
-      }
+      playerPosition.set(0, 0, 4);
     }
 
     // NPC projectile hits

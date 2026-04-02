@@ -225,18 +225,6 @@ export default function MobileControls() {
             ))}
           </div>
         )}
-
-        {/* Disguise button (block hunt) */}
-        {gameMode === "blockhunt" && (
-          <button
-            data-mobile-btn
-            className={`absolute pointer-events-auto ${btnClass} bg-purple-500/60 border-2 border-purple-300/60 text-white`}
-            style={{ width: BUTTON_SIZE - 8, height: BUTTON_SIZE - 8, left: 160, bottom: 50 }}
-            onTouchStart={(e) => { e.preventDefault(); toggleDisguise(); }}
-          >
-            <span className="text-sm">📦</span>
-          </button>
-        )}
       </div>
     </>
   );

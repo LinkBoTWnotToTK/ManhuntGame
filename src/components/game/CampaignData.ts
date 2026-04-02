@@ -1,13 +1,16 @@
 // Campaign system with challenge levels, bosses, and star ratings
 
-import type { GameMap, GameMode, Difficulty } from "./GameState";
+import type { GameMap, Difficulty } from "./GameState";
+
+// Campaign uses its own mode type to reference the 4 remaining modes
+type CampaignMode = "classic" | "infection" | "ctf" | "survival";
 
 export interface BossData {
   name: string;
   emoji: string;
-  healthMult: number; // multiplier on normal hunter HP
+  healthMult: number;
   speedMult: number;
-  size: number; // scale
+  size: number;
   color: string;
 }
 
@@ -17,7 +20,7 @@ export interface CampaignChallenge {
   emoji: string;
   description: string;
   map: GameMap;
-  mode: GameMode;
+  mode: CampaignMode;
   difficulty: Difficulty;
   role: "runner" | "hunter";
   objectives: string[];
@@ -25,8 +28,7 @@ export interface CampaignChallenge {
   requiredCoins?: number;
   reward: { coins: number; xp: number };
   boss?: BossData;
-  // Star thresholds (time in seconds — lower is better)
-  starThresholds?: [number, number, number]; // [3-star, 2-star, 1-star] max times
+  starThresholds?: [number, number, number];
 }
 
 export interface CampaignChapter {
@@ -53,20 +55,20 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         starThresholds: [15, 22, 30],
       },
       {
-        id: "ch1_2", name: "Coin Collector", emoji: "🪙",
-        description: "Collect 10 coins on Suburban.",
-        map: "suburban", mode: "collector", difficulty: "easy", role: "runner",
-        objectives: ["Collect 10 coins"], requiredCoins: 10,
-        timeLimit: 45, reward: { coins: 8, xp: 30 },
-        starThresholds: [20, 30, 45],
-      },
-      {
-        id: "ch1_3", name: "Tag Practice", emoji: "🏷️",
+        id: "ch1_2", name: "Tag Practice", emoji: "🏷️",
         description: "Tag 3 runners as a Hunter on easy.",
         map: "suburban", mode: "classic", difficulty: "easy", role: "hunter",
         objectives: ["Tag 3 runners"],
         reward: { coins: 10, xp: 40 },
         starThresholds: [25, 40, 60],
+      },
+      {
+        id: "ch1_3", name: "Infection Escape", emoji: "🧟",
+        description: "Survive an Infection match on Suburban.",
+        map: "suburban", mode: "infection", difficulty: "easy", role: "runner",
+        objectives: ["Survive and escape"],
+        reward: { coins: 8, xp: 30 },
+        starThresholds: [30, 45, 60],
       },
     ],
   },
@@ -117,20 +119,20 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
     description: "Master the hardest challenges and defeat legendary bosses.",
     challenges: [
       {
-        id: "ch3_1", name: "Parkour Master", emoji: "🧗",
-        description: "Complete all 5 parkour checkpoints on hard.",
-        map: "volcano", mode: "parkour", difficulty: "hard", role: "runner",
-        objectives: ["Reach all 5 checkpoints"],
+        id: "ch3_1", name: "Flag Runner", emoji: "🚩",
+        description: "Capture the flag on Ruins in hard mode.",
+        map: "ruins", mode: "ctf", difficulty: "hard", role: "runner",
+        objectives: ["Capture the flag and return to base"],
         reward: { coins: 20, xp: 80 },
         starThresholds: [40, 60, 90],
       },
       {
-        id: "ch3_2", name: "Death Run", emoji: "☠️",
-        description: "Complete the deathrun on Space Station.",
-        map: "space_station", mode: "deathrun", difficulty: "hard", role: "runner",
-        objectives: ["Reach all checkpoints without dying"],
+        id: "ch3_2", name: "Endurance", emoji: "🛡️",
+        description: "Survive 8 waves on Volcano in hard mode.",
+        map: "volcano", mode: "survival", difficulty: "hard", role: "runner",
+        objectives: ["Survive 8 waves"],
         reward: { coins: 25, xp: 100 },
-        starThresholds: [35, 55, 75],
+        starThresholds: [120, 140, 160],
       },
       {
         id: "ch3_3", name: "Lava Titan", emoji: "🌋",
@@ -150,7 +152,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
       },
       {
         id: "ch3_4", name: "Void King", emoji: "👑",
-        description: "Defeat the final boss — the Void King in Space!",
+        description: "Defeat the final boss — the Void King!",
         map: "space_station", mode: "classic", difficulty: "hard", role: "runner",
         objectives: ["Defeat the Void King"],
         reward: { coins: 50, xp: 200 },
@@ -173,7 +175,7 @@ const CAMPAIGN_STORAGE_KEY = "hide_seek_campaign";
 export interface CampaignProgress {
   completed: string[];
   bestTimes: Record<string, number>;
-  stars: Record<string, number>; // 1-3 stars per challenge
+  stars: Record<string, number>;
 }
 
 export function loadCampaignProgress(): CampaignProgress {
