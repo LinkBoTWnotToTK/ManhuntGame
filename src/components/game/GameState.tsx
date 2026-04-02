@@ -6,12 +6,11 @@ import type { WeaponType } from "./WeaponSystem";
 import { completeCampaignChallenge, type CampaignChallenge } from "./CampaignData";
 import { cloudSave, cloudSaveLeaderboard, getCloudSaveCode } from "./CloudSave";
 import { loadCampaignProgress } from "./CampaignData";
-import { WARFARE_UNITS, WARFARE_TOWERS, WARFARE_STOCKPILES, MAX_ELIXIR, ELIXIR_REGEN_RATE, WARFARE_DURATION, WARFARE_MAP_BOUNDS, type WarfareTower, type WarfareUnit, type WarfareUnitType } from "./WarfareData";
 
 export type Role = "runner" | "hunter";
 export type GameMap = "suburban" | "industrial" | "forest" | "arctic" | "underground" | "volcano" | "space_station" | "ruins" | "swamp" | "rooftop";
 export type Difficulty = "easy" | "medium" | "hard";
-export type GameMode = "classic" | "infection" | "koth" | "lms" | "speedrun" | "collector" | "parkour" | "blockhunt" | "ctf" | "survival" | "deathrun" | "warfare";
+export type GameMode = "classic" | "infection" | "ctf" | "survival";
 
 export interface MapBounds {
   minX: number; maxX: number;
@@ -61,34 +60,36 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, {
 export const GAME_MODES: Record<GameMode, { name: string; emoji: string; desc: string }> = {
   classic:    { name: "Classic", emoji: "🎮", desc: "Hunt or run — the original mode" },
   infection:  { name: "Infection", emoji: "🧟", desc: "Tag converts runners to hunters" },
-  koth:       { name: "King of Hill", emoji: "👑", desc: "Hold the zone to score points" },
-  lms:        { name: "Last Standing", emoji: "💀", desc: "Free-for-all — last alive wins" },
-  speedrun:   { name: "Speed Run", emoji: "⚡", desc: "Reach all checkpoints fastest" },
-  collector:  { name: "Collector", emoji: "🪙", desc: "Collect the most coins to win" },
-  parkour:    { name: "Parkour", emoji: "🧗", desc: "Jump across platforms to the finish" },
-  blockhunt:  { name: "Block Hunt", emoji: "📦", desc: "Hide as objects — seekers find you" },
   ctf:        { name: "Capture Flag", emoji: "🚩", desc: "Grab the flag and return to base" },
-  survival:   { name: "Survival", emoji: "🛡️", desc: "Survive waves of hunters" },
-  deathrun:   { name: "Death Run", emoji: "☠️", desc: "Dodge traps to reach the end" },
-  warfare:    { name: "Warfare", emoji: "⚔️", desc: "Place units, capture towers — epic battle!" },
+  survival:   { name: "Survival", emoji: "🛡️", desc: "Survive endless waves of hunters" },
 };
 
 interface MedkitData { id: string; position: [number, number, number]; }
 interface AmmoPickupData { id: string; position: [number, number, number]; }
 interface CoinData { id: string; position: [number, number, number]; }
 
-// Block Hunt specific
-export const BLOCKHUNT_MAPS: GameMap[] = ["suburban", "forest", "arctic", "ruins", "rooftop"];
-export const BLOCKHUNT_BLOCKS = [
-  { id: "oak_log", name: "Oak Log", color: "#8B6914", emoji: "🪵" },
-  { id: "stone", name: "Stone", color: "#888888", emoji: "🪨" },
-  { id: "grass_block", name: "Grass Block", color: "#4a8c3f", emoji: "🟩" },
-  { id: "bookshelf", name: "Bookshelf", color: "#8B5E3C", emoji: "📚" },
-  { id: "tnt", name: "TNT", color: "#cc2222", emoji: "🧨" },
-  { id: "melon", name: "Melon", color: "#3a7a2a", emoji: "🍈" },
-  { id: "pumpkin", name: "Pumpkin", color: "#cc7722", emoji: "🎃" },
-  { id: "hay_bale", name: "Hay Bale", color: "#ccaa22", emoji: "🌾" },
-];
+// Underground supply data
+export interface UndergroundSupply {
+  id: string;
+  position: [number, number, number];
+  type: "medkit" | "ammo" | "coins";
+}
+
+// Generate underground supplies for hatch areas
+export function getUndergroundSupplies(map: GameMap): UndergroundSupply[] {
+  const supplies: UndergroundSupply[] = [];
+  const baseY = -8;
+  const positions: [number, number, number][] = [
+    [-5, baseY, -20], [5, baseY, -20], [0, baseY, -25],
+    [-8, baseY, -15], [8, baseY, -15], [0, baseY, -30],
+    [-3, baseY, -28], [3, baseY, -18], [-6, baseY, -25],
+  ];
+  positions.forEach((pos, i) => {
+    const type = i % 3 === 0 ? "medkit" : i % 3 === 1 ? "ammo" : "coins";
+    supplies.push({ id: `ug_${map}_${i}`, position: pos, type });
+  });
+  return supplies;
+}
 
 interface GameState {
   role: Role | null;
@@ -127,27 +128,13 @@ interface GameState {
   totalWins: number;
   totalGames: number;
   leaderboard: LeaderboardEntry[];
-  kothScore: number;
-  kothZone: [number, number, number] | null;
-  checkpoints: [number, number, number][];
-  checkpointIndex: number;
   survivalWave: number;
   flagCarried: boolean;
   flagPosition: [number, number, number] | null;
   basePosition: [number, number, number] | null;
-  parkourFinished: boolean;
   isDisguised: boolean;
-  // Block Hunt enhanced
-  blockhuntBlock: string | null;
-  blockhuntStillTimer: number;
-  blockhuntStunTimer: number;
-  // Warfare mode
-  warfarePhase: "prep" | "battle" | null;
-  warfareElixir: number;
-  warfareTowers: WarfareTower[];
-  warfareUnits: WarfareUnit[];
-  warfareDuration: number; // 300 or 600
-  warfareSelectedUnit: string | null;
+  // Underground
+  isUnderground: boolean;
   // Cosmetics
   equippedSkin: string;
   equippedTrail: string;
@@ -187,28 +174,15 @@ interface GameState {
   switchWeapon: (w: WeaponType) => void;
   setMeleeCooldown: (cd: number) => void;
   doPrestige: () => void;
-  advanceCheckpoint: () => void;
-  addKothScore: (pts: number) => void;
   grabFlag: () => void;
   returnFlag: () => void;
-  finishParkour: () => void;
   toggleDisguise: () => void;
   advanceSurvivalWave: () => void;
+  enterUnderground: () => void;
+  exitUnderground: () => void;
   equipSkin: (id: string) => void;
   equipTrail: (id: string) => void;
   equipHat: (id: string) => void;
-  setBlockhuntBlock: (block: string | null) => void;
-  updateBlockhuntStillTimer: (delta: number) => void;
-  applyBlockhuntStun: () => void;
-  // Warfare
-  setWarfarePhase: (phase: "prep" | "battle" | null) => void;
-  placeWarfareUnit: (typeId: string, position: [number, number, number]) => void;
-  setWarfareDuration: (d: number) => void;
-  setWarfareSelectedUnit: (id: string | null) => void;
-  damageWarfareTower: (towerId: string, amount: number) => void;
-  damageWarfareUnit: (unitId: string, amount: number) => void;
-  spawnEnemyUnit: () => void;
-  collectStockpile: (index: number) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -232,27 +206,6 @@ function spawnCoins(bounds: MapBounds, count: number): CoinData[] {
     coins.push({ id: `coin${i}_${Date.now()}`, position: [x, 0.3, z] });
   }
   return coins;
-}
-
-function spawnCheckpoints(bounds: MapBounds): [number, number, number][] {
-  const pts: [number, number, number][] = [];
-  for (let i = 0; i < 5; i++) {
-    const x = bounds.minX + 8 + Math.random() * (bounds.maxX - bounds.minX - 16);
-    const z = bounds.minZ + 8 + Math.random() * (bounds.maxZ - bounds.minZ - 16);
-    pts.push([x, 0, z]);
-  }
-  return pts;
-}
-
-function spawnParkourCheckpoints(): [number, number, number][] {
-  // Parkour checkpoints on elevated platforms — aligned with ParkourPlatforms in House.tsx
-  return [
-    [0, 1.5, -8],       // Stage 1: starting platform
-    [-4, 3.2, -17],     // Stage 2: zigzag mid
-    [0, 5, -26],        // Stage 3: bridge
-    [5, 8.5, -38],      // Stage 5: floating island
-    [0, 11, -52],       // Stage 6: finish platform
-  ];
 }
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
@@ -286,16 +239,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [totalWins, setTotalWins] = useState(0);
   const [totalGames, setTotalGames] = useState(0);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [kothScore, setKothScore] = useState(0);
-  const [kothZone, setKothZone] = useState<[number, number, number] | null>(null);
-  const [checkpoints, setCheckpoints] = useState<[number, number, number][]>([]);
-  const [checkpointIndex, setCheckpointIndex] = useState(0);
   const [survivalWave, setSurvivalWave] = useState(1);
   const [flagCarried, setFlagCarried] = useState(false);
   const [flagPosition, setFlagPosition] = useState<[number, number, number] | null>(null);
   const [basePosition, setBasePosition] = useState<[number, number, number] | null>(null);
-  const [parkourFinished, setParkourFinished] = useState(false);
   const [isDisguised, setIsDisguised] = useState(false);
+  const [isUnderground, setIsUnderground] = useState(false);
   const [equippedSkin, setEquippedSkin] = useState("");
   const [equippedTrail, setEquippedTrail] = useState("");
   const [equippedHat, setEquippedHat] = useState("");
@@ -304,19 +253,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [tutorialActive, setTutorialActive] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [activeCampaignChallenge, setActiveCampaignChallengeState] = useState<CampaignChallenge | null>(null);
-  const [blockhuntBlock, setBlockhuntBlockState] = useState<string | null>(null);
-  const [blockhuntStillTimer, setBlockhuntStillTimer] = useState(0);
-  const [blockhuntStunTimer, setBlockhuntStunTimer] = useState(0);
-  // Warfare state
-  const [warfarePhase, setWarfarePhaseState] = useState<"prep" | "battle" | null>(null);
-  const [warfareElixir, setWarfareElixir] = useState(5);
-  const [warfareTowers, setWarfareTowers] = useState<WarfareTower[]>([]);
-  const [warfareUnits, setWarfareUnits] = useState<WarfareUnit[]>([]);
-  const [warfareDuration, setWarfareDurationState] = useState(WARFARE_DURATION);
-  const [warfareSelectedUnit, setWarfareSelectedUnitState] = useState<string | null>(null);
-  const warfareStockpilesCollected = useRef<Set<number>>(new Set());
-  const warfareEnemySpawnTimer = useRef(0);
-  const warfareElixirRef = useRef(5);
   const campaignChallengeRef = useRef<CampaignChallenge | null>(null);
 
   const timerRef = useRef<number | null>(null);
@@ -333,8 +269,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const nextAmmoSpawn = useRef(10);
   const secondWindUsed = useRef(false);
   const ownedRef = useRef<string[]>([]);
-  const kothRef = useRef(0);
-  const cpRef = useRef(0);
   const waveRef = useRef(1);
 
   useEffect(() => {
@@ -359,7 +293,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const saveData: SaveData = { coins, powerups: ownedPowerups, level, xp, prestige, totalWins, totalGames, equippedSkin, equippedTrail, equippedHat };
     autoSave(saveData);
     ownedRef.current = ownedPowerups;
-    // Cloud save (debounced, fire-and-forget)
     if (getCloudSaveCode()) {
       const campaignData = loadCampaignProgress();
       cloudSave(saveData, campaignData).catch(() => {});
@@ -383,6 +316,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const finishGame = useCallback((result: "win" | "lose", elapsed: number) => {
+    if (gameOverRef.current) return; // Prevent double-finish
     gameOverRef.current = true;
     setGameOver(true);
     setGameResult(result);
@@ -397,11 +331,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     // Campaign challenge completion
     const cc = campaignChallengeRef.current;
     if (cc && result === "win") {
-      // Check objectives
       let objectiveMet = true;
       if (cc.timeLimit && elapsed > cc.timeLimit) objectiveMet = false;
-      // requiredCoins checked against matchCoins would need access - for now treat win as success
-      
       if (objectiveMet) {
         completeCampaignChallenge(cc.id, elapsed);
         coinReward += cc.reward.coins;
@@ -439,8 +370,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       saveLeaderboard(next);
       return next;
     });
-
-    // Cloud save leaderboard entry
     cloudSaveLeaderboard(entry).catch(() => {});
   }, [level, prestige]);
 
@@ -449,38 +378,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const owned = ownedRef.current;
     const extraAmmo = owned.includes("lucky_start") ? 2 : 0;
     const mode = modeRef.current;
-    const isBlockHunt = mode === "blockhunt";
-    const isWarfare = mode === "warfare";
     
-    // Block Hunt: 10 hearts, 5 ammo for runners, random map from 5
-    const currentMaxHealth = isWarfare ? 10 : isBlockHunt ? 10 : (owned.includes("extra_heart") ? 4 : BASE_MAX_HEALTH);
-    const startAmmo = isBlockHunt 
-      ? (roleRef.current === "runner" ? 5 : 0) 
-      : isWarfare ? 0
-      : (roleRef.current === "runner" ? RUNNER_START_AMMO + extraAmmo : HUNTER_START_AMMO);
+    const currentMaxHealth = owned.includes("extra_heart") ? 4 : BASE_MAX_HEALTH;
+    const startAmmo = roleRef.current === "runner" ? RUNNER_START_AMMO + extraAmmo : HUNTER_START_AMMO;
     const ammoInterval = owned.includes("quick_reload") ? 6 : 10;
     const diff = DIFFICULTY_SETTINGS[diffRef.current];
-    const duration = isWarfare ? warfareDuration : isBlockHunt ? 300 : mode === "survival" ? 999 : mode === "parkour" ? 120 : mode === "deathrun" ? 90 : diff.gameDuration;
     
-    // Block Hunt: pick random map if not already set from block hunt maps
-    if (isBlockHunt) {
-      const randomMap = BLOCKHUNT_MAPS[Math.floor(Math.random() * BLOCKHUNT_MAPS.length)];
-      setSelectedMap(randomMap);
-      mapRef.current = randomMap;
-    }
-
-    // Warfare: set up towers and use forest map
-    if (isWarfare) {
-      setSelectedMap("forest");
-      mapRef.current = "forest";
-      setWarfarePhaseState("battle");
-      setWarfareTowers(WARFARE_TOWERS.map(t => ({ ...t, health: t.maxHealth })));
-      setWarfareUnits([]);
-      warfareElixirRef.current = 5;
-      setWarfareElixir(5);
-      warfareStockpilesCollected.current.clear();
-      warfareEnemySpawnTimer.current = 0;
-    }
+    // Mode-specific durations
+    const duration = mode === "survival" ? 999 : diff.gameDuration;
 
     setScore(0);
     setTagged(new Set());
@@ -496,18 +401,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setMedkits([]);
     setAmmoPickups([]);
     setMatchCoins(0);
-    setKothScore(0);
-    kothRef.current = 0;
-    setCheckpointIndex(0);
-    cpRef.current = 0;
     setSurvivalWave(1);
     waveRef.current = 1;
     setFlagCarried(false);
-    setParkourFinished(false);
     setIsDisguised(false);
-    setBlockhuntBlockState(null);
-    setBlockhuntStillTimer(0);
-    setBlockhuntStunTimer(0);
+    setIsUnderground(false);
     playerHealthRef.current = currentMaxHealth;
     playerAmmoRef.current = startAmmo;
     npcHealthRef.current = {};
@@ -519,34 +417,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setElapsedTime(0);
 
     const bounds = MAP_BOUNDS[mapRef.current || "suburban"];
-    const coinCount = mode === "collector" ? 40 : 18;
-    setCoinPickups(spawnCoins(bounds, coinCount));
+    setCoinPickups(spawnCoins(bounds, 18));
 
-    // KOTH zone
-    if (mode === "koth") {
-      const zx = bounds.minX + 10 + Math.random() * (bounds.maxX - bounds.minX - 20);
-      const zz = bounds.minZ + 10 + Math.random() * (bounds.maxZ - bounds.minZ - 20);
-      setKothZone([zx, 0, zz]);
-    } else { setKothZone(null); }
-
-    // Speedrun / Parkour checkpoints
-    if (mode === "speedrun") {
-      setCheckpoints(spawnCheckpoints(bounds));
-    } else if (mode === "parkour") {
-      setCheckpoints(spawnParkourCheckpoints());
-    } else if (mode === "deathrun") {
-      // Deathrun uses linear checkpoints along the run
-      setCheckpoints([
-        [0, 0, -15], [0, 0, -25], [0, 0, -35], [0, 0, -45], [0, 0, -52],
-      ]);
-    } else { setCheckpoints([]); }
-
-    // CTF
+    // CTF: place flag and base
     if (mode === "ctf") {
       const fx = bounds.minX + 10 + Math.random() * (bounds.maxX - bounds.minX - 20);
       const fz = bounds.minZ + 10;
       setFlagPosition([fx, 0.5, fz]);
-      setBasePosition([0, 0, 5]); // near player start
+      setBasePosition([0, 0, 5]);
     } else {
       setFlagPosition(null);
       setBasePosition(null);
@@ -558,37 +436,45 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       setElapsedTime(elapsed);
 
-      if (modeRef.current === "classic" || modeRef.current === "infection") {
+      // === WIN CONDITIONS PER MODE (non-overlapping) ===
+      const currentMode = modeRef.current;
+
+      if (currentMode === "classic") {
+        // Classic: escape opens at timer end, lose 15s later if not escaped
         if (elapsed >= duration) setEscapeOpen(true);
+        if (elapsed >= duration + 15) {
+          finishGame("lose", elapsed);
+          return;
+        }
       }
 
-      if (modeRef.current === "collector" && elapsed >= duration) {
-        finishGame("win", elapsed);
-        return;
+      if (currentMode === "infection") {
+        // Infection: same as classic — escape opens at timer end
+        if (elapsed >= duration) setEscapeOpen(true);
+        if (elapsed >= duration + 15) {
+          finishGame("lose", elapsed);
+          return;
+        }
       }
 
-      if (modeRef.current === "koth" && kothRef.current >= 100) {
-        finishGame("win", elapsed);
-        return;
-      }
-
-      // Survival: advance waves every 20s
-      if (modeRef.current === "survival") {
+      if (currentMode === "survival") {
+        // Survival: advance waves every 20s, no time limit (survive until death)
         const newWave = Math.floor(elapsed / 20) + 1;
         if (newWave > waveRef.current) {
           waveRef.current = newWave;
           setSurvivalWave(newWave);
         }
+        // Win after surviving 10 waves (200 seconds)
+        if (waveRef.current > 10 && !gameOverRef.current) {
+          finishGame("win", elapsed);
+          return;
+        }
       }
 
-      // Parkour / Deathrun timeout
-      if ((modeRef.current === "parkour" || modeRef.current === "deathrun") && elapsed >= duration) {
-        finishGame("lose", elapsed);
-        return;
-      }
+      // CTF: no timer-based end — win by returning flag (handled in returnFlag)
 
+      // Spawn medkits & ammo
       const b = MAP_BOUNDS[mapRef.current || "suburban"];
-
       if (elapsed >= nextMedkitSpawn.current) {
         nextMedkitSpawn.current += 30;
         const x = b.minX + 5 + Math.random() * (b.maxX - b.minX - 10);
@@ -602,67 +488,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const z = b.minZ + 5 + Math.random() * (b.maxZ - b.minZ - 10);
         setAmmoPickups(prev => [...prev.slice(-6), { id: `a${Date.now()}`, position: [x, 0.3, z] as [number, number, number] }]);
       }
-
-      if ((modeRef.current === "classic" || modeRef.current === "infection") && elapsed >= duration + 15) {
-        finishGame("lose", elapsed);
-      }
-
-      if (modeRef.current === "lms" && elapsed >= duration + 30) {
-        finishGame("win", elapsed);
-      }
-
-      // Block hunt: if time runs out as hider, you win
-      if (modeRef.current === "blockhunt" && elapsed >= duration + 30) {
-        finishGame(roleRef.current === "runner" ? "win" : "lose", elapsed);
-      }
-
-      // Warfare: elixir regen + enemy spawning + timeout
-      if (modeRef.current === "warfare") {
-        // Regen elixir
-        warfareElixirRef.current = Math.min(MAX_ELIXIR, warfareElixirRef.current + ELIXIR_REGEN_RATE * 0.1);
-        setWarfareElixir(Math.floor(warfareElixirRef.current * 10) / 10);
-        
-        // Enemy spawns every 8-12 seconds, faster as time goes on
-        warfareEnemySpawnTimer.current += 0.1;
-        const spawnInterval = Math.max(5, 10 - elapsed / 60);
-        if (warfareEnemySpawnTimer.current >= spawnInterval) {
-          warfareEnemySpawnTimer.current = 0;
-          // Spawn 1-3 enemies based on elapsed time
-          const count = Math.min(3, 1 + Math.floor(elapsed / 120));
-          for (let i = 0; i < count; i++) {
-            const pool = WARFARE_UNITS.filter(u => u.cost <= 5);
-            const unitDef = pool[Math.floor(Math.random() * pool.length)];
-            const side = Math.random() > 0.5 ? 1 : -1;
-            const eu: WarfareUnit = {
-              id: `eu_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 5)}`,
-              typeId: unitDef.id,
-              position: [side * (5 + Math.random() * 15), 0, -48],
-              team: "enemy",
-              health: unitDef.health,
-              maxHealth: unitDef.health,
-              targetId: null,
-              lastAttack: 0,
-              alive: true,
-            };
-            setWarfareUnits(prev => [...prev, eu]);
-          }
-        }
-
-        if (elapsed >= duration) {
-          // Time up — check who has more tower HP
-          let playerHP = 0, enemyHP = 0;
-          setWarfareTowers(prev => {
-            prev.forEach(t => {
-              if (t.team === "player") playerHP += t.health;
-              else if (t.team === "enemy") enemyHP += t.health;
-            });
-            return prev;
-          });
-          finishGame(playerHP >= enemyHP ? "win" : "lose", elapsed);
-        }
-      }
     }, 100);
-  }, [finishGame, warfareDuration]);
+  }, [finishGame]);
 
   const diff = DIFFICULTY_SETTINGS[difficulty];
   const totalNPCs = role === "hunter" ? 7 : diff.hunterCount;
@@ -682,7 +509,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
       setScore(enemyCount);
 
-      if (enemyCount >= enemyTotal && (modeRef.current === "classic" || modeRef.current === "infection" || modeRef.current === "lms" || modeRef.current === "blockhunt")) {
+      // Win by tagging all enemies (classic, infection)
+      const mode = modeRef.current;
+      if (enemyCount >= enemyTotal && (mode === "classic" || mode === "infection")) {
         const elapsed = (Date.now() - startTimeRef.current) / 1000;
         finishGame("win", elapsed);
       }
@@ -698,20 +527,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const damagePlayer = useCallback((amount: number) => {
     if (gameOverRef.current) return;
-    // Block Hunt: if caught while NOT disguised, lose ALL hearts instantly
-    const isBlockHunt = modeRef.current === "blockhunt";
-    let dmg: number;
-    if (isBlockHunt) {
-      // In blockhunt: runner slingshot does 2 hearts + stun handled separately
-      // Hunter sword does 2 hearts. If not disguised and melee tagged, instant kill
-      dmg = amount;
-    } else {
-      dmg = ownedRef.current.includes("thick_skin") ? Math.max(1, Math.ceil(amount / 2)) : amount;
-    }
+    const dmg = ownedRef.current.includes("thick_skin") ? Math.max(1, Math.ceil(amount / 2)) : amount;
     playerHealthRef.current = Math.max(0, playerHealthRef.current - dmg);
     setPlayerHealth(playerHealthRef.current);
     if (playerHealthRef.current <= 0) {
-      if (ownedRef.current.includes("second_wind") && !secondWindUsed.current && !isBlockHunt) {
+      if (ownedRef.current.includes("second_wind") && !secondWindUsed.current) {
         secondWindUsed.current = true;
         playerHealthRef.current = 1;
         setPlayerHealth(1);
@@ -817,21 +637,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setOwnedPowerups([]);
   }, [level]);
 
-  const advanceCheckpoint = useCallback(() => {
-    cpRef.current++;
-    setCheckpointIndex(cpRef.current);
-    const maxCp = modeRef.current === "parkour" || modeRef.current === "deathrun" ? 5 : 5;
-    if (cpRef.current >= maxCp) {
-      const elapsed = (Date.now() - startTimeRef.current) / 1000;
-      finishGame("win", elapsed);
-    }
-  }, [finishGame]);
-
-  const addKothScore = useCallback((pts: number) => {
-    kothRef.current += pts;
-    setKothScore(kothRef.current);
-  }, []);
-
   const grabFlag = useCallback(() => {
     setFlagCarried(true);
   }, []);
@@ -843,125 +648,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     finishGame("win", elapsed);
   }, [flagCarried, finishGame]);
 
-  const finishParkour = useCallback(() => {
-    setParkourFinished(true);
-    const elapsed = (Date.now() - startTimeRef.current) / 1000;
-    finishGame("win", elapsed);
-  }, [finishGame]);
-
   const toggleDisguise = useCallback(() => {
     setIsDisguised(prev => !prev);
-  }, []);
-
-  const setBlockhuntBlock = useCallback((block: string | null) => {
-    setBlockhuntBlockState(block);
-  }, []);
-
-  const updateBlockhuntStillTimer = useCallback((delta: number) => {
-    setBlockhuntStillTimer(prev => {
-      const newVal = prev + delta;
-      // After 3 seconds still, auto-disguise
-      if (newVal >= 3 && !isDisguised && gameMode === "blockhunt" && blockhuntBlock) {
-        setIsDisguised(true);
-      }
-      return newVal;
-    });
-  }, [isDisguised, gameMode, blockhuntBlock]);
-
-  const applyBlockhuntStun = useCallback(() => {
-    setBlockhuntStunTimer(1);
-  }, []);
-
-  // === WARFARE CALLBACKS ===
-  const setWarfarePhase = useCallback((phase: "prep" | "battle" | null) => {
-    setWarfarePhaseState(phase);
-  }, []);
-
-  const setWarfareDuration = useCallback((d: number) => {
-    setWarfareDurationState(d);
-  }, []);
-
-  const setWarfareSelectedUnit = useCallback((id: string | null) => {
-    setWarfareSelectedUnitState(id);
-  }, []);
-
-  const placeWarfareUnit = useCallback((typeId: string, position: [number, number, number]) => {
-    const unitDef = WARFARE_UNITS.find(u => u.id === typeId);
-    if (!unitDef) return;
-    if (warfareElixirRef.current < unitDef.cost) return;
-    warfareElixirRef.current -= unitDef.cost;
-    setWarfareElixir(warfareElixirRef.current);
-    const unit: WarfareUnit = {
-      id: `pu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      typeId,
-      position,
-      team: "player",
-      health: unitDef.health,
-      maxHealth: unitDef.health,
-      targetId: null,
-      lastAttack: 0,
-      alive: true,
-    };
-    setWarfareUnits(prev => [...prev, unit]);
-  }, []);
-
-  const spawnEnemyUnit = useCallback(() => {
-    const pool = WARFARE_UNITS.filter(u => u.cost <= 5);
-    const unitDef = pool[Math.floor(Math.random() * pool.length)];
-    const side = Math.random() > 0.5 ? 1 : -1;
-    const unit: WarfareUnit = {
-      id: `eu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      typeId: unitDef.id,
-      position: [side * (5 + Math.random() * 15), 0, -48],
-      team: "enemy",
-      health: unitDef.health,
-      maxHealth: unitDef.health,
-      targetId: null,
-      lastAttack: 0,
-      alive: true,
-    };
-    setWarfareUnits(prev => [...prev, unit]);
-  }, []);
-
-  const damageWarfareTower = useCallback((towerId: string, amount: number) => {
-    setWarfareTowers(prev => {
-      const next = prev.map(t => t.id === towerId ? { ...t, health: Math.max(0, t.health - amount) } : t);
-      // Check win/lose: if enemy king tower destroyed = win, player king = lose
-      const eKing = next.find(t => t.id === "e_king");
-      const pKing = next.find(t => t.id === "p_king");
-      if (eKing && eKing.health <= 0 && !gameOverRef.current) {
-        const elapsed = (Date.now() - startTimeRef.current) / 1000;
-        finishGame("win", elapsed);
-      }
-      if (pKing && pKing.health <= 0 && !gameOverRef.current) {
-        const elapsed = (Date.now() - startTimeRef.current) / 1000;
-        finishGame("lose", elapsed);
-      }
-      return next;
-    });
-  }, [finishGame]);
-
-  const damageWarfareUnit = useCallback((unitId: string, amount: number) => {
-    setWarfareUnits(prev => prev.map(u => 
-      u.id === unitId ? { ...u, health: Math.max(0, u.health - amount), alive: u.health - amount > 0 } : u
-    ).filter(u => u.alive));
-  }, []);
-
-  const collectStockpile = useCallback((index: number) => {
-    if (warfareStockpilesCollected.current.has(index)) return;
-    warfareStockpilesCollected.current.add(index);
-    const sp = WARFARE_STOCKPILES[index];
-    if (sp.resource === "elixir") {
-      warfareElixirRef.current = Math.min(MAX_ELIXIR, warfareElixirRef.current + sp.amount);
-      setWarfareElixir(warfareElixirRef.current);
-    } else {
-      setCoins(prev => prev + sp.amount);
-    }
   }, []);
 
   const advanceSurvivalWave = useCallback(() => {
     waveRef.current++;
     setSurvivalWave(waveRef.current);
+  }, []);
+
+  const enterUnderground = useCallback(() => {
+    setIsUnderground(true);
+  }, []);
+
+  const exitUnderground = useCallback(() => {
+    setIsUnderground(false);
   }, []);
 
   const resetGame = useCallback(() => {
@@ -984,28 +685,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setAmmoPickups([]);
     setCoinPickups([]);
     setMatchCoins(0);
-    setKothScore(0);
-    setKothZone(null);
-    setCheckpoints([]);
-    setCheckpointIndex(0);
     setSurvivalWave(1);
     setFlagCarried(false);
     setFlagPosition(null);
     setBasePosition(null);
-    setParkourFinished(false);
     setIsDisguised(false);
-    setBlockhuntBlockState(null);
-    setBlockhuntStillTimer(0);
-    setBlockhuntStunTimer(0);
-    // Warfare reset
-    setWarfarePhaseState(null);
-    setWarfareElixir(5);
-    setWarfareTowers([]);
-    setWarfareUnits([]);
-    setWarfareSelectedUnitState(null);
-    warfareElixirRef.current = 5;
-    warfareStockpilesCollected.current.clear();
-    warfareEnemySpawnTimer.current = 0;
+    setIsUnderground(false);
 
     playerHealthRef.current = BASE_MAX_HEALTH;
     playerAmmoRef.current = 0;
@@ -1013,13 +698,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     gameOverRef.current = false;
     roleRef.current = null;
     mapRef.current = null;
-    kothRef.current = 0;
-    cpRef.current = 0;
     waveRef.current = 1;
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
-  const gameDuration = gameMode === "warfare" ? warfareDuration : gameMode === "blockhunt" ? 300 : gameMode === "survival" ? 999 : gameMode === "parkour" ? 120 : gameMode === "deathrun" ? 90 : DIFFICULTY_SETTINGS[difficulty].gameDuration;
+  const gameDuration = gameMode === "survival" ? 999 : DIFFICULTY_SETTINGS[difficulty].gameDuration;
   const timeLeft = Math.max(0, gameDuration - elapsedTime);
 
   return (
@@ -1034,12 +717,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         speedMultiplier, staminaDrainMultiplier, maxHealth,
         currentWeapon, meleeCooldown,
         level, xp, prestige, totalWins, totalGames, leaderboard,
-        kothScore, kothZone, checkpoints, checkpointIndex,
         survivalWave, flagCarried, flagPosition, basePosition,
-        parkourFinished, isDisguised,
-        blockhuntBlock, blockhuntStillTimer, blockhuntStunTimer,
-        warfarePhase, warfareElixir, warfareTowers, warfareUnits,
-        warfareDuration, warfareSelectedUnit,
+        isDisguised, isUnderground,
         equippedSkin, equippedTrail, equippedHat,
         nearHatch, hatchPromptText, setNearHatch,
         tutorialActive, tutorialStep, startTutorial, advanceTutorial, endTutorial,
@@ -1051,14 +730,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         useStamina: useStaminaFn, regenStamina,
         buyPowerup, loadSaveData,
         switchWeapon, setMeleeCooldown,
-        doPrestige, advanceCheckpoint, addKothScore,
-        grabFlag, returnFlag, finishParkour,
+        doPrestige,
+        grabFlag, returnFlag,
         toggleDisguise, advanceSurvivalWave,
+        enterUnderground, exitUnderground,
         equipSkin, equipTrail, equipHat,
-        setBlockhuntBlock, updateBlockhuntStillTimer, applyBlockhuntStun,
-        setWarfarePhase, placeWarfareUnit, setWarfareDuration,
-        setWarfareSelectedUnit, damageWarfareTower, damageWarfareUnit,
-        spawnEnemyUnit, collectStockpile,
       }}
     >
       {children}
