@@ -570,9 +570,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const damageNPC = useCallback((id: string, amount: number) => {
     const current = npcHealthRef.current[id] ?? 3;
-    npcHealthRef.current[id] = Math.max(0, current - amount);
+    const next = Math.max(0, current - amount);
+    npcHealthRef.current[id] = next;
     setNpcHealth({ ...npcHealthRef.current });
-  }, []);
+
+    // defeatBoss win condition: kill the boss NPC (id begins with "boss")
+    if (next <= 0 && id.startsWith("boss")) {
+      const challenge = campaignChallengeRef.current;
+      if (challenge && challenge.challengeType === "defeatBoss" && !gameOverRef.current) {
+        const elapsed = (Date.now() - startTimeRef.current) / 1000;
+        finishGame("win", elapsed);
+      }
+    }
+  }, [finishGame]);
 
   const healPlayer = useCallback(() => {
     const mh = ownedRef.current.includes("extra_heart") ? 4 : BASE_MAX_HEALTH;
