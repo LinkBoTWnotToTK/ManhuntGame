@@ -436,36 +436,55 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       setElapsedTime(elapsed);
 
-      // === WIN CONDITIONS PER MODE (non-overlapping) ===
+      // === WIN CONDITIONS ===
+      // If a campaign challenge is active, IT controls the win condition
+      // and overrides the mode default. Otherwise the mode default applies.
       const currentMode = modeRef.current;
+      const challenge = campaignChallengeRef.current;
 
-      if (currentMode === "classic") {
-        // Classic: escape opens at timer end, lose 15s later if not escaped
-        if (elapsed >= duration) setEscapeOpen(true);
-        if (elapsed >= duration + 15) {
-          finishGame("lose", elapsed);
-          return;
+      if (challenge) {
+        // Challenge-driven win conditions
+        if (challenge.challengeType === "surviveTime" && challenge.target) {
+          if (elapsed >= challenge.target) {
+            finishGame("win", elapsed);
+            return;
+          }
         }
-      }
-
-      if (currentMode === "infection") {
-        // Infection: same as classic — escape opens at timer end
-        if (elapsed >= duration) setEscapeOpen(true);
-        if (elapsed >= duration + 15) {
-          finishGame("lose", elapsed);
-          return;
+        // surviveWaves: handled inside the survival block below
+        // tagCount: handled in tagNPC
+        // captureFlag: handled in returnFlag
+        // defeatBoss: handled in damageNPC
+        // escape: still uses the classic escape flow
+        if (challenge.challengeType === "escape") {
+          if (elapsed >= duration) setEscapeOpen(true);
+          if (elapsed >= duration + 15) {
+            finishGame("lose", elapsed);
+            return;
+          }
+        }
+      } else {
+        // Default mode win conditions (no active challenge)
+        if (currentMode === "classic" || currentMode === "infection") {
+          if (elapsed >= duration) setEscapeOpen(true);
+          if (elapsed >= duration + 15) {
+            finishGame("lose", elapsed);
+            return;
+          }
         }
       }
 
       if (currentMode === "survival") {
-        // Survival: advance waves every 20s, no time limit (survive until death)
+        // Survival: advance waves every 20s
         const newWave = Math.floor(elapsed / 20) + 1;
         if (newWave > waveRef.current) {
           waveRef.current = newWave;
           setSurvivalWave(newWave);
         }
-        // Win after surviving 10 waves (200 seconds)
-        if (waveRef.current > 10 && !gameOverRef.current) {
+        // Win target: challenge target if any, else 10 waves
+        const waveTarget = (challenge && challenge.challengeType === "surviveWaves" && challenge.target)
+          ? challenge.target
+          : 10;
+        if (waveRef.current > waveTarget && !gameOverRef.current) {
           finishGame("win", elapsed);
           return;
         }
@@ -509,9 +528,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
       setScore(enemyCount);
 
-      // Win by tagging all enemies (classic, infection)
+      // If a campaign tagCount challenge is active, IT defines the win threshold
+      const challenge = campaignChallengeRef.current;
       const mode = modeRef.current;
-      if (enemyCount >= enemyTotal && (mode === "classic" || mode === "infection")) {
+      if (challenge && challenge.challengeType === "tagCount" && challenge.target) {
+        if (enemyCount >= challenge.target) {
+          const elapsed = (Date.now() - startTimeRef.current) / 1000;
+          finishGame("win", elapsed);
+        }
+      } else if (!challenge && enemyCount >= enemyTotal && (mode === "classic" || mode === "infection")) {
+        // Default: win by tagging ALL enemies
         const elapsed = (Date.now() - startTimeRef.current) / 1000;
         finishGame("win", elapsed);
       }
@@ -544,9 +570,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const damageNPC = useCallback((id: string, amount: number) => {
     const current = npcHealthRef.current[id] ?? 3;
-    npcHealthRef.current[id] = Math.max(0, current - amount);
+    const next = Math.max(0, current - amount);
+    npcHealthRef.current[id] = next;
     setNpcHealth({ ...npcHealthRef.current });
-  }, []);
+
+    // defeatBoss win condition: kill the boss NPC (id begins with "boss")
+    if (next <= 0 && id.startsWith("boss")) {
+      const challenge = campaignChallengeRef.current;
+      if (challenge && challenge.challengeType === "defeatBoss" && !gameOverRef.current) {
+        const elapsed = (Date.now() - startTimeRef.current) / 1000;
+        finishGame("win", elapsed);
+      }
+    }
+  }, [finishGame]);
 
   const healPlayer = useCallback(() => {
     const mh = ownedRef.current.includes("extra_heart") ? 4 : BASE_MAX_HEALTH;

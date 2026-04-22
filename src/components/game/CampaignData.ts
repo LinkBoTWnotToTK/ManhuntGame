@@ -14,6 +14,22 @@ export interface BossData {
   color: string;
 }
 
+// Defines what triggers a WIN for a campaign challenge.
+// This OVERRIDES the default mode win condition while a challenge is active.
+//   surviveTime  – win once you survive `target` seconds (runner)
+//   tagCount     – win once you tag `target` enemies (hunter)
+//   surviveWaves – win once you complete `target` survival waves
+//   escape       – win by reaching the escape portal (default classic/infection)
+//   captureFlag  – win by returning the flag to base (default CTF)
+//   defeatBoss   – win by killing the boss NPC
+export type ChallengeType =
+  | "surviveTime"
+  | "tagCount"
+  | "surviveWaves"
+  | "escape"
+  | "captureFlag"
+  | "defeatBoss";
+
 export interface CampaignChallenge {
   id: string;
   name: string;
@@ -24,6 +40,10 @@ export interface CampaignChallenge {
   difficulty: Difficulty;
   role: "runner" | "hunter";
   objectives: string[];
+  /** What it takes to win this challenge — overrides the mode default. */
+  challengeType: ChallengeType;
+  /** Target value: seconds for surviveTime, count for tagCount, wave # for surviveWaves. */
+  target?: number;
   timeLimit?: number;
   requiredCoins?: number;
   reward: { coins: number; xp: number };
@@ -51,6 +71,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         description: "Survive 30 seconds as a Runner on Suburban.",
         map: "suburban", mode: "classic", difficulty: "easy", role: "runner",
         objectives: ["Survive for 30 seconds"],
+        challengeType: "surviveTime", target: 30,
         timeLimit: 30, reward: { coins: 5, xp: 20 },
         starThresholds: [15, 22, 30],
       },
@@ -59,6 +80,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         description: "Tag 3 runners as a Hunter on easy.",
         map: "suburban", mode: "classic", difficulty: "easy", role: "hunter",
         objectives: ["Tag 3 runners"],
+        challengeType: "tagCount", target: 3,
         reward: { coins: 10, xp: 40 },
         starThresholds: [25, 40, 60],
       },
@@ -67,6 +89,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         description: "Survive an Infection match on Suburban.",
         map: "suburban", mode: "infection", difficulty: "easy", role: "runner",
         objectives: ["Survive and escape"],
+        challengeType: "escape",
         reward: { coins: 8, xp: 30 },
         starThresholds: [30, 45, 60],
       },
@@ -83,6 +106,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         description: "Survive and escape in a thunderstorm on Forest.",
         map: "forest", mode: "classic", difficulty: "medium", role: "runner",
         objectives: ["Escape through the portal"],
+        challengeType: "escape",
         reward: { coins: 12, xp: 50 },
         starThresholds: [30, 45, 60],
       },
@@ -91,6 +115,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         description: "Survive 3 waves in Survival mode on Arctic.",
         map: "arctic", mode: "survival", difficulty: "medium", role: "runner",
         objectives: ["Survive 3 waves"],
+        challengeType: "surviveWaves", target: 3,
         reward: { coins: 15, xp: 60 },
         starThresholds: [40, 55, 70],
       },
@@ -99,6 +124,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         description: "Defeat the Forest Guardian boss!",
         map: "forest", mode: "classic", difficulty: "medium", role: "runner",
         objectives: ["Defeat the Forest Guardian"],
+        challengeType: "defeatBoss",
         reward: { coins: 20, xp: 80 },
         starThresholds: [35, 50, 70],
         boss: {
@@ -123,6 +149,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         description: "Capture the flag on Ruins in hard mode.",
         map: "ruins", mode: "ctf", difficulty: "hard", role: "runner",
         objectives: ["Capture the flag and return to base"],
+        challengeType: "captureFlag",
         reward: { coins: 20, xp: 80 },
         starThresholds: [40, 60, 90],
       },
@@ -131,6 +158,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         description: "Survive 8 waves on Volcano in hard mode.",
         map: "volcano", mode: "survival", difficulty: "hard", role: "runner",
         objectives: ["Survive 8 waves"],
+        challengeType: "surviveWaves", target: 8,
         reward: { coins: 25, xp: 100 },
         starThresholds: [120, 140, 160],
       },
@@ -139,6 +167,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         description: "Defeat the Lava Titan on Volcano!",
         map: "volcano", mode: "classic", difficulty: "hard", role: "runner",
         objectives: ["Defeat the Lava Titan"],
+        challengeType: "defeatBoss",
         reward: { coins: 30, xp: 120 },
         starThresholds: [40, 55, 75],
         boss: {
@@ -155,6 +184,7 @@ export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
         description: "Defeat the final boss — the Void King!",
         map: "space_station", mode: "classic", difficulty: "hard", role: "runner",
         objectives: ["Defeat the Void King"],
+        challengeType: "defeatBoss",
         reward: { coins: 50, xp: 200 },
         starThresholds: [45, 65, 90],
         boss: {
