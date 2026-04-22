@@ -14,6 +14,22 @@ export interface BossData {
   color: string;
 }
 
+// Defines what triggers a WIN for a campaign challenge.
+// This OVERRIDES the default mode win condition while a challenge is active.
+//   surviveTime  – win once you survive `target` seconds (runner)
+//   tagCount     – win once you tag `target` enemies (hunter)
+//   surviveWaves – win once you complete `target` survival waves
+//   escape       – win by reaching the escape portal (default classic/infection)
+//   captureFlag  – win by returning the flag to base (default CTF)
+//   defeatBoss   – win by killing the boss NPC
+export type ChallengeType =
+  | "surviveTime"
+  | "tagCount"
+  | "surviveWaves"
+  | "escape"
+  | "captureFlag"
+  | "defeatBoss";
+
 export interface CampaignChallenge {
   id: string;
   name: string;
@@ -24,6 +40,10 @@ export interface CampaignChallenge {
   difficulty: Difficulty;
   role: "runner" | "hunter";
   objectives: string[];
+  /** What it takes to win this challenge — overrides the mode default. */
+  challengeType: ChallengeType;
+  /** Target value: seconds for surviveTime, count for tagCount, wave # for surviveWaves. */
+  target?: number;
   timeLimit?: number;
   requiredCoins?: number;
   reward: { coins: number; xp: number };
