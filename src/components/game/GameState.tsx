@@ -528,9 +528,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
       setScore(enemyCount);
 
-      // Win by tagging all enemies (classic, infection)
+      // If a campaign tagCount challenge is active, IT defines the win threshold
+      const challenge = campaignChallengeRef.current;
       const mode = modeRef.current;
-      if (enemyCount >= enemyTotal && (mode === "classic" || mode === "infection")) {
+      if (challenge && challenge.challengeType === "tagCount" && challenge.target) {
+        if (enemyCount >= challenge.target) {
+          const elapsed = (Date.now() - startTimeRef.current) / 1000;
+          finishGame("win", elapsed);
+        }
+      } else if (!challenge && enemyCount >= enemyTotal && (mode === "classic" || mode === "infection")) {
+        // Default: win by tagging ALL enemies
         const elapsed = (Date.now() - startTimeRef.current) / 1000;
         finishGame("win", elapsed);
       }
