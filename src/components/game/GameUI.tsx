@@ -228,21 +228,75 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
             </div>
           </div>
 
-          {/* Timer */}
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-            <div className="bg-black/70 backdrop-blur-md rounded-xl px-5 py-2.5 border border-white/10 shadow-2xl">
-              <div className={`font-mono text-xl font-black tracking-wider text-center tabular-nums ${
-                timeLeft <= 10 ? "text-red-400 animate-pulse" : timeLeft <= 20 ? "text-yellow-400" : "text-white"
-              }`}>
-                {gameMode === "survival" ? formatTime(elapsedTime) : formatTime(timeLeft)}
+          {/* Timer — challenge objective overrides default mode display */}
+          {(() => {
+            const ch = activeCampaignChallenge;
+            // Survive-N-seconds challenge: show countdown to win
+            if (ch?.challengeType === "surviveTime" && ch.target) {
+              const remaining = Math.max(0, ch.target - elapsedTime);
+              return (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+                  <div className="bg-black/70 backdrop-blur-md rounded-xl px-5 py-2.5 border border-amber-500/30 shadow-2xl">
+                    <div className={`font-mono text-xl font-black tracking-wider text-center tabular-nums ${
+                      remaining <= 5 ? "text-amber-300 animate-pulse" : "text-amber-400"
+                    }`}>
+                      {formatTime(remaining)}
+                    </div>
+                    <div className="text-amber-400/60 text-[9px] uppercase tracking-[0.15em] text-center">
+                      🎖️ Survive to Win
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            // Tag-N-runners challenge: show progress count instead of escape timer
+            if (ch?.challengeType === "tagCount" && ch.target) {
+              return (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+                  <div className="bg-black/70 backdrop-blur-md rounded-xl px-5 py-2.5 border border-amber-500/30 shadow-2xl">
+                    <div className="font-mono text-xl font-black tracking-wider text-center tabular-nums text-amber-400">
+                      {score}/{ch.target}
+                    </div>
+                    <div className="text-amber-400/60 text-[9px] uppercase tracking-[0.15em] text-center">
+                      🎖️ Tag {ch.target} Runners
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            // Survive-N-waves challenge: show wave progress
+            if (ch?.challengeType === "surviveWaves" && ch.target) {
+              return (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+                  <div className="bg-black/70 backdrop-blur-md rounded-xl px-5 py-2.5 border border-amber-500/30 shadow-2xl">
+                    <div className="font-mono text-xl font-black tracking-wider text-center tabular-nums text-amber-400">
+                      {formatTime(elapsedTime)}
+                    </div>
+                    <div className="text-amber-400/60 text-[9px] uppercase tracking-[0.15em] text-center">
+                      🎖️ Wave {survivalWave}/{ch.target}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            // Default mode timer
+            return (
+              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+                <div className="bg-black/70 backdrop-blur-md rounded-xl px-5 py-2.5 border border-white/10 shadow-2xl">
+                  <div className={`font-mono text-xl font-black tracking-wider text-center tabular-nums ${
+                    timeLeft <= 10 ? "text-red-400 animate-pulse" : timeLeft <= 20 ? "text-yellow-400" : "text-white"
+                  }`}>
+                    {gameMode === "survival" ? formatTime(elapsedTime) : formatTime(timeLeft)}
+                  </div>
+                  <div className="text-white/30 text-[9px] uppercase tracking-[0.15em] text-center">
+                    {gameMode === "survival" ? `Wave ${survivalWave}/10` :
+                     gameMode === "ctf" ? (flagCarried ? "⚡ RETURN TO BASE" : "Find the Flag") :
+                     escapeOpen ? "⚡ ESCAPE OPEN" : "Until Escape"}
+                  </div>
+                </div>
               </div>
-              <div className="text-white/30 text-[9px] uppercase tracking-[0.15em] text-center">
-                {gameMode === "survival" ? `Wave ${survivalWave}/10` :
-                 gameMode === "ctf" ? (flagCarried ? "⚡ RETURN TO BASE" : "Find the Flag") :
-                 escapeOpen ? "⚡ ESCAPE OPEN" : "Until Escape"}
-              </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Stamina */}
           <div className="fixed bottom-4 left-4 z-50 pointer-events-none">
