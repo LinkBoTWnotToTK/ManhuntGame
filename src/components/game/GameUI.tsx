@@ -42,7 +42,7 @@ export default function GameUI({ onOpenEditor }: { onOpenEditor: () => void }) {
     level, xp, prestige, totalWins, totalGames, leaderboard,
     survivalWave, flagCarried, isDisguised, isUnderground,
     selectRole, selectMap, setDifficulty, setGameMode, startGame, resetGame,
-    startTutorial, setActiveCampaignChallenge,
+    startTutorial, setActiveCampaignChallenge, activeCampaignChallenge,
   } = useGame();
 
   const [menuStep, setMenuStep] = useState<"main" | "play" | "shop" | "leaderboard" | "mode" | "difficulty" | "map" | "ready" | "campaign" | "campaign_chapter">("main");
